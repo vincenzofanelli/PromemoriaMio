@@ -2578,9 +2578,26 @@ function goTo(name) {
     'form-lavoro':    'lavoro',
   };
   if (formMap[name]) {
+    const fid = formMap[name];
     // Se non siamo in modifica, resetta il form prima di mostrarlo
-    if (!eventoInModifica) resetForm(formMap[name]);
-    initNotif(formMap[name]);
+    if (!eventoInModifica) {
+      resetForm(fid);
+      initNotif(fid);
+    } else {
+      // In modifica: carica subito i dati dell'evento (sincrono, prima di initNotif)
+      const eventi = leggiEventi();
+      const ev = eventi.find(e => e.id === eventoInModifica);
+      if (ev) {
+        // Precarica notifStati con i dati salvati, così initNotif non li sovrascrive
+        if (ev.notifiche && Array.isArray(ev.notifiche) && ev.notifiche.length > 0) {
+          notifStati[fid] = ev.notifiche.map(n => ({...n}));
+        } else {
+          delete notifStati[fid]; // nessuna notifica salvata → usa defaults
+        }
+        caricaFormEvento(ev);
+      }
+      initNotif(fid);
+    }
   }
 }
 
@@ -3331,19 +3348,15 @@ function apriEvento(id) {
   eventoInModifica = id;
   const target = 'form-' + ev.categoria;
   if (current === target) {
-    const screenEl = document.getElementById(screens[target]);
-    if (screenEl) {
-      screenEl.classList.add('hidden');
-      setTimeout(() => {
-        screenEl.classList.remove('hidden');
-        try { caricaFormEvento(ev); } catch(err) { console.warn('[apriEvento] caricaForm:', err); }
-      }, 0);
+    // Già sulla schermata giusta: ricarica form e notifiche
+    const fid = ev.categoria;
+    if (ev.notifiche && Array.isArray(ev.notifiche) && ev.notifiche.length > 0) {
+      notifStati[fid] = ev.notifiche.map(n => ({...n}));
     }
+    try { caricaFormEvento(ev); } catch(err) { console.warn('[apriEvento]', err); }
+    initNotif(fid);
   } else {
-    goTo(target);
-    setTimeout(() => {
-      try { caricaFormEvento(ev); } catch(err) { console.warn('[apriEvento] caricaForm:', err); }
-    }, 0);
+    goTo(target); // goTo ora gestisce caricaFormEvento+initNotif in modifica
   }
 }
 
@@ -3387,11 +3400,6 @@ function caricaFormEvento(ev) {
     set('acquisti-titolo', e.titolo); setDate('acquisti-data', e.data, false); set('acquisti-note', e.note);
   } else if (cat === 'lavoro') {
     set('lavoro-tipo', e.tipo); set('lavoro-titolo', e.titolo); setDate('lavoro-data', e.data, true); set('lavoro-luogo', e.luogo); set('lavoro-note', e.note);
-  }
-  // Carica anche le notifiche salvate sull'evento e aggiorna il blocco visivo
-  if (ev.notifiche && Array.isArray(ev.notifiche)) {
-    notifStati[cat] = ev.notifiche.map(n => ({...n}));
-    renderNotifBlock(cat);
   }
 }
 
