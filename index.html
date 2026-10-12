@@ -307,14 +307,37 @@ function testSuono() {
 }
 
 // Ascolta messaggi dal SW (es. notifica in arrivo)
+// Flag: una notifica è scattata, suona appena l'app è visibile o al prossimo gesto
+let _suonaPendente = false;
+
+function _suonaSeVisible() {
+  if (!document.hidden) {
+    _suonaPendente = false;
+    suonaPromemoria();
+  }
+}
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', e => {
     if (e.data && e.data.tipo === 'NOTIFICA_IN_ARRIVO') {
-      showToast('🔔 SW→app ricevuto');
-      suonaPromemoria();
+      if (!document.hidden) {
+        // App in primo piano: suona subito
+        suonaPromemoria();
+      } else {
+        // App in background: appena torna visibile (utente tocca la notifica) suona
+        _suonaPendente = true;
+      }
     }
   });
 }
+
+// Quando l'utente torna all'app (tocca la notifica o riapre), suona se c'è un pending
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    if (_suonaPendente) _suonaSeVisible();
+    if (typeof renderHome === 'function' && current === 'home') renderHome();
+  }
+});
 
 function calcolaTimestampNotifica(desc, dataEvt, time) {
   // Copia della data evento, azzera l'ora
@@ -4004,10 +4027,7 @@ if ('Notification' in window && Notification.permission === 'default') {
 setInterval(renderHome, 60000);
 setUtility('ok');
 
-// Aggiorna la home immediatamente quando l'utente torna all'app
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && current === 'home') renderHome();
-});
+// (visibilitychange già gestito sopra — renderHome() incluso)
 
 // Tasto back del telefono (Android): riporta alla home e sincronizza current
 window.addEventListener('popstate', () => {
