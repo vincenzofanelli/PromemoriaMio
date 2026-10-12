@@ -3245,15 +3245,6 @@ function renderHome() {
   }
 
   lista.innerHTML = html;
-
-  // Listener tap su card
-  lista.querySelectorAll('.event-card[data-id]').forEach(card => {
-    card.addEventListener('click', function(e) {
-      // ignora click sui bottoni figli (done/del hanno stopPropagation ma per sicurezza)
-      if (e.target.closest('button')) return;
-      apriEvento(card.dataset.id);
-    });
-  });
 }
 
 function escHTML(s) {
@@ -3310,11 +3301,10 @@ function segnaFatto(id) {
 function apriEvento(id) {
   const eventi = leggiEventi();
   const ev = eventi.find(e => e.id === id);
-  if (!ev) { alert('evento non trovato: ' + id); return; }
+  if (!ev) return;
   eventoInModifica = id;
   caricaFormEvento(ev);
   const target = 'form-' + ev.categoria;
-  alert('apro: ' + target + ' | current: ' + current + ' | screen esiste: ' + !!document.getElementById(screens[target]));
   if (current === target) {
     const el = document.getElementById(screens[target]);
     if (el) { el.classList.add('hidden'); setTimeout(() => el.classList.remove('hidden'), 0); }
@@ -3513,6 +3503,17 @@ window.goTo = function(name) {
 window.addEventListener('load', () => {
   renderHome();
   aggiornaOrariCustom();
+
+  // Event delegation per tap su card — un solo listener permanente sul contenitore
+  const homeList = document.getElementById('home-list');
+  if (homeList) {
+    homeList.addEventListener('click', function(e) {
+      const card = e.target.closest('.event-card[data-id]');
+      if (!card) return;
+      if (e.target.closest('button')) return;
+      apriEvento(card.dataset.id);
+    });
+  }
 });
 
 // ============================================================
