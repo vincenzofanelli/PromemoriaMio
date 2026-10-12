@@ -1,7 +1,7 @@
 // PromemoriaMio Service Worker v1.0
 // Gestisce notifiche locali programmate
 
-const CACHE_NAME = 'promemoriamio-v9';
+const CACHE_NAME = 'promemoriamio-v10';
 const ASSETS = ['./index.html', './manifest.json'];
 
 // ── Install ──────────────────────────────────────────────────────────────────

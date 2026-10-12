@@ -3215,7 +3215,7 @@ function renderHome() {
     for (const ev of items) {
       const badge = CAT_LABELS[ev.categoria] || ev.categoria;
       const dataStr = fmtDataEvento(ev);
-      html += `<div class="event-card ${g.cls}" onclick="apriEvento('${ev.id}')">
+      html += `<div class="event-card ${g.cls}" data-id="${ev.id}">
         <div class="event-dot"></div>
         <div class="event-body">
           <div class="event-title">${escHTML(titoloCarta(ev))}</div>
@@ -3245,6 +3245,20 @@ function renderHome() {
   }
 
   lista.innerHTML = html;
+
+  // Listener tap su card — touchend più affidabile di onclick su Android
+  lista.querySelectorAll('.event-card[data-id]').forEach(card => {
+    let _touchMoved = false;
+    card.addEventListener('touchstart', () => { _touchMoved = false; }, { passive: true });
+    card.addEventListener('touchmove', () => { _touchMoved = true; }, { passive: true });
+    card.addEventListener('touchend', e => {
+      if (_touchMoved) return;
+      e.preventDefault();
+      apriEvento(card.dataset.id);
+    });
+    // fallback desktop
+    card.addEventListener('click', () => apriEvento(card.dataset.id));
+  });
 }
 
 function escHTML(s) {
