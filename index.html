@@ -1271,6 +1271,12 @@ body {
   padding: 0;
 }
 .ev-del-btn:hover { background: #FEE2E2; color: var(--col-scaduto); }
+.ev-edit-btn {
+  background: none; border: none; cursor: pointer; color: var(--fg-3);
+  width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: background 0.15s, color 0.15s; padding: 0;
+}
+.ev-edit-btn:hover { background: #EEF2FF; color: var(--accent); }
 
 /* === SALVA in header === */
 .btn-save-header {
@@ -3225,6 +3231,9 @@ function renderHome() {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <button class="ev-edit-btn" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="Modifica">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
           ${ev.stato !== 'fatto' ? `<button class="ev-done-btn" onclick="event.stopPropagation();segnaFatto('${ev.id}')" title="Segna come fatto">
             <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
           </button>` : '<span style="font-size:0.72rem;color:var(--fg-3);white-space:nowrap">✓ Fatto</span>'}
@@ -3503,18 +3512,26 @@ window.goTo = function(name) {
 window.addEventListener('load', () => {
   renderHome();
   aggiornaOrariCustom();
+});
 
-  // Event delegation per tap su card — un solo listener permanente sul contenitore
-  const homeList = document.getElementById('home-list');
-  if (homeList) {
+// Event delegation per tap su card — eseguito subito, non dentro load
+(function() {
+  function initCardTap() {
+    const homeList = document.getElementById('home-list');
+    if (!homeList) return;
     homeList.addEventListener('click', function(e) {
-      const card = e.target.closest('.event-card[data-id]');
-      if (!card) return;
       if (e.target.closest('button')) return;
+      const card = e.target.closest('.event-card');
+      if (!card || !card.dataset.id) return;
       apriEvento(card.dataset.id);
     });
   }
-});
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCardTap);
+  } else {
+    initCardTap();
+  }
+})();
 
 // ============================================================
 // CUSTOM PICKER ENGINE
