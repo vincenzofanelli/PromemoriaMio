@@ -3246,18 +3246,13 @@ function renderHome() {
 
   lista.innerHTML = html;
 
-  // Listener tap su card — touchend più affidabile di onclick su Android
+  // Listener tap su card
   lista.querySelectorAll('.event-card[data-id]').forEach(card => {
-    let _touchMoved = false;
-    card.addEventListener('touchstart', () => { _touchMoved = false; }, { passive: true });
-    card.addEventListener('touchmove', () => { _touchMoved = true; }, { passive: true });
-    card.addEventListener('touchend', e => {
-      if (_touchMoved) return;
-      e.preventDefault();
+    card.addEventListener('click', function(e) {
+      // ignora click sui bottoni figli (done/del hanno stopPropagation ma per sicurezza)
+      if (e.target.closest('button')) return;
       apriEvento(card.dataset.id);
     });
-    // fallback desktop
-    card.addEventListener('click', () => apriEvento(card.dataset.id));
   });
 }
 
@@ -3315,14 +3310,12 @@ function segnaFatto(id) {
 function apriEvento(id) {
   const eventi = leggiEventi();
   const ev = eventi.find(e => e.id === id);
-  if (!ev) return;
+  if (!ev) { alert('evento non trovato: ' + id); return; }
   eventoInModifica = id;
   caricaFormEvento(ev);
-  // Forza la navigazione anche se current è già lo stesso form
-  // (può succedere se si torna alla home senza passare per 'nuovo')
   const target = 'form-' + ev.categoria;
+  alert('apro: ' + target + ' | current: ' + current + ' | screen esiste: ' + !!document.getElementById(screens[target]));
   if (current === target) {
-    // siamo già sul form giusto ma con dati vecchi: nascondi/mostra per resettare scroll
     const el = document.getElementById(screens[target]);
     if (el) { el.classList.add('hidden'); setTimeout(() => el.classList.remove('hidden'), 0); }
   } else {
