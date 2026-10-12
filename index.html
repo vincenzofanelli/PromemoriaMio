@@ -3310,13 +3310,14 @@ function segnaFatto(id) {
 function apriEvento(id) {
   const eventi = leggiEventi();
   const ev = eventi.find(e => e.id === id);
-  if (!ev) return;
+  if (!ev) { alert('NO EV'); return; }
+  const target = 'form-' + ev.categoria;
+  const screenEl = document.getElementById(screens[target]);
+  alert('cat:' + ev.categoria + ' target:' + target + ' inScreens:' + (target in screens) + ' elExists:' + !!screenEl + ' current:' + current);
   eventoInModifica = id;
   caricaFormEvento(ev);
-  const target = 'form-' + ev.categoria;
   if (current === target) {
-    const el = document.getElementById(screens[target]);
-    if (el) { el.classList.add('hidden'); setTimeout(() => el.classList.remove('hidden'), 0); }
+    if (screenEl) { screenEl.classList.add('hidden'); setTimeout(() => screenEl.classList.remove('hidden'), 0); }
   } else {
     goTo(target);
   }
