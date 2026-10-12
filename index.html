@@ -226,12 +226,56 @@ document.addEventListener('touchstart', () => { const c = _getAudioCtx(); if (c 
 document.addEventListener('click', () => { const c = _getAudioCtx(); if (c && c.state === 'suspended') c.resume(); }, { once: false, passive: true });
 
 function suonaPromemoria() {
-  // vibrazione come fallback sempre (non richiede gesto utente)
   if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
   try {
     const ctx = _getAudioCtx();
-    if (!ctx) return;
+    if (!ctx) { showToast('❌ no AudioCtx'); return; }
+    showToast('🔊 ctx:' + ctx.state);
     function _play() {
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.30);
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.55);
+      } catch(pe) { showToast('❌ play:' + pe.message); }
+    }
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(_play).catch(e => { showToast('❌ resume:' + e.message); });
+    } else {
+      _play();
+    }
+  } catch(e) { showToast('❌ err:' + e.message); }
+}
+
+function testSuono() {
+  const log = document.getElementById('test-suono-log');
+  const lines = [];
+  function append(msg) { lines.push(msg); if (log) log.innerHTML = lines.join('<br>'); }
+  lines.length = 0;
+  append('▶ avvio test…');
+  if (!window.AudioContext && !window.webkitAudioContext) {
+    append('❌ Web Audio API non supportata');
+    return;
+  }
+  append('✅ Web Audio API disponibile');
+  let ctx;
+  try {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    append('✅ AudioContext creato — stato: ' + ctx.state);
+  } catch(e) {
+    append('❌ creazione AudioContext fallita: ' + e.message);
+    return;
+  }
+  function eseguiPlay() {
+    try {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -244,19 +288,29 @@ function suonaPromemoria() {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.55);
+      append('✅ oscillatore avviato — dovresti sentire il suono');
+    } catch(pe) {
+      append('❌ play fallito: ' + pe.message);
     }
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(_play).catch(e => console.warn('[suono] resume:', e));
-    } else {
-      _play();
-    }
-  } catch(e) { console.warn('[suono] errore:', e); }
+  }
+  if (ctx.state === 'suspended') {
+    append('⚠️ stato sospeso — chiamo resume()…');
+    ctx.resume().then(() => {
+      append('✅ resume ok — stato: ' + ctx.state);
+      eseguiPlay();
+    }).catch(e => {
+      append('❌ resume fallito: ' + e.message);
+    });
+  } else {
+    eseguiPlay();
+  }
 }
 
 // Ascolta messaggi dal SW (es. notifica in arrivo)
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', e => {
     if (e.data && e.data.tipo === 'NOTIFICA_IN_ARRIVO') {
+      showToast('🔔 SW→app ricevuto');
       suonaPromemoria();
     }
   });
@@ -360,20 +414,17 @@ function calcolaTimestampNotifica(desc, dataEvt, time) {
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html {
+html, body {
   height: 100%;
-  height: -webkit-fill-available;
-}
-
-body {
-  height: 100%;
-  min-height: -webkit-fill-available;
-  width: 100%;
-  max-width: 430px;
-  margin: 0 auto;
   background: var(--bg);
   color: var(--fg);
   overscroll-behavior: none;
+}
+
+body {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -382,12 +433,15 @@ body {
 
 /* === SCHERMATE === */
 .screen {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  overflow-x: hidden;
+  overflow: hidden;
   transition: transform 0.28s cubic-bezier(.4,0,.2,1), opacity 0.28s;
 }
 .screen.hidden {
@@ -1330,7 +1384,7 @@ body {
 
 /* ---- PICKER OVERLAY ---- */
 .picker-overlay {
-  position: absolute; inset: 0;
+  position: fixed; inset: 0;
   background: rgba(0,0,0,.52);
   z-index: 9999;
   display: flex;
@@ -2063,6 +2117,17 @@ body {
       <button id="btn-utility" class="btn-utility-ok" style="width:100%;padding:13px 16px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-card);color:var(--fg);font-size:0.9rem;font-weight:600;font-family:inherit;cursor:pointer;text-align:left">🔄 Verifica aggiornamenti</button>
       <div id="app-version-info" style="margin-top:10px;padding:10px 14px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);font-size:0.78rem;color:var(--fg-2);line-height:1.8;font-family:ui-monospace,monospace">
         Cache: —<br>SW: —
+      </div>
+    </div>
+
+    <!-- TEST SUONO -->
+    <div style="margin:0 0 8px">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--fg-2);margin-bottom:8px">Test suono</div>
+      <button onclick="testSuono()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:0.95rem;font-weight:700;font-family:inherit;cursor:pointer">
+        🔊 Premi qui per testare il suono
+      </button>
+      <div id="test-suono-log" style="margin-top:8px;padding:10px 14px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);font-size:0.78rem;color:var(--fg-2);line-height:1.8;font-family:ui-monospace,monospace;min-height:40px">
+        —
       </div>
     </div>
 
