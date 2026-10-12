@@ -212,6 +212,35 @@ function scheduleAllNotifications() {
   });
 }
 
+// ── Suono promemoria (Web Audio API) ─────────────────────────────────────────
+function suonaPromemoria() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.30);
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.55);
+    osc.onended = () => ctx.close();
+  } catch(e) { console.warn('[suono] errore:', e); }
+}
+
+// Ascolta messaggi dal SW (es. notifica in arrivo)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.tipo === 'NOTIFICA_IN_ARRIVO') {
+      suonaPromemoria();
+    }
+  });
+}
+
 function calcolaTimestampNotifica(desc, dataEvt, time) {
   // Copia della data evento, azzera l'ora
   const d = new Date(dataEvt);
@@ -1233,8 +1262,8 @@ body {
   padding: 0;
 }
 .ev-del-btn:hover { background: #FEE2E2; color: var(--col-scaduto); }
-.event-card { display: flex; align-items: center; }
-.event-body { flex: 1; min-width: 0; }
+.event-card { display: flex; align-items: center; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.05); user-select: none; -webkit-user-select: none; }
+.event-body { flex: 1; min-width: 0; user-select: none; -webkit-user-select: none; }
 
 /* === SALVA in header === */
 .btn-save-header {
