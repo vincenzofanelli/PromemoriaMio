@@ -3310,16 +3310,23 @@ function segnaFatto(id) {
 function apriEvento(id) {
   const eventi = leggiEventi();
   const ev = eventi.find(e => e.id === id);
-  if (!ev) { alert('NO EV'); return; }
-  const target = 'form-' + ev.categoria;
-  const screenEl = document.getElementById(screens[target]);
-  alert('cat:' + ev.categoria + ' target:' + target + ' inScreens:' + (target in screens) + ' elExists:' + !!screenEl + ' current:' + current);
+  if (!ev) return;
   eventoInModifica = id;
-  caricaFormEvento(ev);
+  const target = 'form-' + ev.categoria;
   if (current === target) {
-    if (screenEl) { screenEl.classList.add('hidden'); setTimeout(() => screenEl.classList.remove('hidden'), 0); }
+    const screenEl = document.getElementById(screens[target]);
+    if (screenEl) {
+      screenEl.classList.add('hidden');
+      setTimeout(() => {
+        screenEl.classList.remove('hidden');
+        try { caricaFormEvento(ev); } catch(err) { console.warn('[apriEvento] caricaForm:', err); }
+      }, 0);
+    }
   } else {
     goTo(target);
+    setTimeout(() => {
+      try { caricaFormEvento(ev); } catch(err) { console.warn('[apriEvento] caricaForm:', err); }
+    }, 0);
   }
 }
 
