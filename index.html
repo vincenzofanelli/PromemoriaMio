@@ -213,11 +213,24 @@ function scheduleAllNotifications() {
 }
 
 // ── Suono promemoria (Web Audio API) ─────────────────────────────────────────
+// AudioContext condiviso — creato al primo gesto utente per bypassare autoplay policy
+let _audioCtx = null;
+function _getAudioCtx() {
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  return _audioCtx;
+}
+// Sblocca l'AudioContext al primo qualsiasi tocco/click
+document.addEventListener('touchstart', () => { const c = _getAudioCtx(); if (c && c.state === 'suspended') c.resume(); }, { once: false, passive: true });
+document.addEventListener('click', () => { const c = _getAudioCtx(); if (c && c.state === 'suspended') c.resume(); }, { once: false, passive: true });
+
 function suonaPromemoria() {
   // vibrazione come fallback sempre (non richiede gesto utente)
   if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _getAudioCtx();
+    if (!ctx) return;
     function _play() {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -231,7 +244,6 @@ function suonaPromemoria() {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.55);
-      osc.onended = () => ctx.close();
     }
     if (ctx.state === 'suspended') {
       ctx.resume().then(_play).catch(e => console.warn('[suono] resume:', e));
@@ -348,18 +360,22 @@ function calcolaTimestampNotifica(desc, dataEvt, time) {
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body {
+html {
   height: 100%;
-  background: var(--bg);
-  color: var(--fg);
-  overscroll-behavior: none;
+  height: -webkit-fill-available;
 }
 
 body {
-  display: flex;
-  flex-direction: column;
+  height: 100%;
+  min-height: -webkit-fill-available;
+  width: 100%;
   max-width: 430px;
   margin: 0 auto;
+  background: var(--bg);
+  color: var(--fg);
+  overscroll-behavior: none;
+  display: flex;
+  flex-direction: column;
   position: relative;
   overflow: hidden;
 }
@@ -371,6 +387,7 @@ body {
   display: flex;
   flex-direction: column;
   background: var(--bg);
+  overflow-x: hidden;
   transition: transform 0.28s cubic-bezier(.4,0,.2,1), opacity 0.28s;
 }
 .screen.hidden {
@@ -3371,9 +3388,10 @@ function caricaFormEvento(ev) {
   } else if (cat === 'lavoro') {
     set('lavoro-tipo', e.tipo); set('lavoro-titolo', e.titolo); setDate('lavoro-data', e.data, true); set('lavoro-luogo', e.luogo); set('lavoro-note', e.note);
   }
-  // Carica anche le notifiche salvate sull'evento
+  // Carica anche le notifiche salvate sull'evento e aggiorna il blocco visivo
   if (ev.notifiche && Array.isArray(ev.notifiche)) {
     notifStati[cat] = ev.notifiche.map(n => ({...n}));
+    renderNotifBlock(cat);
   }
 }
 
