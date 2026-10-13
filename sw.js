@@ -1,12 +1,13 @@
 // PromemoriaMio Service Worker v1.0
 // Gestisce notifiche locali programmate
 
-const CACHE_NAME = 'promemoriamio-v28';
+const CACHE_NAME = 'promemoriamio-v30';
 const ASSETS = ['./index.html', './manifest.json'];
 
 // ── Install ──────────────────────────────────────────────────────────────────
 self.addEventListener('install', e => {
-  self.skipWaiting();
+  // NON skipWaiting qui — vogliamo che il nuovo SW resti in "waiting"
+  // così la pagina mostra il banner giallo e l'utente sceglie quando aggiornare
   e.waitUntil(
     caches.open(CACHE_NAME).then(c => c.addAll(ASSETS).catch(() => {}))
   );
