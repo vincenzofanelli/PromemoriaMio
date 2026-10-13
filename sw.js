@@ -1,7 +1,7 @@
 // PromemoriaMio Service Worker v1.0
 // Gestisce notifiche locali programmate
 
-const CACHE_NAME = 'promemoriamio-v26';
+const CACHE_NAME = 'promemoriamio-v28';
 const ASSETS = ['./index.html', './manifest.json'];
 
 // ── Install ──────────────────────────────────────────────────────────────────
@@ -47,10 +47,6 @@ function programmaNotifica({ tag, title, body, timestamp }) {
   const id = setTimeout(async () => {
     timers.delete(tag);
     try {
-      // Avvisa i client aperti per far suonare il suono
-      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      clients.forEach(c => c.postMessage({ tipo: 'NOTIFICA_IN_ARRIVO' }));
-
       await self.registration.showNotification(title || 'PromemoriaMio', {
         body: body || 'Hai un impegno in programma',
         tag,
@@ -110,10 +106,13 @@ self.addEventListener('notificationclick', e => {
 
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
-      for (const client of clients) {
+      if (clients.length > 0) {
+        const client = clients[0];
+        client.postMessage({ tipo: 'NOTIFICA_IN_ARRIVO' });
         if ('focus' in client) return client.focus();
+      } else {
+        if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
       }
-      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     })
   );
 });
