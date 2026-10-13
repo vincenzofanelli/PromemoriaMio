@@ -317,12 +317,12 @@ function _suonaSeVisible() {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', e => {
     if (e.data && e.data.tipo === 'NOTIFICA_IN_ARRIVO') {
+      showToast('📨 msg SW ricevuto hidden=' + document.hidden);
       if (!document.hidden) {
-        // App in primo piano: suona subito
         suonaPromemoria();
       } else {
-        // App in background: appena torna visibile (utente tocca la notifica) suona
         _suonaPendente = true;
+        showToast('⏳ pending set');
       }
     }
   });
@@ -331,6 +331,7 @@ if ('serviceWorker' in navigator) {
 // Quando l'utente torna all'app (tocca la notifica o riapre), suona se c'è un pending
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
+    showToast('👁 visibile pending=' + _suonaPendente);
     if (_suonaPendente) _suonaSeVisible();
     if (typeof renderHome === 'function' && current === 'home') renderHome();
   }
