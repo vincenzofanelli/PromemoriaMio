@@ -2061,6 +2061,9 @@ body {
 <!-- ============================================================
      SCHERMATA: CONTI
      ============================================================ -->
+<!-- ============================================================
+     SCHERMATA LISTA CONTI
+     ============================================================ -->
 <div class="screen hidden" id="screen-conti">
   <div class="header">
     <button class="header-back" onclick="goTo('nuovo')">
@@ -2068,6 +2071,38 @@ body {
       Indietro
     </button>
     <h1 style="font-size:1rem;color:var(--fg)">Conti</h1>
+    <button class="btn-save-header" onclick="apriModalNuovoConto()">+ Conto</button>
+  </div>
+
+  <div class="scroll-body" id="conti-lista-scroll">
+    <!-- generato da renderListaConti() -->
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="goTo('home')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="fab" onclick="goTo('nuovo')">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+    </button>
+    <button class="nav-btn" onclick="goTo('utente')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+      <span>Profilo</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ============================================================
+     SCHERMATA DETTAGLIO CONTO
+     ============================================================ -->
+<div class="screen hidden" id="screen-conti-dettaglio">
+  <div class="header">
+    <button class="header-back" onclick="goTo('conti')">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      Conti
+    </button>
+    <h1 id="conti-dettaglio-titolo" style="font-size:1rem;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">Conto</h1>
     <button class="btn-save-header" onclick="apriNuovaVoceConti()">+ Voce</button>
   </div>
 
@@ -2088,6 +2123,18 @@ body {
       <span>Profilo</span>
     </button>
   </nav>
+</div>
+
+<!-- Modal nuovo/rinomina conto -->
+<div id="conti-nome-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;align-items:flex-end;justify-content:center" onclick="chiudiModalNomeConto(event)">
+  <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:430px;box-sizing:border-box" onclick="event.stopPropagation()">
+    <div id="conti-nome-modal-titolo" style="font-size:1rem;font-weight:700;color:var(--fg);margin-bottom:16px">Nuovo conto</div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>Nome del conto</label>
+      <input type="text" id="conti-nome-input" placeholder="es. Moglie, Figli, Mario…" style="width:100%;box-sizing:border-box" onkeydown="if(event.key==='Enter')salvaModalNomeConto()">
+    </div>
+    <button onclick="salvaModalNomeConto()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:0.95rem;font-weight:700;font-family:inherit;cursor:pointer">Salva</button>
+  </div>
 </div>
 
 <!-- Modal nuova voce conti -->
@@ -2704,6 +2751,7 @@ const screens = {
   liste:                'screen-liste',
   'lista-dettaglio':    'screen-lista-dettaglio',
   conti:                'screen-conti',
+  'conti-dettaglio':    'screen-conti-dettaglio',
   utente:               'screen-utente',
 };
 let current = 'home';
@@ -2731,7 +2779,7 @@ function goTo(name) {
     renderListe();
   }
   if (name === 'conti') {
-    renderConti();
+    renderListaConti();
   }
   if (name === 'utente') {
     aggiornaInfoVersione();
@@ -4146,23 +4194,140 @@ history.pushState(null, '');
 // CONTI — gestione spese/entrate condivise con checkpoint saldo
 // ============================================================
 
-function leggiConti() {
-  try { return JSON.parse(localStorage.getItem('promemoriamio_conti') || '{"periodi":[]}'); }
-  catch(e) { return { periodi: [] }; }
+// ── Conti: DB ────────────────────────────────────────────────────────────────
+// Struttura: { conti: [ { id, nome, periodi: [ { id, voci: [], saldato: null } ] } ] }
+// Migrazione automatica dal vecchio formato { periodi: [] }
+
+function leggiContiDB() {
+  try {
+    const raw = localStorage.getItem('promemoriamio_conti');
+    if (!raw) return { conti: [] };
+    const parsed = JSON.parse(raw);
+    // vecchio formato: aveva "periodi" in radice
+    if (Array.isArray(parsed.periodi)) {
+      const migrato = { conti: [] };
+      if (parsed.periodi.length) {
+        migrato.conti.push({ id: Date.now(), nome: 'Conto principale', periodi: parsed.periodi });
+      }
+      salvaContiDB(migrato);
+      return migrato;
+    }
+    return parsed;
+  } catch(e) { return { conti: [] }; }
 }
 function salvaContiDB(data) {
   localStorage.setItem('promemoriamio_conti', JSON.stringify(data));
 }
-function contiPeriodoCorrente(data) {
-  if (!data.periodi.length) {
-    const nuovo = { id: Date.now(), voci: [], saldato: null };
-    data.periodi.push(nuovo);
+
+// conto attivo durante la sessione dettaglio
+let _contoAttivoId = null;
+
+function getContoAttivo(db) {
+  return db.conti.find(c => c.id === _contoAttivoId) || null;
+}
+function periodoCorrenteConto(conto) {
+  if (!conto.periodi.length || conto.periodi[conto.periodi.length-1].saldato) {
+    conto.periodi.push({ id: Date.now(), voci: [], saldato: null });
   }
-  return data.periodi[data.periodi.length - 1];
+  return conto.periodi[conto.periodi.length - 1];
+}
+
+// ── Conti: lista ─────────────────────────────────────────────────────────────
+function renderListaConti() {
+  const db = leggiContiDB();
+  const scroll = document.getElementById('conti-lista-scroll');
+  if (!scroll) return;
+  if (!db.conti.length) {
+    scroll.innerHTML = '<div style="color:var(--fg-2);font-size:0.9rem;padding:40px 0;text-align:center">Nessun conto ancora.<br>Premi "+ Conto" per iniziare.</div>';
+    return;
+  }
+  let html = '<div style="padding:8px 0">';
+  db.conti.forEach(c => {
+    const periodoAperto = c.periodi.find(p => !p.saldato);
+    const totAperto = periodoAperto ? periodoAperto.voci.reduce((s,v) => s+v.imp, 0) : 0;
+    const nVoci = periodoAperto ? periodoAperto.voci.length : 0;
+    const colTot = totAperto >= 0 ? '#16a34a' : '#dc2626';
+    html += '<div style="display:flex;align-items:center;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden">'
+      + '<div style="flex:1;min-width:0;padding:14px 16px;cursor:pointer" onclick="apriContoDettaglia(' + c.id + ')">'
+      + '<div style="font-size:1rem;font-weight:700;color:var(--fg)">' + c.nome + '</div>'
+      + '<div style="font-size:0.78rem;color:var(--fg-2);margin-top:3px">'
+      + (nVoci ? nVoci + ' voce/i in corso · <span style="color:' + colTot + ';font-weight:700">' + fmtEuro(totAperto) + '</span>' : 'Nessuna voce in corso')
+      + '</div></div>'
+      + '<button onclick="apriRinominaConto(' + c.id + ')" style="background:none;border:none;border-left:1px solid var(--border);cursor:pointer;padding:14px 12px;color:var(--fg-2);font-size:0.95rem" title="Rinomina">✏️</button>'
+      + '<button onclick="eliminaConto(' + c.id + ')" style="background:none;border:none;border-left:1px solid var(--border);cursor:pointer;padding:14px 12px;color:#dc2626;font-size:0.95rem" title="Elimina">✕</button>'
+      + '</div>';
+  });
+  html += '</div>';
+  scroll.innerHTML = html;
+}
+
+// ── Conti: crea / rinomina / elimina ─────────────────────────────────────────
+let _nomeModalContoId = null; // null = nuovo, number = rinomina
+
+function apriModalNuovoConto() {
+  _nomeModalContoId = null;
+  document.getElementById('conti-nome-modal-titolo').textContent = 'Nuovo conto';
+  document.getElementById('conti-nome-input').value = '';
+  const ov = document.getElementById('conti-nome-modal-overlay');
+  ov.style.display = 'flex';
+  setTimeout(() => document.getElementById('conti-nome-input').focus(), 100);
+}
+function apriRinominaConto(id) {
+  const db = leggiContiDB();
+  const c = db.conti.find(x => x.id === id);
+  if (!c) return;
+  _nomeModalContoId = id;
+  document.getElementById('conti-nome-modal-titolo').textContent = 'Rinomina conto';
+  document.getElementById('conti-nome-input').value = c.nome;
+  const ov = document.getElementById('conti-nome-modal-overlay');
+  ov.style.display = 'flex';
+  setTimeout(() => document.getElementById('conti-nome-input').focus(), 100);
+}
+function chiudiModalNomeConto(e) {
+  if (!e || e.target === document.getElementById('conti-nome-modal-overlay')) {
+    document.getElementById('conti-nome-modal-overlay').style.display = 'none';
+  }
+}
+function salvaModalNomeConto() {
+  const nome = document.getElementById('conti-nome-input').value.trim();
+  if (!nome) { showToast('Inserisci un nome'); return; }
+  const db = leggiContiDB();
+  if (_nomeModalContoId === null) {
+    // nuovo
+    db.conti.push({ id: Date.now(), nome, periodi: [] });
+  } else {
+    const c = db.conti.find(x => x.id === _nomeModalContoId);
+    if (c) c.nome = nome;
+  }
+  salvaContiDB(db);
+  document.getElementById('conti-nome-modal-overlay').style.display = 'none';
+  renderListaConti();
+}
+function eliminaConto(id) {
+  const db = leggiContiDB();
+  const c = db.conti.find(x => x.id === id);
+  if (!c) return;
+  const nPeriodi = c.periodi.length;
+  const nVoci = c.periodi.reduce((s,p) => s + p.voci.length, 0);
+  const msg = 'Elimina "' + c.nome + '"?' + (nVoci ? '\n(' + nVoci + ' voce/i, ' + nPeriodi + ' periodo/i)' : '');
+  if (!confirm(msg)) return;
+  db.conti = db.conti.filter(x => x.id !== id);
+  salvaContiDB(db);
+  renderListaConti();
+}
+
+// ── Conti: dettaglio ─────────────────────────────────────────────────────────
+function apriContoDettaglia(id) {
+  _contoAttivoId = id;
+  const db = leggiContiDB();
+  const c = db.conti.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('conti-dettaglio-titolo').textContent = c.nome;
+  goTo('conti-dettaglio');
+  renderConti();
 }
 
 function apriNuovaVoceConti() {
-  // data default oggi
   const oggi = new Date();
   const pad = n => String(n).padStart(2,'0');
   document.getElementById('conti-data-input').value =
@@ -4185,26 +4350,31 @@ function salvaVoceConti() {
   if (!desc) { showToast('Inserisci una descrizione'); return; }
   if (impRaw === '' || isNaN(parseFloat(impRaw))) { showToast('Inserisci un importo'); return; }
   if (!data) { showToast('Inserisci una data'); return; }
-  const db = leggiConti();
-  const periodo = contiPeriodoCorrente(db);
+  const db = leggiContiDB();
+  const c = getContoAttivo(db);
+  if (!c) return;
+  const periodo = periodoCorrenteConto(c);
   periodo.voci.push({ id: Date.now(), desc, imp: parseFloat(parseFloat(impRaw).toFixed(2)), data });
-  // ordina per data
   periodo.voci.sort((a,b) => a.data.localeCompare(b.data));
   salvaContiDB(db);
   document.getElementById('conti-modal-overlay').style.display = 'none';
   renderConti();
 }
 function eliminaVoceConti(periodoId, vocId) {
-  const db = leggiConti();
-  const p = db.periodi.find(p => p.id === periodoId);
+  const db = leggiContiDB();
+  const c = getContoAttivo(db);
+  if (!c) return;
+  const p = c.periodi.find(p => p.id === periodoId);
   if (!p) return;
   p.voci = p.voci.filter(v => v.id !== vocId);
   salvaContiDB(db);
   renderConti();
 }
 function saldaPeriodo() {
-  const db = leggiConti();
-  const periodo = contiPeriodoCorrente(db);
+  const db = leggiContiDB();
+  const c = getContoAttivo(db);
+  if (!c) return;
+  const periodo = periodoCorrenteConto(c);
   if (!periodo.voci.length) { showToast('Nessuna voce da saldare'); return; }
   const totale = periodo.voci.reduce((s,v) => s + v.imp, 0);
   const oggi = new Date();
@@ -4213,8 +4383,6 @@ function saldaPeriodo() {
     data: oggi.getFullYear()+'-'+pad(oggi.getMonth()+1)+'-'+pad(oggi.getDate()),
     totale: parseFloat(totale.toFixed(2))
   };
-  // apre nuovo periodo
-  db.periodi.push({ id: Date.now(), voci: [], saldato: null });
   salvaContiDB(db);
   renderConti();
 }
@@ -4230,14 +4398,18 @@ function fmtEuro(v) {
 }
 
 function renderConti() {
-  const db = leggiConti();
+  const db = leggiContiDB();
+  const c = getContoAttivo(db);
   const scroll = document.getElementById('conti-scroll');
   if (!scroll) return;
+  if (!c) {
+    scroll.innerHTML = '<div style="color:var(--fg-2);font-size:0.9rem;padding:24px 0;text-align:center">Conto non trovato</div>';
+    return;
+  }
   let html = '';
 
-  // periodi dal più recente
-  for (let i = db.periodi.length - 1; i >= 0; i--) {
-    const p = db.periodi[i];
+  for (let i = c.periodi.length - 1; i >= 0; i--) {
+    const p = c.periodi[i];
     const isCorrente = !p.saldato;
     const totale = p.voci.reduce((s,v) => s + v.imp, 0);
     const totFmt = fmtEuro(totale);
@@ -4268,7 +4440,6 @@ function renderConti() {
         html += '</div>';
       });
       html += '</div>';
-      // totale sotto le voci
       html += '<div style="text-align:right;padding:10px 4px 4px;font-size:1rem;font-weight:700;color:' + totColor + '">Totale: ' + totFmt + '</div>';
     }
 
