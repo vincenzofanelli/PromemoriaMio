@@ -736,6 +736,11 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
+.backup-banner-btn--sec {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
 
 /* === SCHERMATA NUOVO IMPEGNO === */
 .cat-grid {
@@ -1753,7 +1758,11 @@ body {
       <strong>Backup dati</strong>
       <span id="backup-banner-data">Ultimo backup: mai</span>
     </div>
-    <button class="backup-banner-btn" onclick="esportaBackup()">Esporta</button>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="backup-banner-btn" onclick="esportaBackup()">Esporta</button>
+      <button class="backup-banner-btn backup-banner-btn--sec" onclick="document.getElementById('importa-file-input').click()">Importa</button>
+      <input type="file" id="importa-file-input" accept=".json" style="display:none" onchange="importaBackup(this)">
+    </div>
   </div>
 
 </div>
@@ -3519,6 +3528,7 @@ function esportaBackup() {
       if (v !== null) payload[k] = JSON.parse(v);
     } catch(e) {}
   });
+  payload._backup_ts = Date.now();
   const json = JSON.stringify(payload, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -3532,6 +3542,37 @@ function esportaBackup() {
   URL.revokeObjectURL(url);
   try { localStorage.setItem('promemoriamio_ultimo_backup', Date.now().toString()); } catch(e) {}
   aggiornaBackupBanner();
+}
+
+function importaBackup(input) {
+  const file = input.files && input.files[0];
+  input.value = '';           // reset così il prossimo click riapre il picker
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    let payload;
+    try { payload = JSON.parse(ev.target.result); } catch(e) {
+      alert('File non valido: JSON non leggibile.');
+      return;
+    }
+    const chiavi = ['promemoriamio_eventi','promemoriamio_conti','promemoriamio_liste','promemoriamio_utente'];
+    const trovate = chiavi.filter(k => k in payload);
+    if (trovate.length === 0) {
+      alert('File non riconosciuto: nessuna chiave valida trovata.');
+      return;
+    }
+    if (!confirm(`Importare il backup?\nVerranno sovrascritti i dati attuali (${trovate.length} sezioni trovate).\nQuesta operazione non può essere annullata.`)) return;
+    trovate.forEach(k => {
+      try { localStorage.setItem(k, JSON.stringify(payload[k])); } catch(e) {}
+    });
+    // aggiorna timestamp backup con la data del file (se presente) o ora
+    const ts = payload._backup_ts || Date.now();
+    try { localStorage.setItem('promemoriamio_ultimo_backup', ts.toString()); } catch(e) {}
+    aggiornaBackupBanner();
+    alert('Backup importato. L\'app verrà ricaricata.');
+    location.reload();
+  };
+  reader.readAsText(file);
 }
 
 function renderHome() {
