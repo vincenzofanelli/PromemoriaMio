@@ -3519,8 +3519,7 @@ function aggiornaBackupBanner() {
 function esportaBackup() {
   const payload = {};
   const chiavi = [
-    'promemoriamio_eventi', 'promemoriamio_conti',
-    'promemoriamio_liste', 'promemoriamio_utente'
+    'agendame_eventi', 'agendame_liste', 'promemoriamio_conti'
   ];
   chiavi.forEach(k => {
     try {
@@ -3555,7 +3554,7 @@ function importaBackup(input) {
       alert('File non valido: JSON non leggibile.');
       return;
     }
-    const chiavi = ['promemoriamio_eventi','promemoriamio_conti','promemoriamio_liste','promemoriamio_utente'];
+    const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti'];
     const trovate = chiavi.filter(k => k in payload);
     if (trovate.length === 0) {
       alert('File non riconosciuto: nessuna chiave valida trovata.');
