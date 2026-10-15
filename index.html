@@ -2181,8 +2181,8 @@ body {
 </div>
 
 <!-- Modal nuovo/rinomina conto -->
-<div id="conti-nome-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;align-items:flex-end;justify-content:center" onclick="chiudiModalNomeConto(event)">
-  <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:430px;box-sizing:border-box" onclick="event.stopPropagation()">
+<div id="conti-nome-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;align-items:flex-start;justify-content:center;padding-top:env(safe-area-inset-top,0px);overflow-y:auto" onclick="chiudiModalNomeConto(event)">
+  <div style="background:var(--bg);border-radius:0 0 20px 20px;padding:24px 20px 32px;width:100%;max-width:430px;box-sizing:border-box;margin-top:0" onclick="event.stopPropagation()">
     <div id="conti-nome-modal-titolo" style="font-size:1rem;font-weight:700;color:var(--fg);margin-bottom:16px">Nuovo conto</div>
     <div class="form-group" style="margin-bottom:20px">
       <label>Nome del conto</label>
@@ -2193,21 +2193,21 @@ body {
 </div>
 
 <!-- Modal nuova voce conti -->
-<div id="conti-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;align-items:flex-end;justify-content:center" onclick="chiudiModalConti(event)">
-  <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:430px;box-sizing:border-box" onclick="event.stopPropagation()">
+<div id="conti-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;align-items:flex-start;justify-content:center;padding-top:env(safe-area-inset-top,0px);overflow-y:auto" onclick="chiudiModalConti(event)">
+  <div style="background:var(--bg);border-radius:0 0 20px 20px;padding:24px 20px 32px;width:100%;max-width:430px;box-sizing:border-box;margin-top:0" onclick="event.stopPropagation()">
     <div style="font-size:1rem;font-weight:700;color:var(--fg);margin-bottom:16px">Nuova voce</div>
     <div class="form-group" style="margin-bottom:12px">
       <label>Descrizione</label>
       <input type="text" id="conti-desc-input" placeholder="es. Pizzeria, Frigorifero…" style="width:100%;box-sizing:border-box">
     </div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button id="conti-tipo-uscita" onclick="setTipoVoce('uscita')"
-        style="flex:1;padding:10px;border-radius:20px;border:2px solid #dc2626;background:#dc2626;color:#fff;font-size:0.9rem;font-weight:700;font-family:inherit;cursor:pointer">
-        Uscita
-      </button>
       <button id="conti-tipo-entrata" onclick="setTipoVoce('entrata')"
         style="flex:1;padding:10px;border-radius:20px;border:2px solid #16a34a;background:transparent;color:#16a34a;font-size:0.9rem;font-weight:700;font-family:inherit;cursor:pointer">
         Entrata
+      </button>
+      <button id="conti-tipo-uscita" onclick="setTipoVoce('uscita')"
+        style="flex:1;padding:10px;border-radius:20px;border:2px solid #dc2626;background:#dc2626;color:#fff;font-size:0.9rem;font-weight:700;font-family:inherit;cursor:pointer">
+        Uscita
       </button>
     </div>
     <div class="form-group" style="margin-bottom:12px">
