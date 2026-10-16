@@ -190,7 +190,7 @@ function scheduleAllNotifications() {
     const dataStr = extra.data || extra.dataInizio;
     if (!dataStr) return;
     const dataEvt = new Date(dataStr);
-    const stati = notifStati[ev.id] || [];
+    const stati = ev.notifiche || [];
 
     stati.forEach(n => {
       if (!n.on) return;
@@ -3706,7 +3706,7 @@ function eliminaEvento(id) {
   t._timer = setTimeout(() => {
     t.style.opacity = '0';
     t.style.transform = 'translateX(-50%) translateY(20px)';
-    _undoElimina = null;
+    if (_undoElimina) { _undoElimina = null; scheduleAllNotifications(); }
   }, 4000);
 }
 
@@ -3717,6 +3717,7 @@ function undoElimina() {
   salvaEventiLS(eventi);
   _undoElimina = null;
   renderHome();
+  scheduleAllNotifications();
   const t = document.getElementById('toast');
   t.style.opacity = '0';
   clearTimeout(t._timer);
@@ -3732,6 +3733,7 @@ function segnaFatto(id) {
   salvaEventiLS(eventi);
   renderHome();
   showToast('Segnato come fatto ✓');
+  scheduleAllNotifications();
 }
 
 function apriEvento(id) {
@@ -3859,6 +3861,7 @@ function salvaEvento(cat) {
   eventoInModifica = null;
   resetForm(cat);
   goTo('home');
+  scheduleAllNotifications();
 }
 
 function resetForm(cat) {
