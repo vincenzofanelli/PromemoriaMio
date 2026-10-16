@@ -1649,9 +1649,9 @@ body {
 
   <div class="backup-banner" id="backup-banner">
     <div style="display:flex;gap:8px;width:100%;align-items:center">
-      <button id="btn-update" class="backup-banner-btn backup-banner-btn--sec" style="flex:1.2">🔄 Aggiornamenti</button>
-      <button class="backup-banner-btn" style="flex:1" onclick="esportaBackup()">💾 Salva dati</button>
-      <button class="backup-banner-btn backup-banner-btn--sec" style="flex:1" onclick="document.getElementById('importa-file-input').click()">📥 Importa dati</button>
+      <button id="btn-update" class="backup-banner-btn backup-banner-btn--sec" style="flex:1.2">Aggiornamenti</button>
+      <button class="backup-banner-btn" style="flex:1" onclick="esportaBackup()">Salva dati</button>
+      <button class="backup-banner-btn backup-banner-btn--sec" style="flex:1" onclick="document.getElementById('importa-file-input').click()">Importa dati</button>
       <input type="file" id="importa-file-input" accept=".json" style="display:none" onchange="importaBackup(this)">
     </div>
   </div>
@@ -3394,7 +3394,7 @@ function showToastBackup() {
   if (_backupToastMostrato) return;
   _backupToastMostrato = true;
   const t = document.getElementById('toast');
-  t.innerHTML = '💾 <strong style="cursor:pointer" onclick="esportaBackup()">Backup dati</strong>';
+  t.innerHTML = '<strong style="cursor:pointer" onclick="esportaBackup()">Backup dati</strong>';
   t.style.opacity = '1';
   t.style.transform = 'translateX(-50%) translateY(0)';
   t.style.cursor = 'pointer';
