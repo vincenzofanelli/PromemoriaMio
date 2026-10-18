@@ -198,16 +198,18 @@ function scheduleAllNotifications() {
     const dataEvt = new Date(dataStr);
     const stati = ev.notifiche || [];
 
-    stati.forEach(n => {
+    stati.forEach((n, ni) => {
       if (!n.on) return;
+      if (isNaN(dataEvt.getTime())) return; // data non valida
       // Calcola timestamp notifica
       let ts = calcolaTimestampNotifica(n.desc, dataEvt, n.time);
-      if (!ts || ts <= ora) return;
+      if (!ts || isNaN(ts) || ts <= ora) return;
+      const nId = n.id || (ev.id + '_' + ni); // fallback se id mancante
       notifiche.push({
         timestamp: ts,
         title: (extra.titolo || extra.tipo || extra.nome || 'Impegno'),
         body: n.desc + (n.time ? ' alle ' + n.time : ''),
-        tag: ev.id + '_' + n.id
+        tag: ev.id + '_' + nId
       });
     });
   });
@@ -1490,53 +1492,79 @@ body {
 .cal-cell.today { font-weight: 800; color: var(--accent); }
 .cal-cell.selected { background: var(--accent) !important; color: #fff !important; font-weight: 700; }
 
-/* ---- ANNO/MESE PICKER ---- */
+/* ---- ANNO/MESE PICKER (due colonne scroll) ---- */
 .ym-picker {
-  padding: 0 12px 12px;
-  display: flex; flex-direction: column; gap: 8px;
+  padding: 0 12px 8px;
 }
-.ym-decade-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 4px 0;
-}
-.ym-decade-nav button {
-  background: none; border: none; cursor: pointer;
-  color: var(--fg-2); font-size: 1.5rem; line-height: 1;
-  width: 36px; height: 36px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 8px; transition: background 0.12s;
-}
-.ym-decade-nav button:active { background: var(--accent-bg); color: var(--accent); }
-#ym-decade-label { font-size: 0.95rem; font-weight: 700; color: var(--fg); }
-.ym-year-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-}
-.ym-month-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin-top: 4px;
-}
-.ym-year-btn, .ym-month-btn {
-  padding: 10px 4px;
-  text-align: center;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.88rem; font-weight: 600;
-  color: var(--fg); background: var(--bg);
-  border: none; font-family: inherit;
-  transition: background 0.12s;
-}
-.ym-year-btn:active, .ym-month-btn:active { background: var(--accent-bg); color: var(--accent); }
-.ym-year-btn.active, .ym-month-btn.active { background: var(--accent); color: #fff; }
-.ym-step-title {
-  font-size: 0.82rem; font-weight: 700; color: var(--fg-3);
+.ym-picker-label {
+  font-size: 0.75rem; font-weight: 700; color: var(--fg-3);
   text-transform: uppercase; letter-spacing: 0.5px;
-  padding: 0 4px 8px; text-align: center;
+  text-align: center; padding-bottom: 6px;
 }
-.ym-month-btn { grid-column: span 1; }
+.ym-cols {
+  display: flex; gap: 8px;
+  height: 200px;
+}
+.ym-col {
+  flex: 1;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  background: var(--bg);
+  /* nasconde scrollbar su webkit */
+  scrollbar-width: none;
+}
+.ym-col::-webkit-scrollbar { display: none; }
+.ym-col-item {
+  scroll-snap-align: center;
+  height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 500;
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: color 0.1s, font-weight 0.1s;
+  border-radius: 8px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ym-col-item.ym-active {
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+/* pad top/bottom per centrare il primo/ultimo elemento */
+.ym-col-pad {
+  height: 78px; /* (200 - 44) / 2 */
+  flex-shrink: 0;
+}
+/* linee selezione */
+.ym-cols-wrap {
+  position: relative;
+}
+.ym-sel-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 44px;
+  top: calc(50% - 22px);
+  pointer-events: none;
+  border-top: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  border-radius: 0;
+  opacity: 0.35;
+}
+.ym-confirm-row {
+  display: flex; justify-content: center;
+  padding: 10px 0 4px;
+}
+.ym-confirm-btn {
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 18px;
+  padding: 9px 36px;
+  font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
+.ym-confirm-btn:active { opacity: 0.8; }
 
 /* ---- TIME PICKER (rulli scroll) ---- */
 .time-step-btn {
@@ -3658,8 +3686,16 @@ let eventoInModifica = null; // id evento in modifica, null = nuovo
 let mostraCompletati = false;
 
 function leggiEventi() {
-  try { return JSON.parse(localStorage.getItem(LS_EVENTI)) || []; }
-  catch { return []; }
+  try {
+    const ev = JSON.parse(localStorage.getItem(LS_EVENTI)) || [];
+    // Migrazione: assegna id alle notifiche che ne sono prive (eventi creati con versioni vecchie)
+    ev.forEach(e => {
+      if (Array.isArray(e.notifiche)) {
+        e.notifiche.forEach((n, i) => { if (!n.id) n.id = e.id + '_n' + i; });
+      }
+    });
+    return ev;
+  } catch { return []; }
 }
 
 function salvaEventiLS(eventi) {
@@ -4224,8 +4260,6 @@ window.addEventListener('load', () => {
   let _selDate = null;   // selected yyyy-mm-dd string
   let _selH = 9, _selM = 0;
   let _ymMode = false;
-  let _ymYear;           // decade anchor
-  let _ymSelYear = null;
   let _scrollTimers = {};
 
   const IT_MONTHS = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
@@ -4408,82 +4442,112 @@ window.addEventListener('load', () => {
     if (_ymMode) { _ymMode = false; document.getElementById('ym-picker').style.display = 'none'; }
   };
 
-  // ---- YEAR/MONTH ROLLER ----
-  // _ymStep: 'months' = mostra mesi, 'years' = mostra anni
-  let _ymStep = 'months';
+  // ---- YEAR/MONTH SCROLL PICKER ----
+  const YM_MONTHS = 12;
+  const YM_YEAR_RANGE = 15; // anni futuri mostrati
+  const YM_YEAR_START = new Date().getFullYear() - 1; // 1 anno fa + range futuri
+
+  // Aggiorna highlight elementi visibili nello scroll
+  function ymUpdateActive(colEl, items, getIdx) {
+    const center = colEl.scrollTop + colEl.clientHeight / 2;
+    let bestI = 0, bestDist = Infinity;
+    items.forEach((el, i) => {
+      const elCenter = el.offsetTop + el.offsetHeight / 2;
+      const dist = Math.abs(elCenter - center);
+      if (dist < bestDist) { bestDist = dist; bestI = i; }
+    });
+    items.forEach((el, i) => el.classList.toggle('ym-active', i === bestI));
+    return bestI;
+  }
+
+  let _ymMonthItems = [], _ymYearItems = [];
+  let _ymPickerMonth = 0, _ymPickerYear = 0;
+  let _ymScrollTimer = null;
 
   window.toggleYearMonthPicker = function() {
-    // Tocco titolo: apre step MESI
-    _ymStep = 'months';
-    _ymSelYear = _calYear;
-    showYMPicker();
-    renderMonthStep();
-  };
+    _ymPickerMonth = _calMonth;
+    _ymPickerYear  = _calYear;
 
-  window.ymDecade = function(dir) {
-    _ymYear += dir * 10;
-    renderYearStep();
-  };
+    // Popola colonna mesi
+    const colM = document.getElementById('ym-col-month');
+    colM.innerHTML = '';
+    const padTopM = document.createElement('div'); padTopM.className = 'ym-col-pad';
+    colM.appendChild(padTopM);
+    _ymMonthItems = IT_MONTHS.map((m, i) => {
+      const el = document.createElement('div');
+      el.className = 'ym-col-item' + (i === _ymPickerMonth ? ' ym-active' : '');
+      el.textContent = m;
+      colM.appendChild(el);
+      return el;
+    });
+    const padBotM = document.createElement('div'); padBotM.className = 'ym-col-pad';
+    colM.appendChild(padBotM);
 
-  function showYMPicker() {
+    // Popola colonna anni
+    const colY = document.getElementById('ym-col-year');
+    colY.innerHTML = '';
+    const padTopY = document.createElement('div'); padTopY.className = 'ym-col-pad';
+    colY.appendChild(padTopY);
+    _ymYearItems = [];
+    for (let y = YM_YEAR_START; y <= YM_YEAR_START + YM_YEAR_RANGE; y++) {
+      const el = document.createElement('div');
+      el.className = 'ym-col-item' + (y === _ymPickerYear ? ' ym-active' : '');
+      el.textContent = y;
+      colY.appendChild(el);
+      _ymYearItems.push(el);
+    }
+    const padBotY = document.createElement('div'); padBotY.className = 'ym-col-pad';
+    colY.appendChild(padBotY);
+
+    // Mostra picker
     document.getElementById('ym-picker').style.display = '';
     const days = document.getElementById('cal-days-section');
     if (days) days.style.display = 'none';
-  }
 
-  function hideYMPicker() {
+    // Scroll alle selezioni correnti (dopo render)
+    requestAnimationFrame(() => {
+      const mIdx = _ymPickerMonth;
+      const yIdx = _ymPickerYear - YM_YEAR_START;
+      if (_ymMonthItems[mIdx]) {
+        colM.scrollTop = _ymMonthItems[mIdx].offsetTop - (colM.clientHeight / 2 - 22);
+      }
+      if (_ymYearItems[yIdx]) {
+        colY.scrollTop = _ymYearItems[yIdx].offsetTop - (colY.clientHeight / 2 - 22);
+      }
+    });
+
+    // Scroll listener — aggiorna highlight in tempo reale
+    function onScroll() {
+      clearTimeout(_ymScrollTimer);
+      _ymScrollTimer = setTimeout(() => {
+        _ymPickerMonth = ymUpdateActive(colM, _ymMonthItems);
+        _ymPickerYear  = YM_YEAR_START + ymUpdateActive(colY, _ymYearItems);
+      }, 80);
+    }
+    colM._ymHandler && colM.removeEventListener('scroll', colM._ymHandler);
+    colY._ymHandler && colY.removeEventListener('scroll', colY._ymHandler);
+    colM._ymHandler = onScroll;
+    colY._ymHandler = onScroll;
+    colM.addEventListener('scroll', onScroll, { passive: true });
+    colY.addEventListener('scroll', onScroll, { passive: true });
+  };
+
+  window.ymConfirm = function() {
+    // Legge l'item più centrato in ciascuna colonna al momento della conferma
+    const colM = document.getElementById('ym-col-month');
+    const colY = document.getElementById('ym-col-year');
+    _ymPickerMonth = ymUpdateActive(colM, _ymMonthItems);
+    _ymPickerYear  = YM_YEAR_START + ymUpdateActive(colY, _ymYearItems);
+
+    _calMonth = _ymPickerMonth;
+    _calYear  = _ymPickerYear;
+
+    // Torna al calendario
     document.getElementById('ym-picker').style.display = 'none';
     const days = document.getElementById('cal-days-section');
     if (days) days.style.display = '';
-  }
-
-  // Step 1: griglia MESI
-  function renderMonthStep() {
-    _ymStep = 'months';
-    document.getElementById('ym-decade-nav').style.display = 'none';
-    document.getElementById('ym-year-grid').style.display = 'none';
-    document.getElementById('ym-step-title').textContent = 'Scegli il mese';
-    const mg = document.getElementById('ym-month-grid');
-    mg.style.display = '';
-    mg.innerHTML = '';
-    IT_MONTHS.forEach((m, i) => {
-      const b = document.createElement('button');
-      b.textContent = m;
-      b.className = 'ym-month-btn' + (i === _calMonth && _calYear === _ymSelYear ? ' active' : '');
-      b.onclick = () => {
-        _calMonth = i;
-        renderYearStep();
-      };
-      mg.appendChild(b);
-    });
-  }
-
-  // Step 2: griglia ANNI
-  function renderYearStep() {
-    _ymStep = 'years';
-    const curY = new Date().getFullYear();
-    if (!_ymYear || _ymYear < curY) _ymYear = curY;
-    document.getElementById('ym-decade-nav').style.display = '';
-    document.getElementById('ym-month-grid').style.display = 'none';
-    document.getElementById('ym-step-title').textContent = "Scegli l'anno";
-    const startY = Math.max(_ymYear, curY);
-    document.getElementById('ym-decade-label').textContent = startY + '–' + (startY + 9);
-    const yg = document.getElementById('ym-year-grid');
-    yg.style.display = '';
-    yg.innerHTML = '';
-    for (let y = startY; y < startY + 10; y++) {
-      const b = document.createElement('button');
-      b.textContent = y;
-      b.className = 'ym-year-btn' + (y === _ymSelYear ? ' active' : '');
-      b.onclick = () => {
-        _calYear = y;
-        _ymSelYear = y;
-        hideYMPicker();
-        renderCalendar(_calYear, _calMonth);
-      };
-      yg.appendChild(b);
-    }
-  }
+    renderCalendar(_calYear, _calMonth);
+  };
 
   // ---- TIME WHEELS ----
   function initTimeWheels(h, m) {
@@ -5003,16 +5067,19 @@ function creaProssima(id) {
         <button class="cal-nav-btn" onclick="calStep(1)">&#8250;</button>
       </div>
 
-      <!-- Anno/Mese selector (visibile quando si tocca il titolo mese) -->
+      <!-- Anno/Mese selector a due colonne scroll -->
       <div id="ym-picker" class="ym-picker" style="display:none">
-        <div class="ym-step-title" id="ym-step-title">Scegli il mese</div>
-        <div class="ym-decade-nav" id="ym-decade-nav" style="display:none">
-          <button onclick="ymDecade(-1)">&#8249;</button>
-          <span id="ym-decade-label"></span>
-          <button onclick="ymDecade(1)">&#8250;</button>
+        <div class="ym-picker-label">Scorri per scegliere mese e anno</div>
+        <div class="ym-cols-wrap">
+          <div class="ym-sel-line"></div>
+          <div class="ym-cols">
+            <div class="ym-col" id="ym-col-month"></div>
+            <div class="ym-col" id="ym-col-year"></div>
+          </div>
         </div>
-        <div id="ym-month-grid" class="ym-month-grid"></div>
-        <div id="ym-year-grid" class="ym-year-grid" style="display:none"></div>
+        <div class="ym-confirm-row">
+          <button class="ym-confirm-btn" onclick="ymConfirm()">Vai al mese</button>
+        </div>
       </div>
 
       <!-- Griglia giorni (nascosta quando si sceglie anno/mese) -->
