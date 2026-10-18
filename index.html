@@ -233,7 +233,7 @@ function calcolaTimestampNotifica(desc, dataEvt, time) {
   const descL = desc.toLowerCase();
   if (descL.includes('settimana prima') || descL.includes('1 settimana')) d.setDate(d.getDate() - 7);
   else if (descL.includes('mese prima') || descL.includes('1 mese'))     d.setMonth(d.getMonth() - 1);
-  else if (descL.includes('sera prima') || descL.includes('giorno prima') || descL.includes('giorno stesso') && descL.includes('prima')) d.setDate(d.getDate() - 1);
+  else if (descL.includes('sera prima') || descL.includes('giorno prima') || (descL.includes('giorno stesso') && descL.includes('prima'))) d.setDate(d.getDate() - 1);
   else if (descL.includes('mattina') || descL.includes('giorno stesso') || descL.includes('mattina stessa') || descL.includes('giorno scadenza') || descL.includes('mattina scadenza')) { /* stesso giorno */ }
   // else: stesso giorno
 
@@ -1646,6 +1646,15 @@ body {
     <!-- popolato da renderHome() -->
   </div><!-- /scroll-body -->
 
+  <div class="backup-banner" id="backup-banner">
+    <div style="display:flex;gap:8px;width:100%;align-items:center">
+      <button id="btn-update" class="backup-banner-btn backup-banner-btn--sec" style="flex:1.2">Aggiornamenti</button>
+      <button class="backup-banner-btn" style="flex:1" onclick="esportaBackup()">Salva dati</button>
+      <button class="backup-banner-btn backup-banner-btn--sec" style="flex:1" onclick="document.getElementById('importa-file-input').click()">Importa dati</button>
+      <input type="file" id="importa-file-input" accept=".json" style="display:none" onchange="importaBackup(this)">
+    </div>
+  </div>
+
   <!-- bottom nav -->
   <nav class="bottom-nav">
     <button class="nav-btn active" onclick="goTo('home')">
@@ -1660,15 +1669,6 @@ body {
       <span>Profilo</span>
     </button>
   </nav>
-
-  <div class="backup-banner" id="backup-banner">
-    <div style="display:flex;gap:8px;width:100%;align-items:center">
-      <button id="btn-update" class="backup-banner-btn backup-banner-btn--sec" style="flex:1.2">Aggiornamenti</button>
-      <button class="backup-banner-btn" style="flex:1" onclick="esportaBackup()">Salva dati</button>
-      <button class="backup-banner-btn backup-banner-btn--sec" style="flex:1" onclick="document.getElementById('importa-file-input').click()">Importa dati</button>
-      <input type="file" id="importa-file-input" accept=".json" style="display:none" onchange="importaBackup(this)">
-    </div>
-  </div>
 
 </div>
 
@@ -1894,7 +1894,7 @@ body {
 
       <div class="form-group">
         <label>Frequenza</label>
-        <select id="visite-freq" onchange="toggleAnticipo('visite')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="visite-freq" onchange="toggleAnticipo('visite')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessuna (evento singolo)</option>
           <option value="giornaliera">Giornaliera</option>
           <option value="settimanale">Settimanale</option>
@@ -1908,7 +1908,7 @@ body {
       </div>
       <div class="form-group freq-anticipo-wrap" id="visite-anticipo-wrap">
         <label>Anticipo notifica</label>
-        <select id="visite-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="visite-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
           <option value="7">1 settimana prima</option>
           <option value="14">2 settimane prima</option>
@@ -2044,7 +2044,7 @@ body {
 
       <div class="form-group">
         <label>Frequenza</label>
-        <select id="farmaci-freq" onchange="toggleAnticipo('farmaci')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="farmaci-freq" onchange="toggleAnticipo('farmaci')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessuna (evento singolo)</option>
           <option value="giornaliera">Giornaliera</option>
           <option value="settimanale">Settimanale</option>
@@ -2058,7 +2058,7 @@ body {
       </div>
       <div class="form-group freq-anticipo-wrap" id="farmaci-anticipo-wrap">
         <label>Anticipo notifica</label>
-        <select id="farmaci-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="farmaci-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
           <option value="7">1 settimana prima</option>
           <option value="14">2 settimane prima</option>
@@ -2340,7 +2340,7 @@ body {
     <div class="form-wrap">
       <div class="form-group">
         <label>Tipo evento <span style="color:var(--col-scaduto)">*</span></label>
-        <select id="ricorrenze-tipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px">
+        <select id="ricorrenze-tipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px">
           <option value="">— Seleziona tipo —</option>
           <option value="Anniversario">Anniversario</option>
           <option value="Battesimo">Battesimo</option>
@@ -2381,7 +2381,7 @@ body {
       </div>
       <div class="form-group">
         <label>Frequenza</label>
-        <select id="ricorrenze-freq" onchange="toggleAnticipo('ricorrenze')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="ricorrenze-freq" onchange="toggleAnticipo('ricorrenze')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessuna (evento singolo)</option>
           <option value="giornaliera">Giornaliera</option>
           <option value="settimanale">Settimanale</option>
@@ -2395,7 +2395,7 @@ body {
       </div>
       <div class="form-group freq-anticipo-wrap" id="ricorrenze-anticipo-wrap">
         <label>Anticipo notifica</label>
-        <select id="ricorrenze-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="ricorrenze-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
           <option value="7">1 settimana prima</option>
           <option value="14">2 settimane prima</option>
@@ -2458,7 +2458,7 @@ body {
       </div>
       <div class="form-group">
         <label>Frequenza</label>
-        <select id="documenti-freq" onchange="toggleAnticipo('documenti')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="documenti-freq" onchange="toggleAnticipo('documenti')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessuna (evento singolo)</option>
           <option value="giornaliera">Giornaliera</option>
           <option value="settimanale">Settimanale</option>
@@ -2472,7 +2472,7 @@ body {
       </div>
       <div class="form-group freq-anticipo-wrap" id="documenti-anticipo-wrap">
         <label>Anticipo notifica</label>
-        <select id="documenti-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="documenti-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
           <option value="7">1 settimana prima</option>
           <option value="14">2 settimane prima</option>
@@ -2535,7 +2535,7 @@ body {
       </div>
       <div class="form-group">
         <label>Frequenza</label>
-        <select id="auto-freq" onchange="toggleAnticipo('auto')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="auto-freq" onchange="toggleAnticipo('auto')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessuna (evento singolo)</option>
           <option value="giornaliera">Giornaliera</option>
           <option value="settimanale">Settimanale</option>
@@ -2549,7 +2549,7 @@ body {
       </div>
       <div class="form-group freq-anticipo-wrap" id="auto-anticipo-wrap">
         <label>Anticipo notifica</label>
-        <select id="auto-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="auto-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
           <option value="7">1 settimana prima</option>
           <option value="14">2 settimane prima</option>
@@ -2608,7 +2608,7 @@ body {
       </div>
       <div class="form-group">
         <label>Frequenza</label>
-        <select id="generico-freq" onchange="toggleAnticipo('generico')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="generico-freq" onchange="toggleAnticipo('generico')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessuna (evento singolo)</option>
           <option value="giornaliera">Giornaliera</option>
           <option value="settimanale">Settimanale</option>
@@ -2622,7 +2622,7 @@ body {
       </div>
       <div class="form-group freq-anticipo-wrap" id="generico-anticipo-wrap">
         <label>Anticipo notifica</label>
-        <select id="generico-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="generico-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
           <option value="7">1 settimana prima</option>
           <option value="14">2 settimane prima</option>
@@ -2677,7 +2677,7 @@ body {
       </div>
       <div class="form-group">
         <label>Frequenza</label>
-        <select id="acquisti-freq" onchange="toggleAnticipo('acquisti')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="acquisti-freq" onchange="toggleAnticipo('acquisti')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessuna (evento singolo)</option>
           <option value="giornaliera">Giornaliera</option>
           <option value="settimanale">Settimanale</option>
@@ -2691,7 +2691,7 @@ body {
       </div>
       <div class="form-group freq-anticipo-wrap" id="acquisti-anticipo-wrap">
         <label>Anticipo notifica</label>
-        <select id="acquisti-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="acquisti-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
           <option value="7">1 settimana prima</option>
           <option value="14">2 settimane prima</option>
@@ -2760,7 +2760,7 @@ body {
       </div>
       <div class="form-group">
         <label>Frequenza</label>
-        <select id="lavoro-freq" onchange="toggleAnticipo('lavoro')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="lavoro-freq" onchange="toggleAnticipo('lavoro')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessuna (evento singolo)</option>
           <option value="giornaliera">Giornaliera</option>
           <option value="settimanale">Settimanale</option>
@@ -2774,7 +2774,7 @@ body {
       </div>
       <div class="form-group freq-anticipo-wrap" id="lavoro-anticipo-wrap">
         <label>Anticipo notifica</label>
-        <select id="lavoro-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="lavoro-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
           <option value="7">1 settimana prima</option>
           <option value="14">2 settimane prima</option>
@@ -2935,7 +2935,7 @@ body {
     <div class="form-wrap">
       <div class="form-group">
         <label>Tipo <span style="color:var(--col-scaduto)">*</span></label>
-        <select id="condominio-tipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="condominio-tipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">— Seleziona tipo —</option>
           <option value="Assemblea">Assemblea</option>
           <option value="Lettura contatore">Lettura contatore</option>
@@ -2969,7 +2969,7 @@ body {
 
       <div class="form-group">
         <label>Frequenza</label>
-        <select id="condominio-freq" onchange="toggleAnticipo('condominio')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="condominio-freq" onchange="toggleAnticipo('condominio')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessuna (evento singolo)</option>
           <option value="giornaliera">Giornaliera</option>
           <option value="settimanale">Settimanale</option>
@@ -2983,7 +2983,7 @@ body {
       </div>
       <div class="form-group freq-anticipo-wrap" id="condominio-anticipo-wrap">
         <label>Anticipo notifica</label>
-        <select id="condominio-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <select id="condominio-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
           <option value="7">1 settimana prima</option>
           <option value="14">2 settimane prima</option>
@@ -3014,6 +3014,7 @@ body {
 <script>
 const screens = {
   home:                 'screen-home',
+  benvenuto:            'screen-benvenuto',
   nuovo:                'screen-nuovo',
   'form-visite':        'screen-form-visite',
   'form-farmaci':       'screen-form-farmaci',
@@ -3225,25 +3226,7 @@ function mostraFoto(input) {
 }
 
 function salvaFarmaco() {
-  const nome = document.getElementById('farmaco-nome');
-  let ok = true;
-  // rimuovi errori precedenti
-  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
-  document.querySelectorAll('.field-error-msg').forEach(el => el.remove());
-
-  if (!nome.value.trim()) {
-    nome.classList.add('field-error');
-    const msg = document.createElement('div');
-    msg.className = 'field-error-msg';
-    msg.textContent = 'Campo obbligatorio';
-    nome.parentNode.appendChild(msg);
-    nome.focus();
-    ok = false;
-  }
-  if (ok) {
-    showToast('Farmaco salvato ✓');
-    goTo('home');
-  }
+  salvaEvento('farmaci');
 }
 
 // inizializza al caricamento
@@ -3893,9 +3876,7 @@ function renderHome() {
   if (scaduto) showToastBackup();
 }
 
-function escHTML(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function escHTML(s) { return escHtml(String(s)); }
 
 let _undoElimina = null;
 
@@ -4166,14 +4147,6 @@ const _origAggiornaOrari = aggiornaOrari;
   };
 })();
 
-// wrap goTo per renderHome dinamico
-const _origGoTo = goTo;
-window.goTo = function(name) {
-  if (name === 'home') {
-    renderHome(); // prima del goTo così i nuovi elementi ci sono per lo scroll
-  }
-  _origGoTo(name);
-};
 
 window.addEventListener('load', () => {
   renderHome();
@@ -4568,7 +4541,7 @@ if ('Notification' in window && Notification.permission === 'default') {
 // ── Primo avvio / onboarding ──────────────────────────────────
 // Eseguito qui perché goTo() è definita in questo stesso script.
 // Aggiorna la home ogni minuto per spostare eventi scaduti
-setInterval(renderHome, 60000);
+setInterval(() => { if (current === 'home') renderHome(); }, 60000);
 setUtility('ok');
 
 // (visibilitychange già gestito sopra — renderHome() incluso)
