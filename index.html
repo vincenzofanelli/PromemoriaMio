@@ -3885,9 +3885,14 @@ function renderHome() {
 
   let trovati = false;
   for (const g of gruppi) {
-    const items = g.key === 'fatto'
+    const items = (g.key === 'fatto'
       ? leggiEventi().filter(ev => ev.stato === 'fatto')
-      : eventi.filter(ev => ev.stato !== 'fatto' && classificaEvento(ev) === g.key);
+      : eventi.filter(ev => ev.stato !== 'fatto' && classificaEvento(ev) === g.key)
+    ).sort((a, b) => {
+      const da = (a.extra && (a.extra.data || a.extra.dataInizio)) || '';
+      const db = (b.extra && (b.extra.data || b.extra.dataInizio)) || '';
+      return da.localeCompare(db);
+    });
     if (!items.length) continue;
     trovati = true;
     html += `<div class="section-label">${g.label}</div>`;
@@ -4071,7 +4076,7 @@ function caricaFormEvento(ev) {
 }
 
 function raccogliCampiEvento(cat) {
-  const val = id => (document.getElementById(id) || {}).value || '';
+  const val = id => { const el = document.getElementById(id); return el != null ? el.value : ''; };
   const freq = () => val(cat + '-freq');
   const anticipo = () => freq() ? val(cat + '-anticipo') : '';
   if (cat === 'visite')      return { titolo: val('visite-tipo') || 'Visita medica', tipo: val('visite-tipo'), data: val('visite-data'), luogo: val('visite-luogo'), note: val('visite-note'), freq: freq(), anticipo: anticipo() };
