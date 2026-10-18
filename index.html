@@ -500,6 +500,15 @@ body {
 .ev-scaduto  { background: var(--col-scaduto-bg); border-color: #FECACA; }
 .ev-scaduto .event-dot  { background: var(--col-scaduto); }
 .ev-scaduto .event-title { color: var(--col-scaduto); }
+.ev-scaduto-oggi  { background: #FFFBEB; border-color: #FCD34D; }
+.ev-scaduto-oggi .event-dot  { background: #F59E0B; }
+.ev-scaduto-oggi .event-title { color: #92400E; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ev-scaduto-oggi { background: #2A2000; border-color: #A16207; }
+  :root:not([data-theme="light"]) .ev-scaduto-oggi .event-title { color: #FCD34D; }
+}
+:root[data-theme="dark"] .ev-scaduto-oggi { background: #2A2000; border-color: #A16207; }
+:root[data-theme="dark"] .ev-scaduto-oggi .event-title { color: #FCD34D; }
 
 .ev-oggi     { background: var(--col-oggi-bg);    border-color: #FECACA; }
 .ev-oggi .event-dot  { background: var(--col-oggi); }
@@ -3368,7 +3377,7 @@ function classificaEvento(ev) {
   const dataGiorno = new Date(data); dataGiorno.setHours(0,0,0,0);
   // Se l'evento ha orario (datetime), considera scaduto solo se l'ora è già passata
   if (d.includes('T')) {
-    if (data < ora) return 'sospeso';
+    if (data < ora) return dataGiorno.getTime() === oggi.getTime() ? 'sospeso-oggi' : 'sospeso';
   } else {
     if (dataGiorno < oggi) return 'sospeso';
   }
@@ -3516,8 +3525,9 @@ function renderHome() {
   </div>`;
 
   const gruppi = [
-    { key:'sospeso', label:'In sospeso', cls:'ev-scaduto' },
-    { key:'oggi',    label:'Oggi',       cls:'ev-prossimo' },
+    { key:'sospeso',      label:'In sospeso',   cls:'ev-scaduto' },
+    { key:'sospeso-oggi', label:'Scaduto oggi',  cls:'ev-scaduto-oggi' },
+    { key:'oggi',         label:'Oggi',          cls:'ev-prossimo' },
     { key:'domani',  label:'Domani',     cls:'ev-domani' },
     { key:'settimana',label:'Questa settimana', cls:'ev-settimana' },
     { key:'futuro',  label:'Prossimi',   cls:'' },
@@ -3662,6 +3672,13 @@ function caricaFormEvento(ev) {
   const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val || ''; };
 
   // Aggiorna il pulsante visivo di una data nascosta
+  const _GG = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  const _MM = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  const _fmtData = (d, withTime) => {
+    let s = _GG[d.getDay()] + ' ' + d.getDate() + ' ' + _MM[d.getMonth()] + ' ' + d.getFullYear();
+    if (withTime) s += ' · ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    return s;
+  };
   const setDate = (hiddenId, val, isDatetime) => {
     set(hiddenId, val);
     if (!val) return;
@@ -3670,7 +3687,7 @@ function caricaFormEvento(ev) {
     if (lbl) {
       try {
         const d = isDatetime ? new Date(val) : new Date(val + 'T12:00');
-        lbl.textContent = fmtLbl(d, isDatetime);
+        lbl.textContent = _fmtData(d, isDatetime);
       } catch(ex) { lbl.textContent = val; }
     }
     if (btn) markFilled(btn.id);
@@ -3700,7 +3717,7 @@ function raccogliCampiEvento(cat) {
   const val = id => (document.getElementById(id) || {}).value || '';
   if (cat === 'visite')     return { titolo: val('visite-tipo') || 'Visita medica', tipo: val('visite-tipo'), data: val('visite-data'), luogo: val('visite-luogo'), note: val('visite-note') };
   if (cat === 'farmaci')    return { titolo: val('farmaco-nome') || 'Farmaco', nome: val('farmaco-nome'), data: val('farmaci-data') };
-  if (cat === 'ricorrenze') { const _tn = val('ricorrenze-tipo'); const _nn = val('ricorrenze-nome'); return { titolo: (_tn ? _tn + (_nn ? ' · ' + _nn : '') : _nn) || 'Ricorrenza', tipo: _tn, nome: _nn, data: val('ricorrenze-data'), note: val('ricorrenze-note') }; }
+  if (cat === 'ricorrenze') { const _tn = val('ricorrenze-tipo'); const _nn = val('ricorrenze-nome'); return { titolo: _nn || _tn || 'Ricorrenza', tipo: _tn, nome: _nn, data: val('ricorrenze-data'), note: val('ricorrenze-note') }; }
   if (cat === 'documenti')  return { titolo: val('documenti-tipo') || 'Documento', tipo: val('documenti-tipo'), data: val('documenti-data'), note: val('documenti-note') };
   if (cat === 'auto')       return { titolo: val('auto-tipo') || 'Auto', tipo: val('auto-tipo'), data: val('auto-data'), note: val('auto-note') };
   if (cat === 'generico')   return { titolo: val('generico-titolo') || 'Impegno', titolo: val('generico-titolo'), data: val('generico-data'), luogo: val('generico-luogo'), note: val('generico-note') };
