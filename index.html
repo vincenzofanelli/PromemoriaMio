@@ -1,21 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>PromemoriaMio</title><link rel="manifest" href="manifest.json"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
-/* notif time button (replaces native time input) */
-.notif-time-btn {
-  background: var(--bg-card);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--fg);
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  min-width: 60px;
-  text-align: center;
-  flex-shrink: 0;
-}
-.notif-time-btn:focus { outline: none; border-color: var(--accent); }
+/* .notif-time-btn definita nel blocco CSS principale — rimossa duplicata qui */
 
 /* ── btn-utility stati ── */
 .btn-utility-warn {
@@ -76,6 +60,16 @@ function installPWA() {
   _deferredInstallPrompt.userChoice.then(() => {
     _deferredInstallPrompt = null;
     document.getElementById('install-box').style.display = 'none';
+  });
+}
+
+function ripristinaFreqBackup() {
+  const salvato = localStorage.getItem('promemoriamio_backup_freq');
+  if (!salvato) return;
+  const mesi = parseInt(salvato);
+  const btns = document.querySelectorAll('.backup-freq .freq-btn');
+  btns.forEach(b => {
+    b.classList.toggle('active', parseInt(b.getAttribute('onclick').match(/\d+/)?.[0]) === mesi);
   });
 }
 
@@ -527,6 +521,47 @@ body {
 :root[data-theme="dark"] .ev-scaduto-oggi { background: #2A2000; border-color: #A16207; }
 :root[data-theme="dark"] .ev-scaduto-oggi .event-title { color: #FCD34D; }
 
+/* ── Dark mode: colori hardcoded ──────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ev-oggi     { border-color: #7F1D1D; }
+  :root:not([data-theme="light"]) .ev-domani   { border-color: #78350F; }
+  :root:not([data-theme="light"]) .ev-settimana-presto { border-color: #78350F; }
+  :root:not([data-theme="light"]) .ev-done-btn:hover { background: #14532D; color: #86EFAC; border-color: #16A34A; }
+  :root:not([data-theme="light"]) .ev-del-btn:hover  { background: #7F1D1D; color: #FCA5A5; }
+  :root:not([data-theme="light"]) .ev-edit-btn:hover { background: #1E1B4B; color: var(--accent); }
+  :root:not([data-theme="light"]) .btn-elimina-lista:hover { background: #7F1D1D; color: #FCA5A5; }
+  :root:not([data-theme="light"]) .cat-icon.visite    { background: #2D1515; }
+  :root:not([data-theme="light"]) .cat-icon.farmaci   { background: #1a1f3a; }
+  :root:not([data-theme="light"]) .cat-icon.ricorrenze { background: #2D1A0A; }
+  :root:not([data-theme="light"]) .cat-icon.documenti { background: #0F2318; }
+  :root:not([data-theme="light"]) .cat-icon.auto      { background: #0C1A2E; }
+  :root:not([data-theme="light"]) .cat-icon.generico  { background: #1A1030; }
+  :root:not([data-theme="light"]) .cat-icon.acquisti  { background: #1F0F2E; }
+  :root:not([data-theme="light"]) .cat-icon.lavoro    { background: #1F1A00; }
+  :root:not([data-theme="light"]) .cat-icon.condominio { background: #2D1A0A; }
+  :root:not([data-theme="light"]) .cat-icon.conti     { background: #0F2318; }
+  :root:not([data-theme="light"]) .cat-icon.liste     { background: #1a1f3a; }
+}
+:root[data-theme="dark"] .ev-oggi     { border-color: #7F1D1D; }
+:root[data-theme="dark"] .ev-domani   { border-color: #78350F; }
+:root[data-theme="dark"] .ev-settimana-presto { border-color: #78350F; }
+:root[data-theme="dark"] .ev-done-btn:hover { background: #14532D; color: #86EFAC; border-color: #16A34A; }
+:root[data-theme="dark"] .ev-del-btn:hover  { background: #7F1D1D; color: #FCA5A5; }
+:root[data-theme="dark"] .ev-edit-btn:hover { background: #1E1B4B; color: var(--accent); }
+:root[data-theme="dark"] .btn-elimina-lista:hover { background: #7F1D1D; color: #FCA5A5; }
+:root[data-theme="dark"] .cat-icon.visite    { background: #2D1515; }
+:root[data-theme="dark"] .cat-icon.farmaci   { background: #1a1f3a; }
+:root[data-theme="dark"] .cat-icon.ricorrenze { background: #2D1A0A; }
+:root[data-theme="dark"] .cat-icon.documenti { background: #0F2318; }
+:root[data-theme="dark"] .cat-icon.auto      { background: #0C1A2E; }
+:root[data-theme="dark"] .cat-icon.generico  { background: #1A1030; }
+:root[data-theme="dark"] .cat-icon.acquisti  { background: #1F0F2E; }
+:root[data-theme="dark"] .cat-icon.lavoro    { background: #1F1A00; }
+:root[data-theme="dark"] .cat-icon.condominio { background: #2D1A0A; }
+:root[data-theme="dark"] .cat-icon.conti     { background: #0F2318; }
+:root[data-theme="dark"] .cat-icon.liste     { background: #1a1f3a; }
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 .ev-oggi     { background: var(--col-oggi-bg);    border-color: #FECACA; }
 .ev-oggi .event-dot  { background: var(--col-oggi); }
 .ev-oggi .event-title { color: var(--col-oggi); }
@@ -708,8 +743,13 @@ body {
 .cat-icon.generico svg { color: #7C3AED; }
 .cat-icon.acquisti { background: #FDF4FF; }
 .cat-icon.acquisti svg { color: #9333EA; }
-.cat-icon.lavoro { background: #FFF8E1; }
-.cat-icon.lavoro { color: #F59E0B; }
+.cat-icon.lavoro      { background: #FFF8E1; color: #F59E0B; }
+.cat-icon.condominio  { background: #FFF7ED; }
+.cat-icon.condominio svg { color: #EA580C; }
+.cat-icon.conti       { background: #F0FDF4; }
+.cat-icon.conti svg   { color: #16A34A; }
+.cat-icon.liste       { background: #EFF6FF; }
+.cat-icon.liste svg   { color: #2563EB; }
 
 .cat-label {
   font-size: 0.78rem;
@@ -1151,6 +1191,7 @@ body {
   background: var(--bg-card);
   border-radius: 20px 20px 0 0;
   padding: 20px 24px 32px;
+  padding-bottom: max(32px, calc(32px + env(safe-area-inset-bottom)));
   width: 100%;
   max-width: 430px;
   transform: translateY(40px);
@@ -1758,8 +1799,8 @@ body {
 
       <!-- Condominio -->
       <div class="cat-item" onclick="goTo('form-condominio')">
-        <div class="cat-icon" style="background:#FFF7ED">
-          <svg viewBox="0 0 32 32" fill="none" stroke="#ea580c" stroke-width="1.8">
+        <div class="cat-icon condominio">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
             <rect x="4" y="12" width="24" height="16" rx="2"/>
             <path d="M2 14L16 4l14 10"/>
             <rect x="12" y="20" width="8" height="8"/>
@@ -1770,10 +1811,10 @@ body {
 
       <!-- Conti -->
       <div class="cat-item" onclick="goTo('conti')">
-        <div class="cat-icon" style="background:#F0FDF4">
-          <svg viewBox="0 0 32 32" fill="none" stroke="#16a34a" stroke-width="1.8">
+        <div class="cat-icon conti">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
             <circle cx="16" cy="16" r="12"/>
-            <text x="16" y="21" text-anchor="middle" font-size="14" font-weight="700" font-family="Arial" fill="#16a34a" stroke="none">€</text>
+            <text x="16" y="21" text-anchor="middle" font-size="14" font-weight="700" font-family="Arial" fill="currentColor" stroke="none">€</text>
           </svg>
         </div>
         <span class="cat-label">Conti</span>
@@ -1842,8 +1883,8 @@ body {
 
       <!-- Liste -->
       <div class="cat-item" onclick="goTo('liste')">
-        <div class="cat-icon" style="background:#EEF2FF">
-          <svg viewBox="0 0 32 32" fill="none" stroke="#5b6af0" stroke-width="1.8">
+        <div class="cat-icon liste">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
             <rect x="5" y="4" width="22" height="24" rx="3"/>
             <line x1="10" y1="11" x2="22" y2="11"/>
             <line x1="10" y1="16" x2="22" y2="16"/>
@@ -3114,6 +3155,7 @@ function goTo(name) {
   }
   if (name === 'utente') {
     aggiornaInfoVersione();
+    ripristinaFreqBackup();
   }
   // init blocchi notifiche (formMap è ora a scope di modulo — vedi sotto)
   if (formMap[name]) {
@@ -3156,6 +3198,7 @@ function showToast(msg) {
 function setFreq(btn, months) {
   btn.closest('.backup-freq').querySelectorAll('.freq-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  localStorage.setItem('promemoriamio_backup_freq', months);
 }
 
 // === LOGICA ORARI FARMACI ===
@@ -3573,6 +3616,21 @@ const NOTIF_DEFAULTS = {
 };
 
 function initNotif(formId) {
+  // Se creaProssima ha precaricato un payload, usalo e poi compila il form
+  const payload = window._creaProssimaPayload;
+  if (payload && payload.formId === formId) {
+    window._creaProssimaPayload = null;
+    notifStati[formId] = payload.notifiche
+      ? payload.notifiche
+      : (NOTIF_DEFAULTS[formId] || []).map((n, i) => ({ id: formId + '_' + i, desc: n.desc, time: n.time, on: n.on }));
+    renderNotifBlock(formId);
+    caricaFormEvento(payload.template);
+    const selFreq = document.getElementById(formId + '-freq');
+    if (selFreq && payload.freq) { selFreq.value = payload.freq; toggleAnticipo(formId); }
+    const selAnticipo = document.getElementById(formId + '-anticipo');
+    if (selAnticipo && payload.anticipo) selAnticipo.value = payload.anticipo;
+    return;
+  }
   if (!notifStati[formId]) {
     notifStati[formId] = (NOTIF_DEFAULTS[formId] || []).map((n, i) => ({
       id: formId + '_' + i,
@@ -3685,15 +3743,23 @@ const LS_EVENTI = 'agendame_eventi';
 let eventoInModifica = null; // id evento in modifica, null = nuovo
 let mostraCompletati = false;
 
+let _eventiMigratiOk = false;
 function leggiEventi() {
   try {
     const ev = JSON.parse(localStorage.getItem(LS_EVENTI)) || [];
-    // Migrazione: assegna id alle notifiche che ne sono prive (eventi creati con versioni vecchie)
-    ev.forEach(e => {
-      if (Array.isArray(e.notifiche)) {
-        e.notifiche.forEach((n, i) => { if (!n.id) n.id = e.id + '_n' + i; });
+    // Migrazione una-tantum: assegna id alle notifiche prive di id (eventi creati con versioni vecchie)
+    if (!_eventiMigratiOk) {
+      let modif = false;
+      ev.forEach(e => {
+        if (Array.isArray(e.notifiche)) {
+          e.notifiche.forEach((n, i) => { if (!n.id) { n.id = e.id + '_n' + i; modif = true; } });
+        }
+      });
+      if (modif) {
+        try { localStorage.setItem(LS_EVENTI, JSON.stringify(ev)); } catch {}
       }
-    });
+      _eventiMigratiOk = true;
+    }
     return ev;
   } catch { return []; }
 }
@@ -3902,9 +3968,9 @@ function renderHome() {
       html += `<div class="event-card ${g.cls}" data-id="${ev.id}">
         <div class="event-dot"></div>
         <div class="event-body">
-          <div class="event-title">${escHTML(titoloCarta(ev))}</div>
+          <div class="event-title">${escHtml(titoloCarta(ev))}</div>
           <div class="event-meta">
-            ${dataStr ? `<span class="event-date">${escHTML(dataStr)}</span>` : ''}
+            ${dataStr ? `<span class="event-date">${escHtml(dataStr)}</span>` : ''}
             <span class="event-cat-badge">${badge}</span>
           </div>
         </div>
@@ -3942,7 +4008,7 @@ function renderHome() {
   if (scaduto) showToastBackup();
 }
 
-function escHTML(s) { return escHtml(String(s)); }
+// escHTML rimosso — usare escHtml (unico punto di verità)
 
 let _undoElimina = null;
 
@@ -4014,6 +4080,11 @@ function apriEvento(id) {
   } else {
     goTo(target); // goTo ora gestisce caricaFormEvento+initNotif in modifica
   }
+}
+
+function markFilled(btnId) {
+  const btn = document.getElementById(btnId);
+  if (btn) btn.classList.add('filled');
 }
 
 function caricaFormEvento(ev) {
@@ -4613,11 +4684,6 @@ window.addEventListener('load', () => {
 
   function pad2(n) { return String(n).padStart(2, '0'); }
 
-  function markFilled(btnId) {
-    const btn = document.getElementById(btnId);
-    if (btn) btn.classList.add('filled');
-  }
-
   function fmtLbl(d, withTime) {
     const giorni = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
     const mesi = IT_MONTHS_S;
@@ -4644,7 +4710,7 @@ function aggiornaApp() {
 // ── Primo avvio / onboarding ──────────────────────────────────
 // Eseguito qui perché goTo() è definita in questo stesso script.
 // Aggiorna la home ogni minuto per spostare eventi scaduti
-setInterval(() => { if (current === 'home') renderHome(); }, 60000);
+setInterval(() => { if (document.hidden) return; if (current === 'home') renderHome(); }, 60000);
 setUtility('ok');
 
 // (visibilitychange già gestito sopra — renderHome() incluso)
@@ -4666,6 +4732,8 @@ window.addEventListener('popstate', e => {
       }
       setTimeout(() => initNotif(formMap[target]), 0);
     }
+    if (target === 'liste') renderListe();
+    if (target === 'conti') renderListaConti();
   } else {
     eventoInModifica = null;
     const homeEl = document.getElementById(screens['home']);
@@ -4717,7 +4785,8 @@ function leggiContiDB() {
   } catch(e) { return { conti: [] }; }
 }
 function salvaContiDB(data) {
-  localStorage.setItem('promemoriamio_conti', JSON.stringify(data));
+  try { localStorage.setItem('promemoriamio_conti', JSON.stringify(data)); }
+  catch { showToast('Spazio insufficiente sul dispositivo'); }
 }
 
 // conto attivo durante la sessione dettaglio
@@ -5011,7 +5080,7 @@ function calcolaDataProssima(dataStr, freq, anticipoGiorni) {
   };
   if (!freqMap[freq]) return null;
   freqMap[freq]();
-  if (anticipoGiorni) d.setDate(d.getDate() - parseInt(anticipoGiorni));
+  // anticipoGiorni NON sposta la data dell'evento — serve solo al sistema notifiche
   if (isDatetime) return _localISODT(d);
   return _localISO(d);
 }
@@ -5027,25 +5096,20 @@ function creaProssima(id) {
   if (!nuovaData) { showToast('Data non calcolabile'); return; }
   // Prepara evento "template" con nuova data
   const template = { ...ev, id: null, extra: { ...e, data: nuovaData } };
-  // Preserva le notifiche originali: le carica in notifStati prima che goTo le sovrascriva
-  const notifOriginal = ev.notifiche && ev.notifiche.length > 0
-    ? ev.notifiche.map(n => ({ ...n }))
-    : null;
-  // Apri form precompilato come nuovo evento
+  const fid = ev.categoria;
+  // Usa un flag per passare i dati a initNotif senza race condition sul setTimeout
+  // goTo (ramo !eventoInModifica) chiama resetForm (che cancella notifStati) poi setTimeout(initNotif,0)
+  // _creaProssimaPayload viene letto da initNotif prima di decidere se usare i default
+  window._creaProssimaPayload = {
+    formId: fid,
+    template,
+    notifiche: ev.notifiche && ev.notifiche.length > 0 ? ev.notifiche.map(n => ({ ...n })) : null,
+    freq: e.freq,
+    anticipo: e.anticipo,
+  };
   eventoInModifica = null;
-  goTo('form-' + ev.categoria);
-  setTimeout(() => {
-    caricaFormEvento(template);
-    const selFreq = document.getElementById(ev.categoria + '-freq');
-    if (selFreq) { selFreq.value = e.freq || ''; toggleAnticipo(ev.categoria); }
-    const selAnticipo = document.getElementById(ev.categoria + '-anticipo');
-    if (selAnticipo) selAnticipo.value = e.anticipo || '';
-    // Ripristina notifiche originali se presenti (sovrascrive i default caricati da goTo)
-    if (notifOriginal) {
-      notifStati[ev.categoria] = notifOriginal;
-      renderNotifBlock(ev.categoria);
-    }
-  }, 60);
+  goTo('form-' + fid);
+  // Il setTimeout(0) di initNotif dentro goTo leggerà _creaProssimaPayload
 }
 
 </script>
