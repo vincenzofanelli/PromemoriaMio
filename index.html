@@ -3982,7 +3982,7 @@ function caricaFormEvento(ev) {
   document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
   document.querySelectorAll('.field-error-msg').forEach(el => el.remove());
 
-  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val || ''; };
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = (val != null) ? val : ''; };
 
   // Aggiorna il pulsante visivo di una data nascosta
   const _GG = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
