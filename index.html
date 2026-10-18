@@ -1656,13 +1656,13 @@ body {
   </div><!-- /scroll-body -->
 
   <div class="backup-banner" id="backup-banner">
-    <div id="backup-banner-info" class="backup-banner-info warn" style="font-size:0.78rem;color:var(--fg-2);margin-bottom:6px"><span id="backup-banner-data">Ultimo backup: mai</span></div>
     <div style="display:flex;gap:8px;width:100%;align-items:center">
       <button id="btn-update" class="backup-banner-btn backup-banner-btn--sec" style="flex:1.2">Aggiornamenti</button>
       <button class="backup-banner-btn" style="flex:1" onclick="esportaBackup()">Salva dati</button>
       <button class="backup-banner-btn backup-banner-btn--sec" style="flex:1" onclick="document.getElementById('importa-file-input').click()">Importa dati</button>
       <input type="file" id="importa-file-input" accept=".json" style="display:none" onchange="importaBackup(this)">
     </div>
+    <div id="backup-banner-info" class="backup-banner-info warn" style="font-size:0.78rem;color:var(--fg-2);margin-top:6px;text-align:center"><span id="backup-banner-data">Ultimo backup: mai</span></div>
   </div>
 
   <!-- bottom nav -->
@@ -1700,6 +1700,72 @@ body {
     <div class="section-label" style="margin-top:8px">Scegli categoria</div>
     <div class="cat-grid">
 
+      <!-- Acquisti -->
+      <div class="cat-item" onclick="goTo('form-acquisti')">
+        <div class="cat-icon acquisti">
+          <!-- carrello -->
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M4 5 L8 5 L12 20 L24 20 L27 11 L10 11"/>
+            <circle cx="13" cy="24" r="2"/>
+            <circle cx="22" cy="24" r="2"/>
+          </svg>
+        </div>
+        <span class="cat-label">Acquisti</span>
+      </div>
+
+      <!-- Auto -->
+      <div class="cat-item" onclick="goTo('form-auto')">
+        <div class="cat-icon auto">
+          <!-- automobile -->
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M5 18 L8 12 Q9 10 12 10 L20 10 Q23 10 24 12 L27 18 Z"/>
+            <rect x="4" y="18" width="24" height="7" rx="2"/>
+            <circle cx="9" cy="25" r="2.5"/>
+            <circle cx="23" cy="25" r="2.5"/>
+            <rect x="12" y="12" width="8" height="5" rx="1"/>
+          </svg>
+        </div>
+        <span class="cat-label">Auto</span>
+      </div>
+
+      <!-- Condominio -->
+      <div class="cat-item" onclick="goTo('form-condominio')">
+        <div class="cat-icon" style="background:#FFF7ED">
+          <svg viewBox="0 0 32 32" fill="none" stroke="#ea580c" stroke-width="1.8">
+            <rect x="4" y="12" width="24" height="16" rx="2"/>
+            <path d="M2 14L16 4l14 10"/>
+            <rect x="12" y="20" width="8" height="8"/>
+          </svg>
+        </div>
+        <span class="cat-label">Condominio</span>
+      </div>
+
+      <!-- Conti -->
+      <div class="cat-item" onclick="goTo('conti')">
+        <div class="cat-icon" style="background:#F0FDF4">
+          <svg viewBox="0 0 32 32" fill="none" stroke="#16a34a" stroke-width="1.8">
+            <circle cx="16" cy="16" r="12"/>
+            <text x="16" y="21" text-anchor="middle" font-size="14" font-weight="700" font-family="Arial" fill="#16a34a" stroke="none">€</text>
+          </svg>
+        </div>
+        <span class="cat-label">Conti</span>
+      </div>
+
+      <!-- Documenti -->
+      <div class="cat-item" onclick="goTo('form-documenti')">
+        <div class="cat-icon documenti">
+          <!-- sagoma CI/patente -->
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="8" width="26" height="16" rx="3"/>
+            <circle cx="10" cy="16" r="3"/>
+            <line x1="16" y1="13" x2="26" y2="13"/>
+            <line x1="16" y1="17" x2="24" y2="17"/>
+            <line x1="16" y1="21" x2="22" y2="21"/>
+          </svg>
+        </div>
+        <span class="cat-label">Documenti</span>
+      </div>
+
       <!-- Farmaci -->
       <div class="cat-item" onclick="goTo('form-farmaci')">
         <div class="cat-icon farmaci">
@@ -1722,62 +1788,6 @@ body {
         <span class="cat-label">Farmaci</span>
       </div>
 
-      <!-- Visite mediche -->
-      <div class="cat-item" onclick="goTo('form-visite')">
-        <div class="cat-icon visite">
-          <!-- H ospedaliera -->
-          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="4" y="4" width="24" height="24" rx="4" stroke-width="1.8"/>
-            <text x="16" y="23" text-anchor="middle" font-size="16" font-weight="800" font-family="Arial" fill="#DC2626" stroke="none">H</text>
-          </svg>
-        </div>
-        <span class="cat-label">Visite mediche</span>
-      </div>
-
-      <!-- Ricorrenze -->
-      <div class="cat-item" onclick="goTo('form-ricorrenze')">
-        <div class="cat-icon ricorrenze">
-          <!-- torta con candelina -->
-          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
-            <rect x="4" y="16" width="24" height="12" rx="3"/>
-            <path d="M4 20 Q10 16 16 20 Q22 24 28 20"/>
-            <line x1="16" y1="16" x2="16" y2="10"/>
-            <path d="M14 8 Q16 5 18 8" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <span class="cat-label">Ricorrenze</span>
-      </div>
-
-      <!-- Documenti -->
-      <div class="cat-item" onclick="goTo('form-documenti')">
-        <div class="cat-icon documenti">
-          <!-- sagoma CI/patente -->
-          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
-            <rect x="3" y="8" width="26" height="16" rx="3"/>
-            <circle cx="10" cy="16" r="3"/>
-            <line x1="16" y1="13" x2="26" y2="13"/>
-            <line x1="16" y1="17" x2="24" y2="17"/>
-            <line x1="16" y1="21" x2="22" y2="21"/>
-          </svg>
-        </div>
-        <span class="cat-label">Documenti</span>
-      </div>
-
-      <!-- Auto -->
-      <div class="cat-item" onclick="goTo('form-auto')">
-        <div class="cat-icon auto">
-          <!-- automobile -->
-          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M5 18 L8 12 Q9 10 12 10 L20 10 Q23 10 24 12 L27 18 Z"/>
-            <rect x="4" y="18" width="24" height="7" rx="2"/>
-            <circle cx="9" cy="25" r="2.5"/>
-            <circle cx="23" cy="25" r="2.5"/>
-            <rect x="12" y="12" width="8" height="5" rx="1"/>
-          </svg>
-        </div>
-        <span class="cat-label">Auto</span>
-      </div>
-
       <!-- Impegno generico -->
       <div class="cat-item" onclick="goTo('form-generico')">
         <div class="cat-icon generico">
@@ -1794,19 +1804,6 @@ body {
         <span class="cat-label">Impegno generico</span>
       </div>
 
-      <!-- Acquisti -->
-      <div class="cat-item" onclick="goTo('form-acquisti')">
-        <div class="cat-icon acquisti">
-          <!-- carrello -->
-          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M4 5 L8 5 L12 20 L24 20 L27 11 L10 11"/>
-            <circle cx="13" cy="24" r="2"/>
-            <circle cx="22" cy="24" r="2"/>
-          </svg>
-        </div>
-        <span class="cat-label">Acquisti</span>
-      </div>
-
       <!-- Lavoro -->
       <div class="cat-item" onclick="goTo('form-lavoro')">
         <div class="cat-icon lavoro">
@@ -1815,18 +1812,6 @@ body {
         <span class="cat-label">Lavoro</span>
       </div>
 
-
-      <!-- Condominio -->
-      <div class="cat-item" onclick="goTo('form-condominio')">
-        <div class="cat-icon" style="background:#FFF7ED">
-          <svg viewBox="0 0 32 32" fill="none" stroke="#ea580c" stroke-width="1.8">
-            <rect x="4" y="12" width="24" height="16" rx="2"/>
-            <path d="M2 14L16 4l14 10"/>
-            <rect x="12" y="20" width="8" height="8"/>
-          </svg>
-        </div>
-        <span class="cat-label">Condominio</span>
-      </div>
       <!-- Liste -->
       <div class="cat-item" onclick="goTo('liste')">
         <div class="cat-icon" style="background:#EEF2FF">
@@ -1841,15 +1826,30 @@ body {
         <span class="cat-label">Liste</span>
       </div>
 
-      <!-- Conti -->
-      <div class="cat-item" onclick="goTo('conti')">
-        <div class="cat-icon" style="background:#F0FDF4">
-          <svg viewBox="0 0 32 32" fill="none" stroke="#16a34a" stroke-width="1.8">
-            <circle cx="16" cy="16" r="12"/>
-            <text x="16" y="21" text-anchor="middle" font-size="14" font-weight="700" font-family="Arial" fill="#16a34a" stroke="none">€</text>
+      <!-- Ricorrenze -->
+      <div class="cat-item" onclick="goTo('form-ricorrenze')">
+        <div class="cat-icon ricorrenze">
+          <!-- torta con candelina -->
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="4" y="16" width="24" height="12" rx="3"/>
+            <path d="M4 20 Q10 16 16 20 Q22 24 28 20"/>
+            <line x1="16" y1="16" x2="16" y2="10"/>
+            <path d="M14 8 Q16 5 18 8" stroke-linecap="round"/>
           </svg>
         </div>
-        <span class="cat-label">Conti</span>
+        <span class="cat-label">Ricorrenze</span>
+      </div>
+
+      <!-- Visite mediche -->
+      <div class="cat-item" onclick="goTo('form-visite')">
+        <div class="cat-icon visite">
+          <!-- H ospedaliera -->
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="4" width="24" height="24" rx="4" stroke-width="1.8"/>
+            <text x="16" y="23" text-anchor="middle" font-size="16" font-weight="800" font-family="Arial" fill="#DC2626" stroke="none">H</text>
+          </svg>
+        </div>
+        <span class="cat-label">Visite mediche</span>
       </div>
 
     </div>
@@ -4592,8 +4592,9 @@ window.addEventListener('popstate', e => {
     if (el) el.classList.remove('hidden');
     // Se il back porta a un form, resettalo per evitare dati stale
     if (formMap[target]) {
-      eventoInModifica = null;
-      resetForm(formMap[target]);
+      if (!eventoInModifica) {
+        resetForm(formMap[target]);
+      }
       setTimeout(() => initNotif(formMap[target]), 0);
     }
   } else {
