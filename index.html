@@ -3077,7 +3077,8 @@ function goTo(name) {
     // Se non siamo in modifica, resetta il form prima di mostrarlo
     if (!eventoInModifica) {
       resetForm(fid);
-      initNotif(fid);
+      // setTimeout 0 garantisce che il render avvenga dopo che il DOM è visibile
+      setTimeout(() => initNotif(fid), 0);
     } else {
       // In modifica: carica subito i dati dell'evento (sincrono, prima di initNotif)
       const eventi = leggiEventi();
@@ -3091,7 +3092,8 @@ function goTo(name) {
         }
         caricaFormEvento(ev);
       }
-      initNotif(fid);
+      // setTimeout 0 garantisce che il render avvenga dopo che il DOM è visibile
+      setTimeout(() => initNotif(fid), 0);
     }
   }
 }
@@ -3955,9 +3957,11 @@ function apriEvento(id) {
     const fid = ev.categoria;
     if (ev.notifiche && Array.isArray(ev.notifiche) && ev.notifiche.length > 0) {
       notifStati[fid] = ev.notifiche.map(n => ({...n}));
+    } else {
+      delete notifStati[fid];
     }
     try { caricaFormEvento(ev); } catch(err) { console.warn('[apriEvento]', err); }
-    initNotif(fid);
+    setTimeout(() => initNotif(fid), 0);
   } else {
     goTo(target); // goTo ora gestisce caricaFormEvento+initNotif in modifica
   }
