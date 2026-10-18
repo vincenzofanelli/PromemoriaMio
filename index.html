@@ -426,7 +426,7 @@ body {
 .scroll-body {
   flex: 1;
   overflow-y: auto;
-  padding: 0 16px 24px;
+  padding: 0 16px 48px;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -695,7 +695,7 @@ body {
 
 /* === FORM === */
 .form-wrap {
-  padding: 20px 0 16px;
+  padding: 20px 0 32px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -2266,8 +2266,24 @@ body {
   <div class="scroll-body">
     <div class="form-wrap">
       <div class="form-group">
-        <label>Nome ricorrenza <span style="color:var(--col-scaduto)">*</span></label>
-        <input type="text" id="ricorrenze-nome" placeholder="es. Compleanno di Marco" autocomplete="off">
+        <label>Tipo evento <span style="color:var(--col-scaduto)">*</span></label>
+        <select id="ricorrenze-tipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px">
+          <option value="">— Seleziona tipo —</option>
+          <option value="Anniversario">Anniversario</option>
+          <option value="Battesimo">Battesimo</option>
+          <option value="Cerimonia">Cerimonia</option>
+          <option value="Compleanno">Compleanno</option>
+          <option value="Comunione">Comunione</option>
+          <option value="Cresima">Cresima</option>
+          <option value="Laurea">Laurea</option>
+          <option value="Matrimonio">Matrimonio</option>
+          <option value="Onomastico">Onomastico</option>
+          <option value="Varie">Varie</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Nome festeggiato <span style="color:var(--col-scaduto)">*</span></label>
+        <input type="text" id="ricorrenze-nome" placeholder="es. Marco" autocomplete="off">
       </div>
       <div class="form-group">
         <label>Data</label>
@@ -3520,7 +3536,7 @@ function renderHome() {
     trovati = true;
     html += `<div class="section-label">${g.label}</div>`;
     for (const ev of items) {
-      const badge = CAT_LABELS[ev.categoria] || ev.categoria;
+      const badge = (ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo) ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria);
       const dataStr = fmtDataEvento(ev);
       html += `<div class="event-card ${g.cls}" data-id="${ev.id}">
         <div class="event-dot"></div>
@@ -3665,6 +3681,7 @@ function caricaFormEvento(ev) {
   } else if (cat === 'farmaci') {
     set('farmaco-nome', e.nome); setDate('farmaci-data', e.data, false);
   } else if (cat === 'ricorrenze') {
+    const selTipo = document.getElementById('ricorrenze-tipo'); if (selTipo) selTipo.value = e.tipo || '';
     set('ricorrenze-nome', e.nome); setDate('ricorrenze-data', e.data, false); set('ricorrenze-note', e.note);
   } else if (cat === 'documenti') {
     set('documenti-tipo', e.tipo); setDate('documenti-data', e.data, false); set('documenti-note', e.note);
@@ -3683,7 +3700,7 @@ function raccogliCampiEvento(cat) {
   const val = id => (document.getElementById(id) || {}).value || '';
   if (cat === 'visite')     return { titolo: val('visite-tipo') || 'Visita medica', tipo: val('visite-tipo'), data: val('visite-data'), luogo: val('visite-luogo'), note: val('visite-note') };
   if (cat === 'farmaci')    return { titolo: val('farmaco-nome') || 'Farmaco', nome: val('farmaco-nome'), data: val('farmaci-data') };
-  if (cat === 'ricorrenze') return { titolo: val('ricorrenze-nome') || 'Ricorrenza', nome: val('ricorrenze-nome'), data: val('ricorrenze-data'), note: val('ricorrenze-note') };
+  if (cat === 'ricorrenze') { const _tn = val('ricorrenze-tipo'); const _nn = val('ricorrenze-nome'); return { titolo: (_tn ? _tn + (_nn ? ' · ' + _nn : '') : _nn) || 'Ricorrenza', tipo: _tn, nome: _nn, data: val('ricorrenze-data'), note: val('ricorrenze-note') }; }
   if (cat === 'documenti')  return { titolo: val('documenti-tipo') || 'Documento', tipo: val('documenti-tipo'), data: val('documenti-data'), note: val('documenti-note') };
   if (cat === 'auto')       return { titolo: val('auto-tipo') || 'Auto', tipo: val('auto-tipo'), data: val('auto-data'), note: val('auto-note') };
   if (cat === 'generico')   return { titolo: val('generico-titolo') || 'Impegno', titolo: val('generico-titolo'), data: val('generico-data'), luogo: val('generico-luogo'), note: val('generico-note') };
@@ -3749,7 +3766,7 @@ function resetForm(cat) {
   const ids = {
     visite: ['visite-tipo','visite-data','visite-luogo','visite-note'],
     farmaci: ['farmaco-nome','farmaci-data'],
-    ricorrenze: ['ricorrenze-nome','ricorrenze-data','ricorrenze-note'],
+    ricorrenze: ['ricorrenze-tipo','ricorrenze-nome','ricorrenze-data','ricorrenze-note'],
     documenti: ['documenti-tipo','documenti-data','documenti-note'],
     auto: ['auto-tipo','auto-data','auto-note'],
     generico: ['generico-titolo','generico-data','generico-luogo','generico-note'],
