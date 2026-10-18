@@ -115,7 +115,7 @@ function setUtility(mode) {
       setTimeout(() => setUtility('ok'), 3000);
       break;
     default:
-      btn.textContent = '🔄 Aggiornamenti';
+      btn.textContent = 'Aggiornamenti';
       btn.onclick = () => {
         if (window._swReg) window._swReg.update().then(() => {
           if (window._swReg.waiting) setUtility('update');
@@ -761,13 +761,8 @@ body {
   margin-top: 8px;
 }
 .btn-primary:hover { background: var(--accent-dk); }
-.form-footer {
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-  background: var(--bg);
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.form-footer .btn-primary { margin-top: 0; }
+.form-footer { display: none; }
+.form-save-btn { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 
 /* === UTENTE === */
 .profile-avatar {
@@ -1884,10 +1879,10 @@ body {
         <label>Notifiche</label>
         <div class="notif-block" id="notif-visite"></div>
       </div>
-
+      <div class="form-save-btn"><button class="btn-primary" onclick="salvaEvento('visite')">Salva impegno</button></div>
       </div>
   </div>
-  <div class="form-footer"><button class="btn-primary" onclick="salvaEvento('visite')">Salva impegno</button></div>
+  <div class="form-footer"></div>
 </div>
 
 
@@ -2010,10 +2005,10 @@ body {
         <label>Notifiche</label>
         <div class="notif-block" id="notif-farmaci"></div>
       </div>
-
+      <div class="form-save-btn"><button class="btn-primary" onclick="salvaFarmaco()">Salva impegno</button></div>
       </div>
   </div>
-  <div class="form-footer"><button class="btn-primary" onclick="salvaFarmaco()">Salva impegno</button></div>
+  <div class="form-footer"></div>
 </div>
 
 
@@ -2323,9 +2318,10 @@ body {
         <label>Notifiche</label>
         <div class="notif-block" id="notif-ricorrenze"></div>
       </div>
+      <div class="form-save-btn"><button class="btn-primary" onclick="salvaEvento('ricorrenze')">Salva impegno</button></div>
       </div>
   </div>
-  <div class="form-footer"><button class="btn-primary" onclick="salvaEvento('ricorrenze')">Salva impegno</button></div>
+  <div class="form-footer"></div>
 </div>
 
 <!-- ============================================================
@@ -2375,9 +2371,10 @@ body {
         <label>Notifiche</label>
         <div class="notif-block" id="notif-documenti"></div>
       </div>
+      <div class="form-save-btn"><button class="btn-primary" onclick="salvaEvento('documenti')">Salva impegno</button></div>
       </div>
   </div>
-  <div class="form-footer"><button class="btn-primary" onclick="salvaEvento('documenti')">Salva impegno</button></div>
+  <div class="form-footer"></div>
 </div>
 
 <!-- ============================================================
@@ -2427,9 +2424,10 @@ body {
         <label>Notifiche</label>
         <div class="notif-block" id="notif-auto"></div>
       </div>
+      <div class="form-save-btn"><button class="btn-primary" onclick="salvaEvento('auto')">Salva impegno</button></div>
       </div>
   </div>
-  <div class="form-footer"><button class="btn-primary" onclick="salvaEvento('auto')">Salva impegno</button></div>
+  <div class="form-footer"></div>
 </div>
 
 <!-- ============================================================
@@ -2475,9 +2473,10 @@ body {
         <label>Notifiche</label>
         <div class="notif-block" id="notif-generico"></div>
       </div>
+      <div class="form-save-btn"><button class="btn-primary" onclick="salvaEvento('generico')">Salva impegno</button></div>
       </div>
   </div>
-  <div class="form-footer"><button class="btn-primary" onclick="salvaEvento('generico')">Salva impegno</button></div>
+  <div class="form-footer"></div>
 </div>
 
 <!-- ============================================================
@@ -2519,9 +2518,10 @@ body {
         <label>Notifiche</label>
         <div class="notif-block" id="notif-acquisti"></div>
       </div>
+      <div class="form-save-btn"><button class="btn-primary" onclick="salvaEvento('acquisti')">Salva impegno</button></div>
       </div>
   </div>
-  <div class="form-footer"><button class="btn-primary" onclick="salvaEvento('acquisti')">Salva impegno</button></div>
+  <div class="form-footer"></div>
 </div>
 
 <!-- ============================================================
@@ -2577,9 +2577,10 @@ body {
         <label>Notifiche</label>
         <div class="notif-block" id="notif-lavoro"></div>
       </div>
+      <div class="form-save-btn"><button class="btn-primary" onclick="salvaEvento('lavoro')">Salva impegno</button></div>
       </div>
   </div>
-  <div class="form-footer"><button class="btn-primary" onclick="salvaEvento('lavoro')">Salva impegno</button></div>
+  <div class="form-footer"></div>
 </div>
 
 <!-- ============================================================
