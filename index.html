@@ -55,7 +55,6 @@ if ('serviceWorker' in navigator) {
           }
         });
         setInterval(() => reg.update(), 30 * 60 * 1000);
-        scheduleAllNotifications();
       })
       .catch(e => console.warn('SW non registrato:', e));
   });
@@ -176,12 +175,15 @@ function avviaApp() {
 // SCHEDULING NOTIFICHE
 // ============================================================
 
+let _schedRetries = 0;
 function scheduleAllNotifications() {
   if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
-    // SW non ancora attivo, riprova tra 2s
+    // SW non ancora attivo — riprova, ma max 15 volte (~30s) per evitare loop infinito
+    if (++_schedRetries > 15) { console.warn('[PMM] SW controller mai disponibile, rinuncio'); return; }
     setTimeout(scheduleAllNotifications, 2000);
     return;
   }
+  _schedRetries = 0;
   if (Notification.permission !== 'granted') return;
 
   const eventi = leggiEventi ? leggiEventi() : [];
@@ -227,10 +229,17 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function calcolaTimestampNotifica(desc, dataEvt, time) {
-  // Copia della data evento, azzera l'ora
+  // Copia della data evento
   const d = new Date(dataEvt);
-  // Applica offset dal desc
   const descL = desc.toLowerCase();
+
+  // Caso speciale: "1 ora prima" — sottrai 1 ora dall'orario esatto dell'evento
+  if (descL.includes('1 ora prima') || descL.includes("un'ora prima")) {
+    d.setHours(d.getHours() - 1, d.getMinutes(), 0, 0);
+    return d.getTime();
+  }
+
+  // Applica offset giorni/mesi
   if (descL.includes('settimana prima') || descL.includes('1 settimana')) d.setDate(d.getDate() - 7);
   else if (descL.includes('mese prima') || descL.includes('1 mese'))     d.setMonth(d.getMonth() - 1);
   else if (descL.includes('sera prima') || descL.includes('giorno prima') || (descL.includes('giorno stesso') && descL.includes('prima'))) d.setDate(d.getDate() - 1);
@@ -1647,6 +1656,7 @@ body {
   </div><!-- /scroll-body -->
 
   <div class="backup-banner" id="backup-banner">
+    <div id="backup-banner-info" class="backup-banner-info warn" style="font-size:0.78rem;color:var(--fg-2);margin-bottom:6px"><span id="backup-banner-data">Ultimo backup: mai</span></div>
     <div style="display:flex;gap:8px;width:100%;align-items:center">
       <button id="btn-update" class="backup-banner-btn backup-banner-btn--sec" style="flex:1.2">Aggiornamenti</button>
       <button class="backup-banner-btn" style="flex:1" onclick="esportaBackup()">Salva dati</button>
@@ -2716,6 +2726,7 @@ body {
   <div class="header">
     <button class="header-back" onclick="goTo('nuovo')">
       <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      Categorie
     </button>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:20px">👨‍💻</span>
@@ -3033,16 +3044,31 @@ const screens = {
 };
 let current = 'home';
 
+// Mappa schermata-form → categoria; usata da goTo e popstate
+const formMap = {
+  'form-visite':     'visite',
+  'form-farmaci':    'farmaci',
+  'form-ricorrenze': 'ricorrenze',
+  'form-documenti':  'documenti',
+  'form-auto':       'auto',
+  'form-generico':   'generico',
+  'form-acquisti':   'acquisti',
+  'form-lavoro':     'lavoro',
+  'form-condominio': 'condominio',
+};
+
 function goTo(name) {
   if (!screens[name]) return;
+  const prevScreen = current;  // salva PRIMA di aggiornare current
   const prev = document.getElementById(screens[current]);
   const next = document.getElementById(screens[name]);
   if (prev && name !== current) prev.classList.add('hidden');
   if (next) next.classList.remove('hidden');
   current = name;
-  // Aggiunge uno stato history per intercettare il back Android
+  // Aggiunge uno stato history per intercettare il back Android.
+  // Salva la schermata precedente, così popstate sa dove tornare.
   if (name !== 'home') {
-    history.pushState({ screen: name }, '');
+    history.pushState({ screen: prevScreen }, '');
   }
   // Tornare a home o a nuovo significa annullare qualsiasi modifica in corso
   if (name === 'home' || name === 'nuovo') {
@@ -3061,18 +3087,7 @@ function goTo(name) {
   if (name === 'utente') {
     aggiornaInfoVersione();
   }
-  // init blocchi notifiche
-  const formMap = {
-    'form-visite':    'visite',
-    'form-farmaci':   'farmaci',
-    'form-ricorrenze':'ricorrenze',
-    'form-documenti': 'documenti',
-    'form-auto':      'auto',
-    'form-generico':  'generico',
-    'form-acquisti':  'acquisti',
-    'form-lavoro':    'lavoro',
-    'form-condominio': 'condominio',
-  };
+  // init blocchi notifiche (formMap è ora a scope di modulo — vedi sotto)
   if (formMap[name]) {
     const fid = formMap[name];
     // Se non siamo in modifica, resetta il form prima di mostrarlo
@@ -3519,6 +3534,14 @@ const NOTIF_DEFAULTS = {
   'acquisti': [
     { desc: 'Giorno stabilito',  time: '09:00', on: true },
   ],
+  'lavoro': [
+    { desc: 'Sera prima',        time: '20:00', on: true },
+    { desc: '1 ora prima',       time: null,    on: true },
+  ],
+  'condominio': [
+    { desc: '1 mese prima',      time: '09:00', on: true },
+    { desc: 'Giorno scadenza',   time: '09:00', on: true },
+  ],
 };
 
 function initNotif(formId) {
@@ -3708,12 +3731,14 @@ function showToastBackup() {
   t.style.opacity = '1';
   t.style.transform = 'translateX(-50%) translateY(0)';
   t.style.cursor = 'pointer';
+  t.style.pointerEvents = 'auto';
   t.onclick = () => esportaBackup();
   setTimeout(() => {
     t.style.opacity = '0';
     t.style.transform = 'translateX(-50%) translateY(20px)';
     t.onclick = null;
     t.style.cursor = '';
+    t.style.pointerEvents = 'none';
   }, 5000);
 }
 
@@ -3893,10 +3918,12 @@ function eliminaEvento(id) {
   t.innerHTML = 'Eliminato <button onclick="undoElimina()" style="margin-left:10px;font-weight:800;color:#60A5FA;background:none;border:none;cursor:pointer;font-size:inherit">Annulla</button>';
   t.style.opacity = '1';
   t.style.transform = 'translateX(-50%) translateY(0)';
+  t.style.pointerEvents = 'auto';
   clearTimeout(t._timer);
   t._timer = setTimeout(() => {
     t.style.opacity = '0';
     t.style.transform = 'translateX(-50%) translateY(20px)';
+    t.style.pointerEvents = 'none';
     if (_undoElimina) { _undoElimina = null; scheduleAllNotifications(); }
   }, 4000);
 }
@@ -4080,7 +4107,7 @@ function salvaEvento(cat) {
 function resetForm(cat) {
   const ids = {
     visite: ['visite-tipo','visite-data','visite-luogo','visite-note','visite-freq','visite-anticipo'],
-    farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo'],
+    farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo','custom-prima-dose','custom-n-dosi','alterne-ora'],
     ricorrenze: ['ricorrenze-tipo','ricorrenze-nome','ricorrenze-data','ricorrenze-note','ricorrenze-freq','ricorrenze-anticipo'],
     documenti: ['documenti-tipo','documenti-data','documenti-note','documenti-freq','documenti-anticipo'],
     auto: ['auto-tipo','auto-data','auto-note','auto-freq','auto-anticipo'],
@@ -4112,6 +4139,20 @@ function resetForm(cat) {
     if (btn) btn.classList.remove('filled');
   });
   delete notifStati[cat]; // forza reinit defaults al prossimo accesso
+  // Reset campi speciali farmaci
+  if (cat === 'farmaci') {
+    const orariWrap = document.getElementById('orari-wrap');
+    if (orariWrap) orariWrap.innerHTML = '';
+    const fotoPreview = document.getElementById('foto-preview');
+    if (fotoPreview) { fotoPreview.style.display = 'none'; fotoPreview.src = ''; }
+    // Reset label orario alterne
+    const alterneLbl = document.getElementById('alterne-ora-lbl');
+    if (alterneLbl) alterneLbl.textContent = '08:00';
+    const primaDoseLbl = document.getElementById('custom-prima-dose-lbl');
+    if (primaDoseLbl) primaDoseLbl.textContent = '08:00';
+    const nDosi = document.getElementById('custom-n-dosi');
+    if (nDosi) nDosi.value = '3';
+  }
 }
 
 // === ORARI CUSTOM FARMACI ===
@@ -4132,7 +4173,6 @@ function aggiornaOrariCustom() {
 }
 
 // patch aggiornaOrari per custom-wrap display flex
-const _origAggiornaOrari = aggiornaOrari;
 // sostituisce la gestione del custom-wrap per usare flex
 (function patchAggiornaOrari() {
   const orig = window.aggiornaOrari;
@@ -4531,12 +4571,6 @@ function aggiornaApp() {
     .then(() => location.reload(true));
 }
 
-// ── Permesso notifiche all'avvio (indipendente dall'onboarding) ────────
-if ('Notification' in window && Notification.permission === 'default') {
-  Notification.requestPermission().then(perm => {
-    if (perm === 'granted') scheduleAllNotifications();
-  });
-}
 
 // ── Primo avvio / onboarding ──────────────────────────────────
 // Eseguito qui perché goTo() è definita in questo stesso script.
@@ -4547,21 +4581,31 @@ setUtility('ok');
 // (visibilitychange già gestito sopra — renderHome() incluso)
 
 // Tasto back del telefono (Android): riporta alla home e sincronizza current
-window.addEventListener('popstate', () => {
-  // Qualunque schermata si stia mostrando, torna alla home
+window.addEventListener('popstate', e => {
+  // Leggi la schermata target dallo stato pushato
+  const target = (e.state && e.state.screen) ? e.state.screen : 'home';
   const prevEl = document.getElementById(screens[current]);
   if (prevEl) prevEl.classList.add('hidden');
-  current = 'home';
-  eventoInModifica = null;
-  const homeEl = document.getElementById(screens['home']);
-  if (homeEl) homeEl.classList.remove('hidden');
-  renderHome();
-  scrollPrimoOggi();
-  // Mantieni sempre uno stato in history per il prossimo back
-  history.pushState(null, '');
+  current = target;
+  if (target !== 'home') {
+    const el = document.getElementById(screens[target]);
+    if (el) el.classList.remove('hidden');
+    // Se il back porta a un form, resettalo per evitare dati stale
+    if (formMap[target]) {
+      eventoInModifica = null;
+      resetForm(formMap[target]);
+      setTimeout(() => initNotif(formMap[target]), 0);
+    }
+  } else {
+    eventoInModifica = null;
+    const homeEl = document.getElementById(screens['home']);
+    if (homeEl) homeEl.classList.remove('hidden');
+    renderHome();
+    scrollPrimoOggi();
+  }
 });
 // Stato iniziale: così il primo back genera popstate invece di uscire
-history.pushState(null, '');
+history.replaceState({ screen: 'home' }, '');
 
 (function() {
   // Pulisce eventuali chiavi del vecchio AgendaMe per forzare il benvenuto
@@ -4636,7 +4680,7 @@ function renderListaConti() {
     const colTot = totAperto >= 0 ? '#16a34a' : '#dc2626';
     html += '<div style="display:flex;align-items:center;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden">'
       + '<div style="flex:1;min-width:0;padding:14px 16px;cursor:pointer" onclick="apriContoDettaglia(' + c.id + ')">'
-      + '<div style="font-size:1rem;font-weight:700;color:var(--fg)">' + c.nome + '</div>'
+      + '<div style="font-size:1rem;font-weight:700;color:var(--fg)">' + escHtml(c.nome) + '</div>'
       + '<div style="font-size:0.78rem;color:var(--fg-2);margin-top:3px">'
       + (nVoci ? nVoci + ' voce/i in corso · <span style="color:' + colTot + ';font-weight:700">' + fmtEuro(totAperto) + '</span>' : 'Nessuna voce in corso')
       + '</div></div>'
@@ -4834,7 +4878,7 @@ function renderConti() {
         const border = idx < p.voci.length - 1 ? 'border-bottom:1px solid var(--border)' : '';
         html += '<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;' + border + '">'
           + '<div style="flex:1;min-width:0">'
-          + '<div style="font-size:0.9rem;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + v.desc + '</div>'
+          + '<div style="font-size:0.9rem;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(v.desc) + '</div>'
           + '<div style="font-size:0.75rem;color:var(--fg-2);margin-top:2px">' + fmtDataConti(v.data) + '</div>'
           + '</div>'
           + '<div style="font-size:0.95rem;font-weight:700;color:' + colore + ';white-space:nowrap">' + fmtEuro(v.imp) + '</div>';
@@ -4868,6 +4912,18 @@ function toggleAnticipo(cat) {
   else wrap.classList.remove('visible');
 }
 
+// ── Helper: data locale senza offset UTC ────────────────────────────────────
+function _localISO(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+function _localISODT(d) {
+  return _localISO(d) + 'T' +
+    String(d.getHours()).padStart(2, '0') + ':' +
+    String(d.getMinutes()).padStart(2, '0');
+}
+
 // ── Calcola data prossima in base a frequenza ────────────────────────────────
 function calcolaDataProssima(dataStr, freq, anticipoGiorni) {
   const isDatetime = dataStr && dataStr.includes('T');
@@ -4886,8 +4942,8 @@ function calcolaDataProssima(dataStr, freq, anticipoGiorni) {
   if (!freqMap[freq]) return null;
   freqMap[freq]();
   if (anticipoGiorni) d.setDate(d.getDate() - parseInt(anticipoGiorni));
-  if (isDatetime) return d.toISOString().slice(0,16);
-  return d.toISOString().slice(0,10);
+  if (isDatetime) return _localISODT(d);
+  return _localISO(d);
 }
 
 // ── "Fatto → crea prossima" ──────────────────────────────────────────────────
@@ -4901,6 +4957,10 @@ function creaProssima(id) {
   if (!nuovaData) { showToast('Data non calcolabile'); return; }
   // Prepara evento "template" con nuova data
   const template = { ...ev, id: null, extra: { ...e, data: nuovaData } };
+  // Preserva le notifiche originali: le carica in notifStati prima che goTo le sovrascriva
+  const notifOriginal = ev.notifiche && ev.notifiche.length > 0
+    ? ev.notifiche.map(n => ({ ...n }))
+    : null;
   // Apri form precompilato come nuovo evento
   eventoInModifica = null;
   goTo('form-' + ev.categoria);
@@ -4910,6 +4970,11 @@ function creaProssima(id) {
     if (selFreq) { selFreq.value = e.freq || ''; toggleAnticipo(ev.categoria); }
     const selAnticipo = document.getElementById(ev.categoria + '-anticipo');
     if (selAnticipo) selAnticipo.value = e.anticipo || '';
+    // Ripristina notifiche originali se presenti (sovrascrive i default caricati da goTo)
+    if (notifOriginal) {
+      notifStati[ev.categoria] = notifOriginal;
+      renderNotifBlock(ev.categoria);
+    }
   }, 60);
 }
 
