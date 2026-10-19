@@ -25,9 +25,8 @@ if ('serviceWorker' in navigator) {
       .then(reg => {
         window._swReg = reg;
         reg.update();
-        if (reg.waiting && navigator.serviceWorker.controller) {
-          setUtility('update');
-        }
+        // Con skipWaiting() il nuovo SW si attiva immediatamente:
+        // 'installed' + waiting non si verifica più, ma controllerchange sì
         reg.addEventListener('updatefound', () => {
           const nw = reg.installing;
           if (nw) {
@@ -41,6 +40,12 @@ if ('serviceWorker' in navigator) {
         setInterval(() => reg.update(), 30 * 60 * 1000);
       })
       .catch(e => console.warn('SW non registrato:', e));
+
+    // Scatta quando il nuovo SW (con skipWaiting) prende il controllo
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      setUtility('done');
+      showToast('App aggiornata alla versione più recente ✓');
+    });
   });
 }
 // ============================================================
