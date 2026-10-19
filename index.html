@@ -477,6 +477,29 @@ body {
   margin: 20px 0 8px;
 }
 
+/* Sezione "Oggi" evidenziata */
+.section-label-oggi {
+  color: #DC2626;
+  background: #FEF2F2;
+  border-left: 3px solid #DC2626;
+  padding: 6px 10px;
+  margin-left: -16px;
+  margin-right: -16px;
+  border-radius: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .section-label-oggi {
+    background: #2D0A0A;
+    border-left-color: #EF4444;
+    color: #FCA5A5;
+  }
+}
+:root[data-theme="dark"] .section-label-oggi {
+  background: #2D0A0A;
+  border-left-color: #EF4444;
+  color: #FCA5A5;
+}
+
 .event-card {
   display: flex;
   flex-direction: column;
@@ -4005,7 +4028,7 @@ function renderHome() {
     });
     if (!items.length) continue;
     trovati = true;
-    html += `<div class="section-label">${g.label}</div>`;
+    html += `<div class="section-label${g.key === 'oggi' ? ' section-label-oggi' : ''}">${g.label}</div>`;
     for (const ev of items) {
       const badge = (ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo) ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria);
       const dataStr = fmtDataEvento(ev);
@@ -4260,10 +4283,19 @@ function salvaEvento(cat) {
   }
 
   salvaEventiLS(eventi);
+  // DEBUG TEMPORANEO: mostra timestamp notifiche del primo evento salvato
+  const _dbgEv = eventi[0];
   eventoInModifica = null;
   resetForm(cat);
   goTo('home');
   scheduleAllNotifications();
+  if (_dbgEv && _dbgEv.notifiche && _dbgEv.notifiche.length) {
+    const _lines = _dbgEv.notifiche.map(n => {
+      const ts = n.timestamp;
+      return (n.on ? '✓' : '✗') + n.desc + ': ' + (ts ? new Date(ts).toLocaleString('it-IT',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}) : 'NULL');
+    });
+    setTimeout(() => showToast('DBG: ' + _lines.join(' | ')), 1500);
+  }
 }
 
 function resetForm(cat) {
