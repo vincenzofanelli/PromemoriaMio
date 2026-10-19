@@ -1,12 +1,16 @@
-// PromemoriaMio Service Worker v2.0
-// Gestisce notifiche locali programmate — uno store, stato esplicito
+// PromemoriaMio Service Worker v3.0
+// Notifiche schedulate con TimestampTrigger (Chrome Android) + fallback setTimeout
+// 100% locale, nessun server
 
-const CACHE_NAME = 'promemoriamio-v70';
+const CACHE_NAME = 'promemoriamio-v80';
 const ASSETS = ['./index.html', './manifest.json'];
+
+// Feature detection: TimestampTrigger disponibile su Chrome Android
+const HAS_TIMESTAMP_TRIGGER = typeof TimestampTrigger !== 'undefined';
 
 // ── IndexedDB ─────────────────────────────────────────────────────────────────
 const IDB_NAME    = 'promemoriamio-sw';
-const IDB_VERSION = 3;
+const IDB_VERSION = 4;
 const IDB_STORE   = 'notifiche';
 
 function apriDB() {
@@ -14,7 +18,7 @@ function apriDB() {
     const req = indexedDB.open(IDB_NAME, IDB_VERSION);
     req.onupgradeneeded = e => {
       const db = e.target.result;
-      // Migrazione: elimina store vecchi (v1: 'notifiche' senza status, v2: 'fired')
+      // Migrazione: elimina store vecchi
       if (db.objectStoreNames.contains('fired')) db.deleteObjectStore('fired');
       if (db.objectStoreNames.contains('notifiche')) db.deleteObjectStore('notifiche');
       db.createObjectStore(IDB_STORE, { keyPath: 'tag' });
@@ -116,10 +120,11 @@ async function idbPulizia() {
 
 // ── Install ───────────────────────────────────────────────────────────────────
 self.addEventListener('install', e => {
+  console.log('[SW] install — HAS_TIMESTAMP_TRIGGER:', HAS_TIMESTAMP_TRIGGER);
   e.waitUntil(
     caches.open(CACHE_NAME).then(c => c.addAll(ASSETS).catch(() => {}))
   );
-  self.skipWaiting();  // forza attivazione immediata senza aspettare chiusura tab
+  self.skipWaiting();
 });
 
 // ── Activate ──────────────────────────────────────────────────────────────────
@@ -130,7 +135,10 @@ self.addEventListener('activate', e => {
         Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
       )
       .then(() => self.clients.claim())
-      .then(() => ripristinaTimer())
+      .then(() => {
+        // fallback setTimeout: ripristina timer solo se TimestampTrigger non disponibile
+        if (!HAS_TIMESTAMP_TRIGGER) return ripristinaTimer();
+      })
       .then(() => idbPulizia())
   );
 });
@@ -148,7 +156,7 @@ self.addEventListener('fetch', e => {
   );
 });
 
-// ── Timer in memoria ──────────────────────────────────────────────────────────
+// ── Timer in memoria (fallback per browser senza TimestampTrigger) ────────────
 const timers = new Map();
 
 function cancellaTimer(tag) {
@@ -158,53 +166,96 @@ function cancellaTimer(tag) {
   }
 }
 
-function mostraNotifica(n) {
-  return self.registration.showNotification(n.title || 'PromemoriaMio', {
-    body: n.body || 'Hai un impegno in programma',
-    tag: n.tag,
-    icon: './icon-192.png',
-    badge: './icon-192.png',
-    vibrate: [200, 100, 200],
-    renotify: true,
-    requireInteraction: false,
-    data: { url: './' }
-  });
+// ── Coerce timestamp ──────────────────────────────────────────────────────────
+function coerceTimestamp(ts) {
+  if (typeof ts === 'string') ts = new Date(ts).getTime();
+  else if (ts instanceof Date) ts = ts.getTime();
+  if (typeof ts !== 'number' || isNaN(ts)) return null;
+  if (ts < 1e12) ts *= 1000;  // secondi → ms
+  return ts;
 }
 
 // ── Scheduling ────────────────────────────────────────────────────────────────
 async function programmaNotifica({ tag, title, body, timestamp }) {
-  cancellaTimer(tag);
-  const delay = timestamp - Date.now();
+  const ts = coerceTimestamp(timestamp);
+  if (!ts) {
+    console.warn('[SW] timestamp non valido per', tag, ':', timestamp);
+    return;
+  }
+
+  const delay = ts - Date.now();
+  console.log('[SW] programmaNotifica:', tag, 'tra', Math.round(delay / 60000) + ' min',
+    HAS_TIMESTAMP_TRIGGER ? '(TimestampTrigger)' : '(setTimeout fallback)');
+
   if (delay <= 0) return;
 
-  console.log('[SW] programmaNotifica:', tag, 'tra', Math.round(delay / 60000) + ' min');
-  await idbSalva({ tag, title, body, timestamp });
+  await idbSalva({ tag, title, body, timestamp: ts });
 
-  const id = setTimeout(async () => {
-    timers.delete(tag);
-    await idbSegnaFired(tag);
+  if (HAS_TIMESTAMP_TRIGGER) {
+    // ── Path A: TimestampTrigger — il browser Android gestisce il timing
     try {
-      await mostraNotifica({ tag, title, body });
+      await self.registration.showNotification(title || 'PromemoriaMio', {
+        body: body || 'Hai un impegno in programma',
+        tag,
+        icon: './icon-192.png',
+        badge: './icon-192.png',
+        vibrate: [200, 100, 200],
+        renotify: true,
+        requireInteraction: false,
+        showTrigger: new TimestampTrigger(ts),
+        data: { url: './' }
+      });
     } catch (err) {
-      console.warn('[SW] showNotification error:', err);
+      console.warn('[SW] showNotification (TimestampTrigger) error:', err);
     }
-  }, delay);
-
-  timers.set(tag, id);
+  } else {
+    // ── Path B: setTimeout fallback (SW deve rimanere attivo)
+    cancellaTimer(tag);
+    const id = setTimeout(async () => {
+      timers.delete(tag);
+      await idbSegnaFired(tag);
+      try {
+        await self.registration.showNotification(title || 'PromemoriaMio', {
+          body: body || 'Hai un impegno in programma',
+          tag,
+          icon: './icon-192.png',
+          badge: './icon-192.png',
+          vibrate: [200, 100, 200],
+          renotify: true,
+          requireInteraction: false,
+          data: { url: './' }
+        });
+      } catch (err) {
+        console.warn('[SW] showNotification (setTimeout) error:', err);
+      }
+    }, delay);
+    timers.set(tag, id);
+  }
 }
 
-// Safety net: al wake-up, ri-schedula solo ciò che è 'pending' e futuro
+// Fallback: al wake-up ri-schedula con setTimeout i pending (solo se no TimestampTrigger)
 async function ripristinaTimer() {
   const pendenti = await idbLeggiPending();
   console.log('[SW] ripristinaTimer — pendenti:', pendenti.length);
 
   for (const n of pendenti) {
-    const delay = n.timestamp - Date.now();
+    const ts = coerceTimestamp(n.timestamp);
+    if (!ts || ts <= Date.now()) continue;
+    const delay = ts - Date.now();
     const id = setTimeout(async () => {
       timers.delete(n.tag);
       await idbSegnaFired(n.tag);
       try {
-        await mostraNotifica(n);
+        await self.registration.showNotification(n.title || 'PromemoriaMio', {
+          body: n.body || 'Hai un impegno in programma',
+          tag: n.tag,
+          icon: './icon-192.png',
+          badge: './icon-192.png',
+          vibrate: [200, 100, 200],
+          renotify: true,
+          requireInteraction: false,
+          data: { url: './' }
+        });
       } catch (err) {
         console.warn('[SW] showNotification (ripristino) error:', err);
       }
@@ -220,17 +271,25 @@ self.addEventListener('message', e => {
 
   switch (msg.tipo) {
     case 'SCHEDULE_NOTIFICHE': {
-      // Reset completo: cancella timer + IDB, poi ri-schedula la lista fresca
+      // Cancella timer in memoria (fallback)
       for (const [tag, id] of timers) {
         clearTimeout(id);
         timers.delete(tag);
       }
-      idbSvuota().then(() => {
-        const lista = Array.isArray(msg.notifiche) ? msg.notifiche : [];
-        lista.forEach(n => {
-          if (n.tag && n.title && n.timestamp) programmaNotifica(n);
+      // Chiude TUTTE le notifiche incluse quelle schedulate con trigger futuro
+      self.registration.getNotifications({ includeTriggered: true })
+        .then(ns => ns.forEach(n => n.close()))
+        .catch(() => {
+          // includeTriggered non supportato su alcuni browser — fallback senza
+          return self.registration.getNotifications().then(ns => ns.forEach(n => n.close()));
+        })
+        .then(() => idbSvuota())
+        .then(() => {
+          const lista = Array.isArray(msg.notifiche) ? msg.notifiche : [];
+          lista.forEach(n => {
+            if (n.tag && n.title && n.timestamp) programmaNotifica(n);
+          });
         });
-      });
       break;
     }
     case 'SCHEDULE_NOTIFICA': {
@@ -242,13 +301,21 @@ self.addEventListener('message', e => {
       if (msg.tag) {
         cancellaTimer(msg.tag);
         idbSegnaCancelled(msg.tag);
-        self.registration.getNotifications({ tag: msg.tag })
-          .then(ns => ns.forEach(n => n.close()));
+        self.registration.getNotifications({ tag: msg.tag, includeTriggered: true })
+          .then(ns => ns.forEach(n => n.close()))
+          .catch(() => {
+            return self.registration.getNotifications({ tag: msg.tag })
+              .then(ns => ns.forEach(n => n.close()));
+          });
       }
       break;
     }
     case 'PING': {
-      e.source && e.source.postMessage({ tipo: 'PONG', timers: [...timers.keys()] });
+      e.source && e.source.postMessage({
+        tipo: 'PONG',
+        hasTimestampTrigger: HAS_TIMESTAMP_TRIGGER,
+        timers: [...timers.keys()]
+      });
       break;
     }
     case 'SKIP_WAITING': {
