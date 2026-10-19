@@ -194,7 +194,7 @@ function scheduleAllNotifications() {
     const extra = ev.extra || {};
     const dataStr = extra.data || extra.dataInizio;
     if (!dataStr) return;
-    const dataEvt = dataStr.includes('T') ? new Date(dataStr) : new Date(dataStr + 'T00:00:00');
+    const dataEvt = parseDataLocale(dataStr);
     const stati = ev.notifiche || [];
 
     stati.forEach((n, ni) => {
@@ -226,12 +226,30 @@ function scheduleAllNotifications() {
 }
 
 // Calcola e salva il timestamp in ogni notifica dell'evento (chiamare prima di salvaEventiLS)
+function parseDataLocale(dataStr) {
+  // Forza interpretazione come ora locale (non UTC) aggiungendo i secondi se mancano
+  // "2026-10-19T16:45" → trattato come locale da Chrome ma non da tutti i browser
+  // Usiamo sempre la forma con T e senza Z per garantire ora locale
+  if (!dataStr) return new Date(NaN);
+  if (dataStr.includes('T')) {
+    // già datetime: es. "2026-10-19T16:45" — aggiungi :00 se mancano i secondi
+    const parts = dataStr.split('T');
+    const timePart = parts[1] || '00:00';
+    const [hh, mm] = timePart.split(':').map(Number);
+    const [yyyy, mo, dd] = parts[0].split('-').map(Number);
+    return new Date(yyyy, mo - 1, dd, hh, mm || 0, 0, 0);
+  } else {
+    // solo data: "2026-10-19"
+    const [yyyy, mo, dd] = dataStr.split('-').map(Number);
+    return new Date(yyyy, mo - 1, dd, 0, 0, 0, 0);
+  }
+}
+
 function calcolaEsalvaTimestamp(ev) {
   const extra = ev.extra || {};
   const dataStr = extra.data || extra.dataInizio;
   if (!dataStr) return;
-  // Se dataStr contiene già l'orario (es. "2026-10-19T15:24"), usarlo direttamente
-  const dataEvt = dataStr.includes('T') ? new Date(dataStr) : new Date(dataStr + 'T00:00:00');
+  const dataEvt = parseDataLocale(dataStr);
   if (isNaN(dataEvt.getTime())) return;
   (ev.notifiche || []).forEach(n => {
     n.timestamp = calcolaTimestampNotifica(n.desc, dataEvt, n.time) || null;
@@ -505,6 +523,74 @@ body {
   border-left-color: #EF4444;
   color: #FCA5A5;
 }
+
+/* ── Pannello appuntamenti giornata ── */
+.pannello-giornata {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin: 10px 0 6px;
+  overflow: hidden;
+}
+.pannello-giornata-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #fff;
+  background: #DC2626;
+}
+.pannello-giornata-header.domani {
+  background: var(--accent);
+}
+.pannello-giornata-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+  color: var(--fg);
+}
+.pannello-giornata-row:first-of-type { border-top: none; }
+.pannello-giornata-ora {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--fg-2);
+  min-width: 38px;
+}
+.pannello-giornata-titolo {
+  flex: 1;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pannello-giornata-badge {
+  font-size: 0.7rem;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pannello-giornata-vuoto {
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: var(--fg-3);
+  font-style: italic;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .pannello-giornata { border-color: #333; }
+  :root:not([data-theme="light"]) .pannello-giornata-row { border-color: #333; }
+}
+:root[data-theme="dark"] .pannello-giornata { border-color: #333; }
+:root[data-theme="dark"] .pannello-giornata-row { border-color: #333; }
 
 .event-card {
   display: flex;
@@ -4003,14 +4089,84 @@ function importaBackup(input) {
   reader.readAsText(file);
 }
 
+function renderPannelloGiornata() {
+  const ora = new Date();
+  const dopoLe14 = ora.getHours() >= 14;
+
+  // Inizio e fine giornata di oggi e domani (mezzanotte locale)
+  const inizioOggi   = new Date(ora.getFullYear(), ora.getMonth(), ora.getDate(), 0, 0, 0, 0);
+  const fineOggi     = new Date(ora.getFullYear(), ora.getMonth(), ora.getDate(), 23, 59, 59, 999);
+  const inizioDomani = new Date(ora.getFullYear(), ora.getMonth(), ora.getDate() + 1, 0, 0, 0, 0);
+  const fineDomani   = new Date(ora.getFullYear(), ora.getMonth(), ora.getDate() + 1, 23, 59, 59, 999);
+
+  const tutti = leggiEventi().filter(ev => ev.stato !== 'fatto');
+
+  function eventiGiorno(inizio, fine) {
+    return tutti.filter(ev => {
+      const extra = ev.extra || {};
+      const ds = extra.data || extra.dataInizio;
+      if (!ds) return false;
+      const d = parseDataLocale(ds);
+      return !isNaN(d) && d >= inizio && d <= fine;
+    }).sort((a, b) => {
+      const da = parseDataLocale((a.extra||{}).data || (a.extra||{}).dataInizio || '');
+      const db = parseDataLocale((b.extra||{}).data || (b.extra||{}).dataInizio || '');
+      return da - db;
+    });
+  }
+
+  function blocco(titoloBlocco, items, cssExtra) {
+    let h = `<div class="pannello-giornata">
+      <div class="pannello-giornata-header ${cssExtra}">${titoloBlocco}</div>`;
+    if (!items.length) {
+      h += `<div class="pannello-giornata-vuoto">Nessun impegno</div>`;
+    } else {
+      items.forEach(ev => {
+        const extra = ev.extra || {};
+        const ds = extra.data || extra.dataInizio || '';
+        let oraStr = '';
+        if (ds.includes('T')) {
+          const tp = ds.split('T')[1] || '';
+          oraStr = tp.slice(0, 5); // "HH:MM"
+        }
+        const titolo = escHtml(titoloCarta(ev));
+        const badge  = escHtml(CAT_LABELS[ev.categoria] || ev.categoria);
+        h += `<div class="pannello-giornata-row" onclick="apriEvento('${ev.id}')">
+          <span class="pannello-giornata-ora">${oraStr}</span>
+          <span class="pannello-giornata-titolo">${titolo}</span>
+          <span class="pannello-giornata-badge">${badge}</span>
+        </div>`;
+      });
+    }
+    h += `</div>`;
+    return h;
+  }
+
+  const oggiItems   = eventiGiorno(inizioOggi, fineOggi);
+  const domaniItems = dopoLe14 ? eventiGiorno(inizioDomani, fineDomani) : null;
+
+  // Mostra solo se c'è qualcosa (o dopo le 14 per il blocco domani)
+  if (!oggiItems.length && !dopoLe14) return '';
+
+  let html = '';
+  html += blocco('📅 Oggi — ' + inizioOggi.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' }), oggiItems, '');
+  if (domaniItems !== null) {
+    html += blocco('📅 Domani — ' + inizioDomani.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' }), domaniItems, 'domani');
+  }
+  return html;
+}
+
 function renderHome() {
   const lista = document.getElementById('home-list');
   if (!lista) return;
   const eventi = leggiEventi().filter(ev => mostraCompletati || ev.stato !== 'fatto');
 
+  // Pannello appuntamenti giornata (oggi + domani se dopo le 14)
+  let html = renderPannelloGiornata();
+
   // toggle completati in cima
   const completati = leggiEventi().filter(ev => ev.stato === 'fatto').length;
-  let html = `<div style="display:flex;align-items:center;justify-content:flex-end;padding:4px 16px 2px;gap:8px">
+  html += `<div style="display:flex;align-items:center;justify-content:flex-end;padding:4px 16px 2px;gap:8px">
     <span style="font-size:0.8rem;color:var(--fg-3)">${completati} completat${completati===1?'o':'i'}</span>
     <button onclick="mostraCompletati=!mostraCompletati;renderHome()"
       style="font-size:0.78rem;font-weight:700;color:var(--accent);background:none;border:none;cursor:pointer;padding:4px 0">
