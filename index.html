@@ -189,7 +189,7 @@ function scheduleAllNotifications() {
     const extra = ev.extra || {};
     const dataStr = extra.data || extra.dataInizio;
     if (!dataStr) return;
-    const dataEvt = new Date(dataStr + 'T00:00:00');  // ora locale, non UTC
+    const dataEvt = dataStr.includes('T') ? new Date(dataStr) : new Date(dataStr + 'T00:00:00');
     const stati = ev.notifiche || [];
 
     stati.forEach((n, ni) => {
@@ -225,7 +225,8 @@ function calcolaEsalvaTimestamp(ev) {
   const extra = ev.extra || {};
   const dataStr = extra.data || extra.dataInizio;
   if (!dataStr) return;
-  const dataEvt = new Date(dataStr + 'T00:00:00');  // forza ora locale, evita UTC midnight
+  // Se dataStr contiene già l'orario (es. "2026-10-19T15:24"), usarlo direttamente
+  const dataEvt = dataStr.includes('T') ? new Date(dataStr) : new Date(dataStr + 'T00:00:00');
   if (isNaN(dataEvt.getTime())) return;
   (ev.notifiche || []).forEach(n => {
     n.timestamp = calcolaTimestampNotifica(n.desc, dataEvt, n.time) || null;
