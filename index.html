@@ -3148,6 +3148,15 @@ body {
   <div class="form-footer"></div>
 </div>
 
+<!-- DEBUG PANEL (temporaneo) -->
+<div id="debug-panel" onclick="this.style.display='none'" style="
+  display:none;position:fixed;top:60px;left:8px;right:8px;z-index:9999;
+  background:#1a1a1a;color:#0f0;font:12px/1.5 monospace;
+  padding:12px;border-radius:8px;white-space:pre-wrap;word-break:break-all;
+  max-height:60vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.6)">
+  (tocca per chiudere)
+</div>
+
 <!-- TOAST -->
 <div id="toast" style="
   position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -4294,9 +4303,16 @@ function salvaEvento(cat) {
     const dataStr = extra.data || extra.dataInizio || 'NO-DATA';
     const notif = _dbgEv.notifiche || [];
     const nLines = notif.length
-      ? notif.map(n => (n.on?'ON':'OFF') + ' desc=' + (n.desc||'?') + ' time=' + (n.time||'null') + ' ts=' + (n.timestamp||'NULL')).join(' | ')
+      ? notif.map(n =>
+          'on=' + (n.on?'SI':'NO') +
+          '\ndesc=' + (n.desc||'?') +
+          '\ntime=' + (n.time||'null') +
+          '\nts=' + (n.timestamp||'NULL')
+        ).join('\n---\n')
       : 'nessuna notifica';
-    setTimeout(() => showToast('DBG data=' + dataStr + ' ' + nLines), 1500);
+    const txt = 'EVENTO: ' + (_dbgEv.categoria||'?') + '\ndata=' + dataStr + '\n\n' + nLines + '\n\n(tocca per chiudere)';
+    const panel = document.getElementById('debug-panel');
+    if (panel) { panel.textContent = txt; panel.style.display = 'block'; }
   }
 }
 
