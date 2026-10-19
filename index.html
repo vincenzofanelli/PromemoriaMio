@@ -208,6 +208,14 @@ function scheduleAllNotifications() {
     });
   });
 
+  // Log diagnostico — rimuovere in produzione
+  console.log('[PMM] Notifiche schedulate:', notifiche.map(n => ({
+    tag: n.tag,
+    title: n.title,
+    body: n.body,
+    tra: Math.round((n.timestamp - Date.now()) / 60000) + ' min'
+  })));
+
   // Manda la lista al service worker
   navigator.serviceWorker.controller.postMessage({
     tipo: 'SCHEDULE_NOTIFICHE',
@@ -453,11 +461,11 @@ body {
 
 .event-card {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: column;
+  gap: 0;
   background: var(--bg-card);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  padding: 12px 14px 10px;
   margin-bottom: 8px;
   border: 1px solid var(--border);
   cursor: pointer;
@@ -470,12 +478,19 @@ body {
 }
 .event-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.07); }
 
+/* riga superiore: pallino colorato + titolo */
+.event-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .event-dot {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 5px;
 }
 
 .event-body { flex: 1; min-width: 0; user-select: none; -webkit-user-select: none; }
@@ -487,14 +502,16 @@ body {
   text-overflow: ellipsis;
   pointer-events: none;
 }
+
+/* riga centrale: data + badge, larghezza piena */
 .event-meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 .event-date {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--fg-2);
 }
 .event-cat-badge {
@@ -505,6 +522,15 @@ body {
   background: var(--accent-bg);
   color: var(--accent);
   letter-spacing: 0.2px;
+}
+
+/* riga inferiore: bottoni azioni allineati a destra */
+.event-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
 }
 
 /* stati colore */
@@ -3966,16 +3992,18 @@ function renderHome() {
       const badge = (ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo) ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria);
       const dataStr = fmtDataEvento(ev);
       html += `<div class="event-card ${g.cls}" data-id="${ev.id}">
-        <div class="event-dot"></div>
-        <div class="event-body">
-          <div class="event-title">${escHtml(titoloCarta(ev))}</div>
-          <div class="event-meta">
-            ${dataStr ? `<span class="event-date">${escHtml(dataStr)}</span>` : ''}
-            <span class="event-cat-badge">${badge}</span>
+        <div class="event-top">
+          <div class="event-dot"></div>
+          <div class="event-body">
+            <div class="event-title">${escHtml(titoloCarta(ev))}</div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          ${(ev.extra && ev.extra.freq) ? `<button class="ev-edit-btn" style="background:var(--accent);color:#fff;border-color:var(--accent)" onclick="event.stopPropagation();creaProssima('${ev.id}')" title="Crea prossima">↻</button>` : ''}
+        <div class="event-meta">
+          ${dataStr ? `<span class="event-date">${escHtml(dataStr)}</span>` : ''}
+          <span class="event-cat-badge">${badge}</span>
+        </div>
+        <div class="event-actions">
+          ${(ev.extra && ev.extra.freq) ? `<button class="ev-edit-btn" style="background:var(--accent);color:#fff" onclick="event.stopPropagation();creaProssima('${ev.id}')" title="Crea prossima">↻</button>` : ''}
           <button class="ev-edit-btn" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="Modifica">
             <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           </button>

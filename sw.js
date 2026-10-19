@@ -127,6 +127,7 @@ function cancellaTimer(tag) {
 function programmaNotifica({ tag, title, body, timestamp }) {
   cancellaTimer(tag);
   const delay = timestamp - Date.now();
+  console.log('[SW] programmaNotifica:', tag, 'delay ms:', delay, 'tra:', Math.round(delay/60000) + ' min');
   if (delay <= 0) return;
 
   // Persisti prima di settare il timer: se lo SW viene killato
@@ -158,6 +159,9 @@ function programmaNotifica({ tag, title, body, timestamp }) {
 // Richiamata al wake-up dello SW: rilegge IDB e re-schedula i timer pendenti
 async function ripristinaTimer() {
   const pendenti = await idbLeggiTutte();
+  console.log('[SW] ripristinaTimer — trovate in IDB:', pendenti.map(n => ({
+    tag: n.tag, timestamp: n.timestamp, tra: Math.round((n.timestamp - Date.now()) / 60000) + ' min'
+  })));
   pendenti.forEach(n => {
     if (n.timestamp > Date.now()) {
       // programmaNotifica salverebbe di nuovo su IDB — evitiamo lo scrivi ridondante
