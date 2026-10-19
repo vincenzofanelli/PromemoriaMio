@@ -4289,12 +4289,14 @@ function salvaEvento(cat) {
   resetForm(cat);
   goTo('home');
   scheduleAllNotifications();
-  if (_dbgEv && _dbgEv.notifiche && _dbgEv.notifiche.length) {
-    const _lines = _dbgEv.notifiche.map(n => {
-      const ts = n.timestamp;
-      return (n.on ? '✓' : '✗') + n.desc + ': ' + (ts ? new Date(ts).toLocaleString('it-IT',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}) : 'NULL');
-    });
-    setTimeout(() => showToast('DBG: ' + _lines.join(' | ')), 1500);
+  if (_dbgEv) {
+    const extra = _dbgEv.extra || {};
+    const dataStr = extra.data || extra.dataInizio || 'NO-DATA';
+    const notif = _dbgEv.notifiche || [];
+    const nLines = notif.length
+      ? notif.map(n => (n.on?'ON':'OFF') + ' desc=' + (n.desc||'?') + ' time=' + (n.time||'null') + ' ts=' + (n.timestamp||'NULL')).join(' | ')
+      : 'nessuna notifica';
+    setTimeout(() => showToast('DBG data=' + dataStr + ' ' + nLines), 1500);
   }
 }
 
