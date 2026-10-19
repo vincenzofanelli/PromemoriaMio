@@ -43,8 +43,7 @@ if ('serviceWorker' in navigator) {
 
     // Scatta quando il nuovo SW (con skipWaiting) prende il controllo
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      setUtility('done');
-      showToast('App aggiornata alla versione più recente ✓');
+      setUtility('update');
     });
   });
 }
@@ -98,7 +97,7 @@ function setUtility(mode) {
   if (!btn) return;
   switch (mode) {
     case 'update':
-      btn.textContent = '🔄 Aggiornamento disponibile!';
+      btn.textContent = 'Aggiornamento disponibile!';
       btn.onclick = aggiornaApp;
       btn.style.background = '#fff8d6';
       btn.style.borderColor = '#e6c84a';
@@ -1884,7 +1883,7 @@ body {
   </div><!-- /scroll-body -->
 
   <div class="backup-banner" id="backup-banner">
-    <div style="display:flex;gap:8px;width:100%;align-items:center">
+    <div style="display:flex;gap:8px;width:100%">
       <button id="btn-update" class="backup-banner-btn backup-banner-btn--sec" style="flex:1.2">Aggiornamenti</button>
       <button class="backup-banner-btn" style="flex:1" onclick="esportaBackup()">Salva dati</button>
       <button class="backup-banner-btn backup-banner-btn--sec" style="flex:1" onclick="document.getElementById('importa-file-input').click()">Importa dati</button>
@@ -4091,15 +4090,13 @@ function importaBackup(input) {
 
 function renderPannelloGiornata() {
   const ora = new Date();
-  const dopoLe14 = ora.getHours() >= 14;
 
-  // Inizio e fine giornata di oggi e domani (mezzanotte locale)
   const inizioOggi   = new Date(ora.getFullYear(), ora.getMonth(), ora.getDate(), 0, 0, 0, 0);
   const fineOggi     = new Date(ora.getFullYear(), ora.getMonth(), ora.getDate(), 23, 59, 59, 999);
   const inizioDomani = new Date(ora.getFullYear(), ora.getMonth(), ora.getDate() + 1, 0, 0, 0, 0);
   const fineDomani   = new Date(ora.getFullYear(), ora.getMonth(), ora.getDate() + 1, 23, 59, 59, 999);
 
-  const tutti = leggiEventi().filter(ev => ev.stato !== 'fatto');
+  const tutti = leggiEventi(); // tutti, inclusi i fatti
 
   function eventiGiorno(inizio, fine) {
     return tutti.filter(ev => {
@@ -4127,14 +4124,15 @@ function renderPannelloGiornata() {
         let oraStr = '';
         if (ds.includes('T')) {
           const tp = ds.split('T')[1] || '';
-          oraStr = tp.slice(0, 5); // "HH:MM"
+          oraStr = tp.slice(0, 5);
         }
+        const fatto = ev.stato === 'fatto';
         const titolo = escHtml(titoloCarta(ev));
         const badge  = escHtml(CAT_LABELS[ev.categoria] || ev.categoria);
-        h += `<div class="pannello-giornata-row" onclick="apriEvento('${ev.id}')">
+        h += `<div class="pannello-giornata-row" onclick="apriEvento('${ev.id}')" style="${fatto ? 'opacity:0.55' : ''}">
           <span class="pannello-giornata-ora">${oraStr}</span>
-          <span class="pannello-giornata-titolo">${titolo}</span>
-          <span class="pannello-giornata-badge">${badge}</span>
+          <span class="pannello-giornata-titolo" style="${fatto ? 'text-decoration:line-through' : ''}">${titolo}</span>
+          ${fatto ? '<span style="font-size:1rem;color:#22c55e">✓</span>' : `<span class="pannello-giornata-badge">${badge}</span>`}
         </div>`;
       });
     }
@@ -4143,16 +4141,13 @@ function renderPannelloGiornata() {
   }
 
   const oggiItems   = eventiGiorno(inizioOggi, fineOggi);
-  const domaniItems = dopoLe14 ? eventiGiorno(inizioDomani, fineDomani) : null;
+  const domaniItems = eventiGiorno(inizioDomani, fineDomani);
 
-  // Mostra solo se c'è qualcosa (o dopo le 14 per il blocco domani)
-  if (!oggiItems.length && !dopoLe14) return '';
+  if (!oggiItems.length && !domaniItems.length) return '';
 
   let html = '';
-  html += blocco('📅 Oggi — ' + inizioOggi.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' }), oggiItems, '');
-  if (domaniItems !== null) {
-    html += blocco('📅 Domani — ' + inizioDomani.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' }), domaniItems, 'domani');
-  }
+  html += blocco('Oggi — ' + inizioOggi.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' }), oggiItems, '');
+  html += blocco('Domani — ' + inizioDomani.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' }), domaniItems, 'domani');
   return html;
 }
 
@@ -4161,18 +4156,8 @@ function renderHome() {
   if (!lista) return;
   const eventi = leggiEventi().filter(ev => mostraCompletati || ev.stato !== 'fatto');
 
-  // Pannello appuntamenti giornata (oggi + domani se dopo le 14)
   let html = renderPannelloGiornata();
 
-  // toggle completati in cima
-  const completati = leggiEventi().filter(ev => ev.stato === 'fatto').length;
-  html += `<div style="display:flex;align-items:center;justify-content:flex-end;padding:4px 16px 2px;gap:8px">
-    <span style="font-size:0.8rem;color:var(--fg-3)">${completati} completat${completati===1?'o':'i'}</span>
-    <button onclick="mostraCompletati=!mostraCompletati;renderHome()"
-      style="font-size:0.78rem;font-weight:700;color:var(--accent);background:none;border:none;cursor:pointer;padding:4px 0">
-      ${mostraCompletati ? 'Nascondi' : 'Mostra'}
-    </button>
-  </div>`;
 
   const gruppi = [
     { key:'sospeso',      label:'In sospeso',   cls:'ev-scaduto' },

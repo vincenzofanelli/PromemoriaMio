@@ -2,7 +2,7 @@
 // Notifiche schedulate con TimestampTrigger (Chrome Android) + fallback setTimeout
 // 100% locale, nessun server
 
-const CACHE_NAME = 'promemoriamio-v81';
+const CACHE_NAME = 'promemoriamio-v83';
 const ASSETS = ['./index.html', './manifest.json'];
 
 // Feature detection: TimestampTrigger disponibile su Chrome Android
