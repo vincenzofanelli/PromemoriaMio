@@ -208,22 +208,25 @@ function scheduleAllNotifications() {
     });
   });
 
-  // Log diagnostico — rimuovere in produzione
-  console.log('[PMM] Notifiche schedulate:', notifiche.map(n => ({
-    tag: n.tag,
-    title: n.title,
-    body: n.body,
-    tra: Math.round((n.timestamp - Date.now()) / 60000) + ' min'
-  })));
-
-  // Manda la lista al service worker
-  navigator.serviceWorker.controller.postMessage({
-    tipo: 'SCHEDULE_NOTIFICHE',
-    notifiche
+  // Invia ogni notifica singolarmente al SW (SCHEDULE_NOTIFICA, singolare)
+  notifiche.forEach(n => {
+    navigator.serviceWorker.controller.postMessage({
+      tipo: 'SCHEDULE_NOTIFICA',
+      notifica: n
+    });
   });
 }
 
-
+// Cancella nel SW tutte le notifiche di un evento (da chiamare prima di re-schedularle)
+function cancellaNotificheEvento(ev) {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+  const notifiche = ev.notifiche || [];
+  notifiche.forEach((n, ni) => {
+    const nId = n.id || (ev.id + '_' + ni);
+    const tag = ev.id + '_' + nId;
+    navigator.serviceWorker.controller.postMessage({ tipo: 'CANCEL_NOTIFICA', tag });
+  });
+}
 
 // Quando l'utente torna all'app (tocca la notifica o riapre), suona se c'è un pending
 document.addEventListener('visibilitychange', () => {
@@ -4044,6 +4047,7 @@ function eliminaEvento(id) {
   const eventi = leggiEventi();
   const idx = eventi.findIndex(e => e.id === id);
   if (idx === -1) return;
+  cancellaNotificheEvento(eventi[idx]);  // cancella notifiche nel SW
   _undoElimina = { ev: eventi[idx], idx };
   eventi.splice(idx, 1);
   salvaEventiLS(eventi);
@@ -4220,6 +4224,7 @@ function salvaEvento(cat) {
   if (eventoInModifica) {
     const idx = eventi.findIndex(e => e.id === eventoInModifica);
     if (idx !== -1) {
+      cancellaNotificheEvento(eventi[idx]);  // cancella vecchie notifiche nel SW
       eventi[idx].extra = extra;
       eventi[idx].notifiche = notifStati[cat] ? [...notifStati[cat]] : [];
     }

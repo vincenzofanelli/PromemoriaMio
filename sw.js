@@ -1,21 +1,26 @@
-// PromemoriaMio Service Worker v1.0
-// Gestisce notifiche locali programmate
+// PromemoriaMio Service Worker v1.1
+// Gestisce notifiche locali programmate (una per volta)
 
-const CACHE_NAME = 'promemoriamio-v61';
+const CACHE_NAME = 'promemoriamio-v62';
 const ASSETS = ['./index.html', './manifest.json'];
 
 // ── IndexedDB helper ──────────────────────────────────────────────────────────
-// Usata per persistere le notifiche schedulate: se lo SW viene terminato
-// e poi risvegliato, le notifiche vengono ri-idratate da qui.
 const IDB_NAME    = 'promemoriamio-sw';
-const IDB_VERSION = 1;
+const IDB_VERSION = 2;
 const IDB_STORE   = 'notifiche';
+const IDB_FIRED   = 'fired';
 
 function apriDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(IDB_NAME, IDB_VERSION);
     req.onupgradeneeded = e => {
-      e.target.result.createObjectStore(IDB_STORE, { keyPath: 'tag' });
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: 'tag' });
+      }
+      if (!db.objectStoreNames.contains(IDB_FIRED)) {
+        db.createObjectStore(IDB_FIRED, { keyPath: 'tag' });
+      }
     };
     req.onsuccess = e => resolve(e.target.result);
     req.onerror   = e => reject(e.target.error);
@@ -65,24 +70,61 @@ async function idbLeggiTutte() {
   }
 }
 
-async function idbSvuota() {
+// ── Store "fired": traccia i tag già scattati ────────────────────────────────
+async function idbFiredAggiungi(tag) {
   try {
     const db = await apriDB();
     return new Promise((resolve, reject) => {
-      const tx  = db.transaction(IDB_STORE, 'readwrite');
-      const req = tx.objectStore(IDB_STORE).clear();
-      req.onsuccess = () => resolve();
+      const tx  = db.transaction(IDB_FIRED, 'readwrite');
+      tx.objectStore(IDB_FIRED).put({ tag, firedAt: Date.now() });
+      tx.oncomplete = () => resolve();
+      tx.onerror   = e => reject(e.target.error);
+    });
+  } catch (err) {
+    console.warn('[SW] idbFiredAggiungi error:', err);
+  }
+}
+
+async function idbFiredContiene(tag) {
+  try {
+    const db = await apriDB();
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(IDB_FIRED, 'readonly');
+      const req = tx.objectStore(IDB_FIRED).get(tag);
+      req.onsuccess = () => resolve(!!req.result);
       req.onerror   = e => reject(e.target.error);
     });
   } catch (err) {
-    console.warn('[SW] idbSvuota error:', err);
+    console.warn('[SW] idbFiredContiene error:', err);
+    return false;
+  }
+}
+
+async function idbFiredPulisci() {
+  // Rimuove voci fired > 7 giorni
+  try {
+    const db = await apriDB();
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(IDB_FIRED, 'readwrite');
+      const store = tx.objectStore(IDB_FIRED);
+      const req = store.getAll();
+      req.onsuccess = e => {
+        const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        (e.target.result || []).forEach(v => {
+          if (v.firedAt < cutoff) store.delete(v.tag);
+        });
+        tx.oncomplete = () => resolve();
+        tx.onerror   = err => reject(err);
+      };
+      req.onerror = e => reject(e.target.error);
+    });
+  } catch (err) {
+    console.warn('[SW] idbFiredPulisci error:', err);
   }
 }
 
 // ── Install ───────────────────────────────────────────────────────────────────
 self.addEventListener('install', e => {
-  // NON skipWaiting qui — vogliamo che il nuovo SW resti in "waiting"
-  // così la pagina mostra il banner giallo e l'utente sceglie quando aggiornare
   e.waitUntil(
     caches.open(CACHE_NAME).then(c => c.addAll(ASSETS).catch(() => {}))
   );
@@ -96,11 +138,12 @@ self.addEventListener('activate', e => {
         Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
       )
       .then(() => self.clients.claim())
-      .then(() => ripristinaTimer())  // re-idrata notifiche dopo kill SW
+      .then(() => ripristinaTimer())
+      .then(() => idbFiredPulisci())
   );
 });
 
-// ── Fetch (cache-first per assets, network-first per richieste esterne) ───────
+// ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
@@ -121,22 +164,27 @@ function cancellaTimer(tag) {
     clearTimeout(timers.get(tag));
     timers.delete(tag);
   }
-  idbElimina(tag);  // rimuovi dalla persistenza
+  idbElimina(tag);
 }
 
-function programmaNotifica({ tag, title, body, timestamp }) {
+async function programmaNotifica({ tag, title, body, timestamp }) {
+  // Guard: se è già scattata, non ri-schedulare
+  if (await idbFiredContiene(tag)) {
+    console.log('[SW] programmaNotifica: tag', tag, 'già fired — skip');
+    return;
+  }
+
   cancellaTimer(tag);
   const delay = timestamp - Date.now();
-  console.log('[SW] programmaNotifica:', tag, 'delay ms:', delay, 'tra:', Math.round(delay/60000) + ' min');
+  console.log('[SW] programmaNotifica:', tag, 'delay ms:', delay, 'tra:', Math.round(delay / 60000) + ' min');
   if (delay <= 0) return;
 
-  // Persisti prima di settare il timer: se lo SW viene killato
-  // e risvegliato, ripristinaTimer() rilegerà da IDB
-  idbSalva({ tag, title, body, timestamp });
+  await idbSalva({ tag, title, body, timestamp });
 
   const id = setTimeout(async () => {
     timers.delete(tag);
-    idbElimina(tag);  // notifica scattata: rimuovi dalla persistenza
+    await idbElimina(tag);
+    await idbFiredAggiungi(tag);
     try {
       await self.registration.showNotification(title || 'PromemoriaMio', {
         body: body || 'Hai un impegno in programma',
@@ -156,20 +204,18 @@ function programmaNotifica({ tag, title, body, timestamp }) {
   timers.set(tag, id);
 }
 
-// Richiamata al wake-up dello SW: rilegge IDB e re-schedula i timer pendenti
+// Safety net: al wake-up dello SW, ri-schedula solo i timer pendenti
 async function ripristinaTimer() {
   const pendenti = await idbLeggiTutte();
-  console.log('[SW] ripristinaTimer — trovate in IDB:', pendenti.map(n => ({
-    tag: n.tag, timestamp: n.timestamp, tra: Math.round((n.timestamp - Date.now()) / 60000) + ' min'
-  })));
-  pendenti.forEach(n => {
-    if (n.timestamp > Date.now()) {
-      // programmaNotifica salverebbe di nuovo su IDB — evitiamo lo scrivi ridondante
-      // settando direttamente il timer (già in IDB)
+  console.log('[SW] ripristinaTimer — pendenti in IDB:', pendenti.length);
+
+  for (const n of pendenti) {
+    if (n.timestamp > Date.now() && !(await idbFiredContiene(n.tag))) {
       const delay = n.timestamp - Date.now();
       const id = setTimeout(async () => {
         timers.delete(n.tag);
-        idbElimina(n.tag);
+        await idbElimina(n.tag);
+        await idbFiredAggiungi(n.tag);
         try {
           await self.registration.showNotification(n.title || 'PromemoriaMio', {
             body: n.body || 'Hai un impegno in programma',
@@ -187,10 +233,9 @@ async function ripristinaTimer() {
       }, delay);
       timers.set(n.tag, id);
     } else {
-      // Timestamp già passato: pulizia
-      idbElimina(n.tag);
+      await idbElimina(n.tag);
     }
-  });
+  }
 }
 
 // ── Message handler ───────────────────────────────────────────────────────────
@@ -199,20 +244,17 @@ self.addEventListener('message', e => {
   if (!msg || !msg.tipo) return;
 
   switch (msg.tipo) {
-    case 'SCHEDULE_NOTIFICHE': {
-      // Cancella tutti i timer in memoria e svuota IDB, poi ri-schedula
-      for (const [tag] of timers) cancellaTimer(tag);
-      idbSvuota().then(() => {
-        const lista = Array.isArray(msg.notifiche) ? msg.notifiche : [];
-        lista.forEach(n => {
-          if (n.tag && n.title && n.timestamp) programmaNotifica(n);
-        });
-      });
+    case 'SCHEDULE_NOTIFICA': {
+      const n = msg.notifica;
+      if (n && n.tag && n.timestamp) {
+        programmaNotifica(n).catch(err => console.warn('[SW] SCHEDULE_NOTIFICA error:', err));
+      }
       break;
     }
     case 'CANCEL_NOTIFICA': {
       if (msg.tag) {
         cancellaTimer(msg.tag);
+        idbElimina(msg.tag);
         self.registration.getNotifications({ tag: msg.tag })
           .then(ns => ns.forEach(n => n.close()));
       }
@@ -245,4 +287,4 @@ self.addEventListener('notificationclick', e => {
       }
     })
   );
-});
+});   
