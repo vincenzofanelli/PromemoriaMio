@@ -100,6 +100,20 @@ async function idbFiredContiene(tag) {
   }
 }
 
+async function idbFiredElimina(tag) {
+  try {
+    const db = await apriDB();
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(IDB_FIRED, 'readwrite');
+      const req = tx.objectStore(IDB_FIRED).delete(tag);
+      req.onsuccess = () => resolve();
+      req.onerror   = e => reject(e.target.error);
+    });
+  } catch (err) {
+    console.warn('[SW] idbFiredElimina error:', err);
+  }
+}
+
 async function idbFiredPulisci() {
   // Rimuove voci fired > 7 giorni
   try {
@@ -128,6 +142,7 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(c => c.addAll(ASSETS).catch(() => {}))
   );
+  self.skipWaiting();  // forza attivazione immediata senza aspettare chiusura tab
 });
 
 // ── Activate ──────────────────────────────────────────────────────────────────
@@ -165,6 +180,7 @@ function cancellaTimer(tag) {
     timers.delete(tag);
   }
   idbElimina(tag);
+  idbFiredElimina(tag);  // permette la ri-schedulazione se l'evento viene modificato
 }
 
 async function programmaNotifica({ tag, title, body, timestamp }) {
@@ -253,8 +269,7 @@ self.addEventListener('message', e => {
     }
     case 'CANCEL_NOTIFICA': {
       if (msg.tag) {
-        cancellaTimer(msg.tag);
-        idbElimina(msg.tag);
+        cancellaTimer(msg.tag);  // cancella timer, IDB notifiche e IDB fired
         self.registration.getNotifications({ tag: msg.tag })
           .then(ns => ns.forEach(n => n.close()));
       }
