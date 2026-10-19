@@ -189,16 +189,21 @@ function scheduleAllNotifications() {
     const extra = ev.extra || {};
     const dataStr = extra.data || extra.dataInizio;
     if (!dataStr) return;
-    const dataEvt = new Date(dataStr);
+    const dataEvt = new Date(dataStr + 'T00:00:00');  // ora locale, non UTC
     const stati = ev.notifiche || [];
 
     stati.forEach((n, ni) => {
       if (!n.on) return;
-      if (isNaN(dataEvt.getTime())) return; // data non valida
-      // Calcola timestamp notifica
-      let ts = calcolaTimestampNotifica(n.desc, dataEvt, n.time);
-      if (!ts || isNaN(ts) || ts <= ora) return;
-      const nId = n.id || (ev.id + '_' + ni); // fallback se id mancante
+      // Usa il timestamp pre-calcolato al salvataggio; fallback al calcolo dinamico
+      const ts = (n.timestamp && n.timestamp > ora)
+        ? n.timestamp
+        : (() => {
+            if (isNaN(dataEvt.getTime())) return null;
+            const t = calcolaTimestampNotifica(n.desc, dataEvt, n.time);
+            return (t && t > ora) ? t : null;
+          })();
+      if (!ts) return;
+      const nId = n.id || (ev.id + '_' + ni);
       notifiche.push({
         timestamp: ts,
         title: (extra.titolo || extra.tipo || extra.nome || 'Impegno'),
@@ -208,12 +213,22 @@ function scheduleAllNotifications() {
     });
   });
 
-  // Invia ogni notifica singolarmente al SW (SCHEDULE_NOTIFICA, singolare)
-  notifiche.forEach(n => {
-    navigator.serviceWorker.controller.postMessage({
-      tipo: 'SCHEDULE_NOTIFICA',
-      notifica: n
-    });
+  // Invia lista completa al SW che fa reset + ri-schedula in modo atomico
+  navigator.serviceWorker.controller.postMessage({
+    tipo: 'SCHEDULE_NOTIFICHE',
+    notifiche
+  });
+}
+
+// Calcola e salva il timestamp in ogni notifica dell'evento (chiamare prima di salvaEventiLS)
+function calcolaEsalvaTimestamp(ev) {
+  const extra = ev.extra || {};
+  const dataStr = extra.data || extra.dataInizio;
+  if (!dataStr) return;
+  const dataEvt = new Date(dataStr + 'T00:00:00');  // forza ora locale, evita UTC midnight
+  if (isNaN(dataEvt.getTime())) return;
+  (ev.notifiche || []).forEach(n => {
+    n.timestamp = calcolaTimestampNotifica(n.desc, dataEvt, n.time) || null;
   });
 }
 
@@ -4227,6 +4242,7 @@ function salvaEvento(cat) {
       cancellaNotificheEvento(eventi[idx]);  // cancella vecchie notifiche nel SW
       eventi[idx].extra = extra;
       eventi[idx].notifiche = notifStati[cat] ? [...notifStati[cat]] : [];
+      calcolaEsalvaTimestamp(eventi[idx]);   // calcola e salva timestamp in ogni notifica
     }
     showToast('Impegno aggiornato ✓');
   } else {
@@ -4238,6 +4254,7 @@ function salvaEvento(cat) {
       extra,
       notifiche: notifStati[cat] ? [...notifStati[cat]] : [],
     };
+    calcolaEsalvaTimestamp(nuovoEv);         // calcola e salva timestamp in ogni notifica
     eventi.unshift(nuovoEv);
     showToast('Impegno salvato ✓');
   }

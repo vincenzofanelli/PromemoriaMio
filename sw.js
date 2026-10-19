@@ -260,11 +260,29 @@ self.addEventListener('message', e => {
   if (!msg || !msg.tipo) return;
 
   switch (msg.tipo) {
-    case 'SCHEDULE_NOTIFICA': {
-      const n = msg.notifica;
-      if (n && n.tag && n.timestamp) {
-        programmaNotifica(n).catch(err => console.warn('[SW] SCHEDULE_NOTIFICA error:', err));
+    case 'SCHEDULE_NOTIFICHE': {
+      // Reset completo: cancella timer in memoria + entrambi gli store IDB, poi ri-schedula
+      for (const [tag, id] of [...timers.entries()]) {
+        clearTimeout(id);
+        timers.delete(tag);
       }
+      Promise.all([
+        idbSvuota(),
+        (async () => {
+          const db = await apriDB();
+          return new Promise((res, rej) => {
+            const tx = db.transaction(IDB_FIRED, 'readwrite');
+            tx.objectStore(IDB_FIRED).clear();
+            tx.oncomplete = res;
+            tx.onerror = e => rej(e.target.error);
+          });
+        })()
+      ]).then(() => {
+        const lista = Array.isArray(msg.notifiche) ? msg.notifiche : [];
+        lista.forEach(n => {
+          if (n.tag && n.title && n.timestamp) programmaNotifica(n);
+        });
+      }).catch(err => console.warn('[SW] SCHEDULE_NOTIFICHE error:', err));
       break;
     }
     case 'CANCEL_NOTIFICA': {
