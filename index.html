@@ -2504,7 +2504,7 @@ body {
     <div class="form-wrap">
       <div class="form-group">
         <label>Tipo evento <span style="color:var(--col-scaduto)">*</span></label>
-        <select id="ricorrenze-tipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px">
+        <select id="ricorrenze-tipo" onchange="aggiornaFreqRicorrenza()" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px">
           <option value="">— Seleziona tipo —</option>
           <option value="Anniversario">Anniversario</option>
           <option value="Battesimo">Battesimo</option>
@@ -2534,7 +2534,7 @@ body {
         <label>Note (opzionale)</label>
         <textarea id="ricorrenze-note" placeholder="Informazioni aggiuntive…"></textarea>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="ricorrenze-freq-wrap">
         <label>Frequenza</label>
         <select id="ricorrenze-freq" onchange="toggleAnticipo('ricorrenze')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessuna (evento singolo)</option>
@@ -4281,6 +4281,7 @@ function caricaFormEvento(ev) {
   } else if (cat === 'ricorrenze') {
     const selTipo = document.getElementById('ricorrenze-tipo'); if (selTipo) selTipo.value = e.tipo || '';
     set('ricorrenze-nome', e.nome);
+    aggiornaFreqRicorrenza();
   } else if (cat === 'documenti') {
     set('documenti-tipo', e.tipo);
   } else if (cat === 'auto') {
@@ -4446,6 +4447,11 @@ function resetForm(cat) {
     if (btn) btn.classList.remove('filled');
   });
   delete notifStati[cat]; // forza reinit defaults al prossimo accesso
+  // Reset ricorrenze: ripristina visibilità campo frequenza
+  if (cat === 'ricorrenze') {
+    const freqWrap = document.getElementById('ricorrenze-freq-wrap');
+    if (freqWrap) freqWrap.style.display = '';
+  }
   // Reset campi speciali farmaci
   if (cat === 'farmaci') {
     const orariWrap = document.getElementById('orari-wrap');
@@ -5246,6 +5252,23 @@ function renderConti() {
 }
 
 // ── Frequenza: mostra/nascondi anticipo ──────────────────────────────────────
+// Tipi ricorrenza con frequenza annuale implicita
+const RICORRENZE_ANNUALI = new Set(['Anniversario', 'Compleanno', 'Onomastico']);
+
+function aggiornaFreqRicorrenza() {
+  const tipo = document.getElementById('ricorrenze-tipo');
+  const freqSel = document.getElementById('ricorrenze-freq');
+  const freqWrap = document.getElementById('ricorrenze-freq-wrap');
+  if (!tipo || !freqSel || !freqWrap) return;
+  if (RICORRENZE_ANNUALI.has(tipo.value)) {
+    freqSel.value = 'annuale';
+    freqWrap.style.display = 'none';
+  } else {
+    freqWrap.style.display = '';
+  }
+  toggleAnticipo('ricorrenze');
+}
+
 function toggleAnticipo(cat) {
   const sel = document.getElementById(cat + '-freq');
   const wrap = document.getElementById(cat + '-anticipo-wrap');
