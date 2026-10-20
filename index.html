@@ -53,21 +53,6 @@ if ('serviceWorker' in navigator) {
 // BENVENUTO + PWA + NOTIFICHE LOCALI
 // ============================================================
 
-let _deferredInstallPrompt = null;
-
-window.addEventListener('beforeinstallprompt', e => {
-  _deferredInstallPrompt = e;
-  document.getElementById('install-box').style.display = '';
-});
-
-function installPWA() {
-  if (!_deferredInstallPrompt) return;
-  _deferredInstallPrompt.prompt();
-  _deferredInstallPrompt.userChoice.then(() => {
-    _deferredInstallPrompt = null;
-    document.getElementById('install-box').style.display = 'none';
-  });
-}
 
 function ripristinaFreqBackup() {
   const salvato = localStorage.getItem('promemoriamio_backup_freq');
@@ -127,49 +112,7 @@ function setUtility(mode) {
   }
 }
 
-function rilevaTipoDispositivo() {
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-  const isAndroid = /Android/.test(ua);
-  const isChrome = /Chrome/.test(ua) && !/Edg|OPR/.test(ua);
-  return { isIOS, isAndroid, isChrome };
-}
 
-function inizializzaBenvenuto() {
-  const { isIOS, isAndroid, isChrome } = rilevaTipoDispositivo();
-  const icon = document.getElementById('notif-compat-icon');
-  const title = document.getElementById('notif-compat-title');
-  const msg = document.getElementById('notif-compat-msg');
-
-  if (isIOS) {
-    icon.textContent = '🍎';
-    title.textContent = 'iPhone / iPad rilevato';
-    msg.innerHTML = "Su iOS le notifiche funzionano <strong>solo con l'app aperta</strong>.<br><br>"
-      + "Per la migliore esperienza: tocca <strong>Condividi → Aggiungi a schermata Home</strong> in Safari.";
-  } else if (isAndroid && isChrome) {
-    icon.textContent = '🔔';
-    title.textContent = 'Notifiche complete disponibili';
-    msg.innerHTML = 'Su Android con Chrome puoi ricevere notifiche <strong>anche con il telefono in standby</strong>.<br><br>'
-      + "Installa l'app per attivare le notifiche.";
-  } else {
-    icon.textContent = '⚠️';
-    title.textContent = 'Browser non ottimale';
-    msg.innerHTML = 'Per le notifiche usa <strong>Chrome su Android</strong>.<br>'
-      + "Su altri browser le notifiche funzionano solo con l'app aperta.";
-  }
-}
-
-function avviaApp() {
-  // Chiedi permesso notifiche se disponibile
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission().then(perm => {
-      console.log('Permesso notifiche:', perm);
-      scheduleAllNotifications();
-    });
-  }
-  localStorage.setItem('agendamia_onboarding_done', '1');
-  goTo('home');
-}
 
 // ============================================================
 // SCHEDULING NOTIFICHE
@@ -1856,37 +1799,6 @@ body {
 </style>
 
 
-<!-- ============================================================
-     SCHERMATA BENVENUTO (primo avvio)
-     ============================================================ -->
-<div class="screen hidden" id="screen-benvenuto" style="justify-content:center;align-items:center;padding:32px 24px;text-align:center">
-  <div style="font-size:3.5rem;margin-bottom:16px">📅</div>
-  <h1 style="font-size:1.6rem;font-weight:800;color:var(--fg);margin-bottom:8px">PromemoriaMio</h1>
-  <p style="font-size:0.95rem;color:var(--fg-2);margin-bottom:32px;line-height:1.5">
-    Il tuo agenda personale,<br>tutto sul tuo telefono.
-  </p>
-
-  <!-- Box compatibilità notifiche -->
-  <div id="notif-compat-box" style="width:100%;background:var(--bg-card);border-radius:16px;padding:20px;margin-bottom:28px;text-align:left;border:1.5px solid var(--border)">
-    <div style="font-size:1.2rem;margin-bottom:8px" id="notif-compat-icon">⏳</div>
-    <div style="font-size:0.92rem;font-weight:700;color:var(--fg);margin-bottom:6px" id="notif-compat-title">Controllo dispositivo…</div>
-    <div style="font-size:0.84rem;color:var(--fg-2);line-height:1.5" id="notif-compat-msg"></div>
-  </div>
-
-  <!-- Pulsante installazione (Android Chrome) -->
-  <div id="install-box" style="display:none;width:100%;margin-bottom:16px">
-    <button id="btn-install-pwa" onclick="installPWA()"
-      style="width:100%;padding:15px;background:var(--accent);color:#fff;border:none;border-radius:14px;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:10px">
-      📲 Installa PromemoriaMio
-    </button>
-    <p style="font-size:0.78rem;color:var(--fg-3)">Installando l'app riceverai le notifiche anche con il telefono in standby.</p>
-  </div>
-
-  <button onclick="avviaApp()"
-    style="width:100%;padding:15px;background:var(--accent);color:#fff;border:none;border-radius:14px;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer">
-    Inizia →
-  </button>
-</div>
 
 <!-- ============================================================
      HOME SCREEN
@@ -3272,7 +3184,6 @@ body {
 <script>
 const screens = {
   home:                 'screen-home',
-  benvenuto:            'screen-benvenuto',
   nuovo:                'screen-nuovo',
   'form-visite':        'screen-form-visite',
   'form-farmaci':       'screen-form-farmaci',
@@ -4987,16 +4898,23 @@ window.addEventListener('popstate', e => {
 history.replaceState({ screen: 'home' }, '');
 
 (function() {
-  // Pulisce eventuali chiavi del vecchio AgendaMe per forzare il benvenuto
-  const chiaveVecchia = 'agendame_onboarding_done';
-  if (localStorage.getItem(chiaveVecchia)) {
-    localStorage.removeItem(chiaveVecchia);
-  }
+  // Vai sempre alla home direttamente, senza schermata di benvenuto.
+  // scheduleAllNotifications viene chiamata dopo che il SW è pronto.
+  goTo('home');
 
-  const primoAvvio = !localStorage.getItem('agendamia_onboarding_done');
-  if (primoAvvio) {
-    inizializzaBenvenuto();
-    goTo('benvenuto');
+  // Chiedi permesso notifiche se non ancora deciso, poi schedula.
+  // Se il permesso è già granted, schedula subito (gestisce reload post-import).
+  if ('Notification' in window) {
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().then(() => scheduleAllNotifications());
+    } else if (Notification.permission === 'granted') {
+      // Aspetta che il SW sia attivo (può servire dopo un reload)
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        scheduleAllNotifications();
+      } else if (navigator.serviceWorker) {
+        navigator.serviceWorker.ready.then(() => scheduleAllNotifications());
+      }
+    }
   }
 })();
 
