@@ -134,7 +134,7 @@ function scheduleAllNotifications() {
   eventi.forEach(ev => {
     if (ev.stato === 'fatto') return;
     const extra = ev.extra || {};
-    const dataStr = extra.data || extra.dataInizio;
+    const dataStr = extra.data;
     if (!dataStr) return;
     const dataEvt = parseDataLocale(dataStr);
     if (isNaN(dataEvt.getTime())) return;
@@ -164,10 +164,7 @@ function scheduleAllNotifications() {
 
       const nId = n.id || (ev.id + '_' + ni);
       const tag = ev.id + '_' + nId;
-      // Per le ricorrenze mostra tipo (Compleanno, Onomastico…) + nome
-      const title = (ev.categoria === 'ricorrenze' && extra.tipo)
-        ? extra.tipo + (extra.nome ? ' di ' + extra.nome : '')
-        : (extra.titolo || extra.tipo || extra.nome || 'Impegno');
+      const title = extra.titolo || 'Impegno';
       const body = n.desc + (n.time ? ' alle ' + n.time : '');
 
       // Mostra notifica immediata via SW (senza showTrigger)
@@ -208,7 +205,7 @@ function parseDataLocale(dataStr) {
 
 function calcolaEsalvaTimestamp(ev) {
   const extra = ev.extra || {};
-  const dataStr = extra.data || extra.dataInizio;
+  const dataStr = extra.data;
   if (!dataStr) return;
   const dataEvt = parseDataLocale(dataStr);
   if (isNaN(dataEvt.getTime())) return;
@@ -2534,15 +2531,6 @@ body {
         <input type="hidden" id="ricorrenze-data" value="">
       </div>
       <div class="form-group">
-        <label>Si ripete ogni anno</label>
-        <div class="notif-block">
-          <div class="toggle-row">
-            <span class="toggle-label">Ricorrenza annuale</span>
-            <button class="toggle on" onclick="this.classList.toggle('on')"></button>
-          </div>
-        </div>
-      </div>
-      <div class="form-group">
         <label>Note (opzionale)</label>
         <textarea id="ricorrenze-note" placeholder="Informazioni aggiuntive…"></textarea>
       </div>
@@ -3836,13 +3824,29 @@ let _eventiMigratiOk = false;
 function leggiEventi() {
   try {
     const ev = JSON.parse(localStorage.getItem(LS_EVENTI)) || [];
-    // Migrazione una-tantum: assegna id alle notifiche prive di id (eventi creati con versioni vecchie)
     if (!_eventiMigratiOk) {
       let modif = false;
       ev.forEach(e => {
+        // Migrazione 1: assegna id alle notifiche prive di id
         if (Array.isArray(e.notifiche)) {
           e.notifiche.forEach((n, i) => { if (!n.id) { n.id = e.id + '_n' + i; modif = true; } });
         }
+        // Migrazione 2: normalizza extra — porta tutto a campi canonici
+        const x = e.extra || {};
+        // dataInizio → data
+        if (!x.data && x.dataInizio) { x.data = x.dataInizio; delete x.dataInizio; modif = true; }
+        // ricorrenze: costruisci titolo canonico se mancante
+        if (e.categoria === 'ricorrenze' && !x.titolo) {
+          x.titolo = (x.tipo && x.nome) ? x.tipo + ' di ' + x.nome
+                   : x.nome || x.tipo || 'Ricorrenza';
+          modif = true;
+        }
+        // farmaci: nome → titolo
+        if (e.categoria === 'farmaci' && !x.titolo && x.nome) { x.titolo = x.nome; modif = true; }
+        // fallback generico: titolo da tipo se mancante
+        if (!x.titolo && x.tipo) { x.titolo = x.tipo; modif = true; }
+        if (!x.titolo) { x.titolo = '—'; modif = true; }
+        e.extra = x;
       });
       if (modif) {
         try { localStorage.setItem(LS_EVENTI, JSON.stringify(ev)); } catch {}
@@ -3860,8 +3864,7 @@ function salvaEventiLS(eventi) {
 
 // Restituisce la "data principale" di un evento come stringa ISO yyyy-mm-dd o datetime
 function dataEvento(ev) {
-  const extra = ev.extra || {};
-  return extra.data || extra.dataInizio || null;
+  return (ev.extra || {}).data || null;
 }
 
 // Classifica temporale dell'evento
@@ -3907,8 +3910,7 @@ function fmtDataEvento(ev) {
 }
 
 function titoloCarta(ev) {
-  const e = ev.extra || {};
-  return e.titolo || e.tipo || e.nome || '—';
+  return (ev.extra || {}).titolo || '—';
 }
 
 // ── Backup banner ─────────────────────────────────────────────────────────────
@@ -4266,27 +4268,34 @@ function caricaFormEvento(ev) {
     if (btn) markFilled(btn.id);
   };
 
+  // Campi comuni a tutte le categorie
+  const isDatetime = (cat === 'visite' || cat === 'generico' || cat === 'lavoro');
+  setDate(cat + '-data', e.data, isDatetime);
+  set(cat + '-note', e.note);
+
+  // Campi specifici per categoria
   if (cat === 'visite') {
-    set('visite-tipo', e.tipo); setDate('visite-data', e.data, true); set('visite-luogo', e.luogo); set('visite-note', e.note);
+    set('visite-tipo', e.tipo); set('visite-luogo', e.luogo);
   } else if (cat === 'farmaci') {
-    set('farmaco-nome', e.nome); setDate('farmaci-data', e.data, false);
+    set('farmaco-nome', e.nome);
   } else if (cat === 'ricorrenze') {
     const selTipo = document.getElementById('ricorrenze-tipo'); if (selTipo) selTipo.value = e.tipo || '';
-    set('ricorrenze-nome', e.nome); setDate('ricorrenze-data', e.data, false); set('ricorrenze-note', e.note);
+    set('ricorrenze-nome', e.nome);
   } else if (cat === 'documenti') {
-    set('documenti-tipo', e.tipo); setDate('documenti-data', e.data, false); set('documenti-note', e.note);
+    set('documenti-tipo', e.tipo);
   } else if (cat === 'auto') {
-    set('auto-tipo', e.tipo); setDate('auto-data', e.data, false); set('auto-note', e.note);
+    set('auto-tipo', e.tipo);
   } else if (cat === 'generico') {
-    set('generico-titolo', e.titolo); setDate('generico-data', e.data, true); set('generico-luogo', e.luogo); set('generico-note', e.note);
+    set('generico-titolo', e.titolo); set('generico-luogo', e.luogo);
   } else if (cat === 'acquisti') {
-    set('acquisti-titolo', e.titolo); setDate('acquisti-data', e.data, false); set('acquisti-note', e.note);
+    set('acquisti-titolo', e.titolo);
   } else if (cat === 'lavoro') {
-    set('lavoro-tipo', e.tipo); set('lavoro-titolo', e.titolo); setDate('lavoro-data', e.data, true); set('lavoro-luogo', e.luogo); set('lavoro-note', e.note);
+    set('lavoro-tipo', e.tipo); set('lavoro-titolo', e.titolo); set('lavoro-luogo', e.luogo);
   } else if (cat === 'condominio') {
     const selTipo = document.getElementById('condominio-tipo'); if (selTipo) selTipo.value = e.tipo || '';
-    set('condominio-titolo', e.titolo); setDate('condominio-data', e.data, false); set('condominio-importo', e.importo); set('condominio-note', e.note);
+    set('condominio-titolo', e.titolo); set('condominio-importo', e.importo);
   }
+
   // Frequenza e anticipo (tutti i form)
   const selFreq = document.getElementById(cat + '-freq');
   if (selFreq) { selFreq.value = e.freq || ''; toggleAnticipo(cat); }
@@ -4295,19 +4304,54 @@ function caricaFormEvento(ev) {
 }
 
 function raccogliCampiEvento(cat) {
-  const val = id => { const el = document.getElementById(id); return el != null ? el.value : ''; };
-  const freq = () => val(cat + '-freq');
+  const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const freq     = () => val(cat + '-freq');
   const anticipo = () => freq() ? val(cat + '-anticipo') : '';
-  if (cat === 'visite')      return { titolo: val('visite-tipo') || 'Visita medica', tipo: val('visite-tipo'), data: val('visite-data'), luogo: val('visite-luogo'), note: val('visite-note'), freq: freq(), anticipo: anticipo() };
-  if (cat === 'farmaci')     return { titolo: val('farmaco-nome') || 'Farmaco', nome: val('farmaco-nome'), data: val('farmaci-data'), freq: freq(), anticipo: anticipo() };
-  if (cat === 'ricorrenze')  { const _tn = val('ricorrenze-tipo'); const _nn = val('ricorrenze-nome'); return { titolo: _nn || _tn || 'Ricorrenza', tipo: _tn, nome: _nn, data: val('ricorrenze-data'), note: val('ricorrenze-note'), freq: freq(), anticipo: anticipo() }; }
-  if (cat === 'documenti')   return { titolo: val('documenti-tipo') || 'Documento', tipo: val('documenti-tipo'), data: val('documenti-data'), note: val('documenti-note'), freq: freq(), anticipo: anticipo() };
-  if (cat === 'auto')        return { titolo: val('auto-tipo') || 'Auto', tipo: val('auto-tipo'), data: val('auto-data'), note: val('auto-note'), freq: freq(), anticipo: anticipo() };
-  if (cat === 'generico')    return { titolo: val('generico-titolo') || 'Impegno', data: val('generico-data'), luogo: val('generico-luogo'), note: val('generico-note'), freq: freq(), anticipo: anticipo() };
-  if (cat === 'acquisti')    return { titolo: val('acquisti-titolo') || 'Acquisto', data: val('acquisti-data'), note: val('acquisti-note'), freq: freq(), anticipo: anticipo() };
-  if (cat === 'lavoro')      return { titolo: val('lavoro-titolo') || val('lavoro-tipo') || 'Lavoro', tipo: val('lavoro-tipo'), data: val('lavoro-data'), luogo: val('lavoro-luogo'), note: val('lavoro-note'), freq: freq(), anticipo: anticipo() };
-  if (cat === 'condominio')  return { titolo: val('condominio-titolo') || val('condominio-tipo') || 'Condominio', tipo: val('condominio-tipo'), data: val('condominio-data'), importo: val('condominio-importo'), note: val('condominio-note'), freq: freq(), anticipo: anticipo() };
-  return {};
+  const data     = () => val(cat + '-data');
+  const note     = () => val(cat + '-note');
+  const tipo     = () => val(cat + '-tipo');
+  const luogo    = () => val(cat + '-luogo');
+
+  // Campi extra specifici per categoria
+  let titolo = '', extra = {};
+  if (cat === 'visite') {
+    titolo = tipo() || 'Visita medica';
+    extra  = { tipo: tipo(), luogo: luogo() };
+  } else if (cat === 'farmaci') {
+    const nome = val('farmaco-nome');
+    titolo = nome || 'Farmaco';
+    extra  = { nome };
+  } else if (cat === 'ricorrenze') {
+    const _tipo = tipo(), _nome = val('ricorrenze-nome');
+    titolo = (_tipo && _nome) ? _tipo + ' di ' + _nome : _nome || _tipo || 'Ricorrenza';
+    extra  = { tipo: _tipo, nome: _nome };
+  } else if (cat === 'documenti') {
+    titolo = tipo() || 'Documento';
+    extra  = { tipo: tipo() };
+  } else if (cat === 'auto') {
+    titolo = tipo() || 'Auto';
+    extra  = { tipo: tipo() };
+  } else if (cat === 'generico') {
+    titolo = val('generico-titolo') || 'Impegno';
+    extra  = { luogo: luogo() };
+  } else if (cat === 'acquisti') {
+    titolo = val('acquisti-titolo') || 'Acquisto';
+  } else if (cat === 'lavoro') {
+    titolo = val('lavoro-titolo') || tipo() || 'Lavoro';
+    extra  = { tipo: tipo(), luogo: luogo() };
+  } else if (cat === 'condominio') {
+    titolo = val('condominio-titolo') || tipo() || 'Condominio';
+    extra  = { tipo: tipo(), importo: val('condominio-importo') };
+  }
+
+  return {
+    titolo,
+    data:     data(),
+    note:     note(),
+    freq:     freq(),
+    anticipo: anticipo(),
+    ...extra,
+  };
 }
 
 function salvaEvento(cat) {
