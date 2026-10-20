@@ -4052,7 +4052,7 @@ function renderPannelloGiornata() {
         }
         const fatto = ev.stato === 'fatto';
         const titolo = escHtml(titoloCarta(ev));
-        const badge  = escHtml(CAT_LABELS[ev.categoria] || ev.categoria);
+        const badge  = escHtml((ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo) ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria));
         h += `<div class="pannello-giornata-row" onclick="apriEvento('${ev.id}')" style="${fatto ? 'opacity:0.55' : ''}">
           <span class="pannello-giornata-ora">${oraStr}</span>
           <span class="pannello-giornata-titolo" style="${fatto ? 'text-decoration:line-through' : ''}">${titolo}</span>
