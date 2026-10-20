@@ -2,11 +2,12 @@
 // Notifiche schedulate con TimestampTrigger (Chrome Android) + fallback setTimeout
 // 100% locale, nessun server
 
-const CACHE_NAME = 'promemoriamio-v83';
+const CACHE_NAME = 'promemoriamio-v84';
 const ASSETS = ['./index.html', './manifest.json'];
 
-// Feature detection: TimestampTrigger disponibile su Chrome Android
-const HAS_TIMESTAMP_TRIGGER = typeof TimestampTrigger !== 'undefined';
+// TimestampTrigger rimosso: mostrava tutte le notifiche nel drawer subito.
+// Ora le notifiche vengono mostrate immediatamente al momento della chiamata (entro 48h).
+const HAS_TIMESTAMP_TRIGGER = false;
 
 // ── IndexedDB ─────────────────────────────────────────────────────────────────
 const IDB_NAME    = 'promemoriamio-sw';
@@ -176,60 +177,27 @@ function coerceTimestamp(ts) {
 }
 
 // ── Scheduling ────────────────────────────────────────────────────────────────
+// Mostra la notifica immediatamente (l'app filtra già per eventi entro 48h).
 async function programmaNotifica({ tag, title, body, timestamp }) {
   const ts = coerceTimestamp(timestamp);
   if (!ts) {
     console.warn('[SW] timestamp non valido per', tag, ':', timestamp);
     return;
   }
-
-  const delay = ts - Date.now();
-  console.log('[SW] programmaNotifica:', tag, 'tra', Math.round(delay / 60000) + ' min',
-    HAS_TIMESTAMP_TRIGGER ? '(TimestampTrigger)' : '(setTimeout fallback)');
-
-  if (delay <= 0) return;
-
-  await idbSalva({ tag, title, body, timestamp: ts });
-
-  if (HAS_TIMESTAMP_TRIGGER) {
-    // ── Path A: TimestampTrigger — il browser Android gestisce il timing
-    try {
-      await self.registration.showNotification(title || 'PromemoriaMio', {
-        body: body || 'Hai un impegno in programma',
-        tag,
-        icon: './icon-192.png',
-        badge: './icon-192.png',
-        vibrate: [200, 100, 200],
-        renotify: true,
-        requireInteraction: false,
-        showTrigger: new TimestampTrigger(ts),
-        data: { url: './' }
-      });
-    } catch (err) {
-      console.warn('[SW] showNotification (TimestampTrigger) error:', err);
-    }
-  } else {
-    // ── Path B: setTimeout fallback (SW deve rimanere attivo)
-    cancellaTimer(tag);
-    const id = setTimeout(async () => {
-      timers.delete(tag);
-      await idbSegnaFired(tag);
-      try {
-        await self.registration.showNotification(title || 'PromemoriaMio', {
-          body: body || 'Hai un impegno in programma',
-          tag,
-          icon: './icon-192.png',
-          badge: './icon-192.png',
-          vibrate: [200, 100, 200],
-          renotify: true,
-          requireInteraction: false,
-          data: { url: './' }
-        });
-      } catch (err) {
-        console.warn('[SW] showNotification (setTimeout) error:', err);
-      }
-    }, delay);
-    timers.set(tag, id);
+  console.log('[SW] programmaNotifica immediata:', tag);
+  try {
+    await self.registration.showNotification(title || 'PromemoriaMio', {
+      body: body || 'Hai un impegno in programma',
+      tag,
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      vibrate: [200, 100, 200],
+      renotify: true,
+      requireInteraction: false,
+      data: { url: './' }
+    });
+  } catch (err) {
+    console.warn('[SW] showNotification error:', err);
   }
 }
 
@@ -308,6 +276,14 @@ self.addEventListener('message', e => {
               .then(ns => ns.forEach(n => n.close()));
           });
       }
+      break;
+    }
+    case 'CANCEL_FUTURE': {
+      // Rimuove tutte le notifiche schedulate nel drawer (residui vecchie versioni)
+      self.registration.getNotifications({ includeTriggered: true })
+        .then(ns => ns.forEach(n => n.close()))
+        .catch(() => self.registration.getNotifications().then(ns => ns.forEach(n => n.close())));
+      idbSvuota();
       break;
     }
     case 'PING': {

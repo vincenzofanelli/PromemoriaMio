@@ -173,20 +173,16 @@ function avviaApp() {
 // SCHEDULING NOTIFICHE
 // ============================================================
 
+// Mostra notifiche immediate per eventi in scadenza entro 48 ore.
+// Non usa TimestampTrigger (evita notifiche nel drawer in anticipo).
+// Viene chiamata all'apertura dell'app e al salvataggio di un evento.
 let _schedRetries = 0;
 function scheduleAllNotifications() {
-  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
-    // SW non ancora attivo — riprova, ma max 15 volte (~30s) per evitare loop infinito
-    if (++_schedRetries > 15) { console.warn('[PMM] SW controller mai disponibile, rinuncio'); return; }
-    setTimeout(scheduleAllNotifications, 2000);
-    return;
-  }
-  _schedRetries = 0;
   if (Notification.permission !== 'granted') return;
 
   const eventi = leggiEventi ? leggiEventi() : [];
-  const notifiche = [];
   const ora = Date.now();
+  const limite48h = ora + 48 * 60 * 60 * 1000;
 
   eventi.forEach(ev => {
     if (ev.stato === 'fatto') return;
@@ -194,34 +190,41 @@ function scheduleAllNotifications() {
     const dataStr = extra.data || extra.dataInizio;
     if (!dataStr) return;
     const dataEvt = parseDataLocale(dataStr);
+    if (isNaN(dataEvt.getTime())) return;
     const stati = ev.notifiche || [];
 
     stati.forEach((n, ni) => {
       if (!n.on) return;
-      // Usa il timestamp pre-calcolato al salvataggio; fallback al calcolo dinamico
+      // Calcola timestamp della notifica
       const ts = (n.timestamp && n.timestamp > ora)
         ? n.timestamp
         : (() => {
-            if (isNaN(dataEvt.getTime())) return null;
             const t = calcolaTimestampNotifica(n.desc, dataEvt, n.time);
             return (t && t > ora) ? t : null;
           })();
       if (!ts) return;
+      // Mostra solo se la notifica scade entro 48 ore
+      if (ts > limite48h) return;
+
       const nId = n.id || (ev.id + '_' + ni);
-      notifiche.push({
-        timestamp: ts,
-        title: (extra.titolo || extra.tipo || extra.nome || 'Impegno'),
-        body: n.desc + (n.time ? ' alle ' + n.time : ''),
-        tag: ev.id + '_' + nId
-      });
+      const tag = ev.id + '_' + nId;
+      const title = extra.titolo || extra.tipo || extra.nome || 'Impegno';
+      const body = n.desc + (n.time ? ' alle ' + n.time : '');
+
+      // Mostra notifica immediata via SW (senza showTrigger)
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          tipo: 'SCHEDULE_NOTIFICA',
+          notifica: { tag, title, body, timestamp: ts }
+        });
+      }
     });
   });
 
-  // Invia lista completa al SW che fa reset + ri-schedula in modo atomico
-  navigator.serviceWorker.controller.postMessage({
-    tipo: 'SCHEDULE_NOTIFICHE',
-    notifiche
-  });
+  // Cancella nel SW tutte le notifiche schedulate non più pertinenti
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ tipo: 'CANCEL_FUTURE' });
+  }
 }
 
 // Calcola e salva il timestamp in ogni notifica dell'evento (chiamare prima di salvaEventiLS)
@@ -815,9 +818,8 @@ body {
 /* === BANNER BACKUP HOME === */
 .backup-banner {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
   padding: 9px 16px;
   background: var(--bg-card);
   border-top: 1px solid var(--border);
