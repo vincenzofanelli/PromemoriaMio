@@ -41,8 +41,10 @@ if ('serviceWorker' in navigator) {
       })
       .catch(e => console.warn('SW non registrato:', e));
 
-    // Scatta quando il nuovo SW (con skipWaiting) prende il controllo
+    // Scatta quando il nuovo SW (con skipWaiting) prende il controllo.
+    // Ignoriamo l'evento se stiamo già ricaricando la pagina (aggiornaApp).
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (window._reloading) return;
       setUtility('update');
     });
   });
@@ -183,6 +185,8 @@ function scheduleAllNotifications() {
   const eventi = leggiEventi ? leggiEventi() : [];
   const ora = Date.now();
   const limite48h = ora + 48 * 60 * 60 * 1000;
+  // Recuperiamo notifiche di oggi mancate (app non era aperta): finestra di 24h nel passato
+  const finestra24hPassato = ora - 24 * 60 * 60 * 1000;
 
   eventi.forEach(ev => {
     if (ev.stato === 'fatto') return;
@@ -196,19 +200,31 @@ function scheduleAllNotifications() {
     stati.forEach((n, ni) => {
       if (!n.on) return;
       // Calcola timestamp della notifica
-      const ts = (n.timestamp && n.timestamp > ora)
-        ? n.timestamp
-        : (() => {
-            const t = calcolaTimestampNotifica(n.desc, dataEvt, n.time);
-            return (t && t > ora) ? t : null;
-          })();
+      const ts = (() => {
+        // Prima prova il timestamp salvato
+        if (n.timestamp) {
+          // Se è nel futuro: valido
+          if (n.timestamp > ora) return n.timestamp;
+          // Se è nelle ultime 24h: notifica mancata, mostrarla ora
+          if (n.timestamp >= finestra24hPassato) return n.timestamp;
+        }
+        // Ricalcola dal descrittore
+        const t = calcolaTimestampNotifica(n.desc, dataEvt, n.time);
+        if (!t) return null;
+        if (t > ora) return t;
+        if (t >= finestra24hPassato) return t;
+        return null;
+      })();
       if (!ts) return;
-      // Mostra solo se la notifica scade entro 48 ore
+      // Mostra solo se la notifica è entro 48 ore (future o mancate di oggi)
       if (ts > limite48h) return;
 
       const nId = n.id || (ev.id + '_' + ni);
       const tag = ev.id + '_' + nId;
-      const title = extra.titolo || extra.tipo || extra.nome || 'Impegno';
+      // Per le ricorrenze mostra tipo (Compleanno, Onomastico…) + nome
+      const title = (ev.categoria === 'ricorrenze' && extra.tipo)
+        ? extra.tipo + (extra.nome ? ' di ' + extra.nome : '')
+        : (extra.titolo || extra.tipo || extra.nome || 'Impegno');
       const body = n.desc + (n.time ? ' alle ' + n.time : '');
 
       // Mostra notifica immediata via SW (senza showTrigger)
@@ -3242,13 +3258,6 @@ body {
 </div>
 
 <!-- DEBUG PANEL (temporaneo) -->
-<div id="debug-panel" onclick="this.style.display='none'" style="
-  display:none;position:fixed;top:60px;left:8px;right:8px;z-index:9999;
-  background:#1a1a1a;color:#0f0;font:12px/1.5 monospace;
-  padding:12px;border-radius:8px;white-space:pre-wrap;word-break:break-all;
-  max-height:60vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.6)">
-  (tocca per chiudere)
-</div>
 
 <!-- TOAST -->
 <div id="toast" style="
@@ -4441,28 +4450,10 @@ function salvaEvento(cat) {
   }
 
   salvaEventiLS(eventi);
-  // DEBUG TEMPORANEO: mostra timestamp notifiche del primo evento salvato
-  const _dbgEv = eventi[0];
   eventoInModifica = null;
   resetForm(cat);
   goTo('home');
   scheduleAllNotifications();
-  if (_dbgEv) {
-    const extra = _dbgEv.extra || {};
-    const dataStr = extra.data || extra.dataInizio || 'NO-DATA';
-    const notif = _dbgEv.notifiche || [];
-    const nLines = notif.length
-      ? notif.map(n =>
-          'on=' + (n.on?'SI':'NO') +
-          '\ndesc=' + (n.desc||'?') +
-          '\ntime=' + (n.time||'null') +
-          '\nts=' + (n.timestamp||'NULL')
-        ).join('\n---\n')
-      : 'nessuna notifica';
-    const txt = 'EVENTO: ' + (_dbgEv.categoria||'?') + '\ndata=' + dataStr + '\n\n' + nLines + '\n\n(tocca per chiudere)';
-    const panel = document.getElementById('debug-panel');
-    if (panel) { panel.textContent = txt; panel.style.display = 'block'; }
-  }
 }
 
 function resetForm(cat) {
@@ -4944,6 +4935,7 @@ window.addEventListener('load', () => {
 
 // ── Azzera app: disinstalla SW, svuota cache, ricarica ────────
 function aggiornaApp() {
+  window._reloading = true;   // impedisce a controllerchange di rimettere il bottone giallo
   showToast('Pulizia in corso…');
   navigator.serviceWorker.getRegistrations()
     .then(regs => {
