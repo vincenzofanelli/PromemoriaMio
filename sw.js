@@ -2,7 +2,7 @@
 // Notifiche schedulate con TimestampTrigger (Chrome Android) + fallback setTimeout
 // 100% locale, nessun server
 
-const CACHE_NAME = 'promemoriamio-v89';
+const CACHE_NAME = 'promemoriamio-v92';
 const ASSETS = ['./index.html', './manifest.json'];
 
 // TimestampTrigger rimosso: mostrava tutte le notifiche nel drawer subito.

@@ -2136,7 +2136,7 @@ body {
       </div>
 
       <div class="form-group">
-        <label>Frequenza assunzione</label>
+        <label>Numero assunzioni</label>
         <select id="freq-select" onchange="aggiornaOrari()">
           <option value="1" selected>1 volta al giorno</option>
           <option value="2">2 volte al giorno</option>
@@ -2207,8 +2207,8 @@ body {
       </div>
 
       <div class="form-group">
-        <label>Frequenza</label>
-        <select id="farmaci-freq" onchange="toggleAnticipo('farmaci')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
+        <label>Ripetizione promemoria</label>
+        <select id="farmaci-freq" onchange="toggleAnticipo('farmaci')">
           <option value="">Nessuna (evento singolo)</option>
           <option value="giornaliera">Giornaliera</option>
           <option value="settimanale">Settimanale</option>
@@ -3867,15 +3867,38 @@ function dataEvento(ev) {
   return (ev.extra || {}).data || null;
 }
 
+// Per eventi ricorrenti, restituisce la prossima occorrenza >= oggi
+// Per eventi singoli restituisce la data originale
+function dataEventoEffettiva(ev) {
+  let d = dataEvento(ev);
+  if (!d) return null;
+  const freq = (ev.extra || {}).freq;
+  if (!freq) return d;
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const isDatetime = d.includes('T');
+  let cur = isDatetime ? new Date(d) : new Date(d + 'T12:00');
+  const curGiorno = new Date(cur); curGiorno.setHours(0,0,0,0);
+  if (curGiorno >= oggi) return d; // già oggi o futura
+  let safety = 0;
+  while (safety++ < 3660) {
+    const prossima = calcolaDataProssima(d, freq, null);
+    if (!prossima) break;
+    d = prossima;
+    const g = new Date(isDatetime ? d : d + 'T12:00'); g.setHours(0,0,0,0);
+    if (g >= oggi) break;
+  }
+  return d;
+}
+
 // Classifica temporale dell'evento
 function classificaEvento(ev) {
-  const d = dataEvento(ev);
+  const d = dataEventoEffettiva(ev);
   if (!d) return 'futuro';
   const ora = new Date();
   const oggi = new Date(); oggi.setHours(0,0,0,0);
   const domani = new Date(oggi); domani.setDate(domani.getDate()+1);
   const sett = new Date(oggi); sett.setDate(sett.getDate()+7);
-  const data = new Date(d);
+  const data = new Date(d.includes('T') ? d : d + 'T12:00');
   const dataGiorno = new Date(data); dataGiorno.setHours(0,0,0,0);
   // Se l'evento ha orario (datetime), considera scaduto solo se l'ora è già passata
   if (d.includes('T')) {
@@ -3896,9 +3919,9 @@ const CAT_LABELS = {
 };
 
 function fmtDataEvento(ev) {
-  const d = dataEvento(ev);
+  const d = dataEventoEffettiva(ev);
   if (!d) return '';
-  const dt = new Date(d);
+  const dt = new Date(d.includes('T') ? d : d + 'T12:00');
   const cls = classificaEvento(ev);
   if (cls === 'oggi') return 'Oggi' + (d.includes('T') ? ' · ' + dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) : '');
   if (cls === 'domani') return 'Domani' + (d.includes('T') ? ' · ' + dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) : '');
@@ -4181,7 +4204,7 @@ function eliminaEvento(id) {
     t.style.opacity = '0';
     t.style.transform = 'translateX(-50%) translateY(20px)';
     t.style.pointerEvents = 'none';
-    if (_undoElimina) { _undoElimina = null; scheduleAllNotifications(); }
+    if (_undoElimina) { _undoElimina = null; /* scheduleAllNotifications(); */ }
   }, 4000);
 }
 
@@ -4192,7 +4215,7 @@ function undoElimina() {
   salvaEventiLS(eventi);
   _undoElimina = null;
   renderHome();
-  scheduleAllNotifications();
+  /* scheduleAllNotifications(); */
   const t = document.getElementById('toast');
   t.style.opacity = '0';
   clearTimeout(t._timer);
@@ -4208,7 +4231,7 @@ function segnaFatto(id) {
   salvaEventiLS(eventi);
   renderHome();
   showToast('Segnato come fatto ✓');
-  scheduleAllNotifications();
+  /* scheduleAllNotifications(); */
 }
 
 function apriEvento(id) {
@@ -4278,6 +4301,7 @@ function caricaFormEvento(ev) {
     set('visite-tipo', e.tipo); set('visite-luogo', e.luogo);
   } else if (cat === 'farmaci') {
     set('farmaco-nome', e.nome);
+    aggiornaOrari();
   } else if (cat === 'ricorrenze') {
     const selTipo = document.getElementById('ricorrenze-tipo'); if (selTipo) selTipo.value = e.tipo || '';
     set('ricorrenze-nome', e.nome);
@@ -4409,7 +4433,7 @@ function salvaEvento(cat) {
   eventoInModifica = null;
   resetForm(cat);
   goTo('home');
-  scheduleAllNotifications();
+  /* scheduleAllNotifications(); */
 }
 
 function resetForm(cat) {
@@ -4955,16 +4979,18 @@ history.replaceState({ screen: 'home' }, '');
   // Chiedi permesso notifiche se non ancora deciso, poi schedula.
   // Se il permesso è già granted, schedula subito (gestisce reload post-import).
   if ('Notification' in window) {
+    // Notifiche push disabilitate: il codice è pronto per un futuro sistema con app chiusa
+    /*
     if (Notification.permission === 'default') {
       Notification.requestPermission().then(() => scheduleAllNotifications());
     } else if (Notification.permission === 'granted') {
-      // Aspetta che il SW sia attivo (può servire dopo un reload)
       if (navigator.serviceWorker && navigator.serviceWorker.controller) {
         scheduleAllNotifications();
       } else if (navigator.serviceWorker) {
         navigator.serviceWorker.ready.then(() => scheduleAllNotifications());
       }
     }
+    */
   }
 })();
 
