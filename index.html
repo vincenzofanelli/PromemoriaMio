@@ -44,7 +44,10 @@ if ('serviceWorker' in navigator) {
     // Scatta quando il nuovo SW (con skipWaiting) prende il controllo.
     // Ignoriamo l'evento se stiamo già ricaricando la pagina (aggiornaApp).
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (window._reloading) return;
+      if (sessionStorage.getItem('_sw_reloading')) {
+        sessionStorage.removeItem('_sw_reloading');
+        return;
+      }
       setUtility('update');
     });
   });
@@ -2213,7 +2216,7 @@ body {
 
       <div class="form-group">
         <label>Durata</label>
-        <select>
+        <select id="farmaci-durata">
           <option>7 giorni</option>
           <option selected>10 giorni</option>
           <option>15 giorni</option>
@@ -2438,7 +2441,7 @@ body {
         <button class="freq-btn" onclick="setFreq(this,9)">9 mesi</button>
         <button class="freq-btn" onclick="setFreq(this,12)">12 mesi</button>
       </div>
-      <div class="settings-row" onclick="showToast('Backup inviato a mario.rossi@email.it ✓')">
+      <div class="settings-row" onclick="condividiBackup()">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
         <div class="settings-row-body">
           <div class="settings-row-label">Invia backup ora</div>
@@ -4029,6 +4032,52 @@ function esportaBackup() {
   aggiornaBackupBanner();
 }
 
+async function condividiBackup() {
+  // Costruisce il payload identico a esportaBackup()
+  const payload = {};
+  const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti'];
+  chiavi.forEach(k => {
+    try {
+      const v = localStorage.getItem(k);
+      if (v !== null) payload[k] = JSON.parse(v);
+    } catch(e) {}
+  });
+  payload._backup_ts = Date.now();
+  const json = JSON.stringify(payload, null, 2);
+  const oggi = new Date().toISOString().slice(0, 10);
+  const nomeFile = `promemoriamio-backup-${oggi}.json`;
+
+  // Prova Web Share API con file (Android Chrome)
+  if (navigator.canShare) {
+    try {
+      const blob = new Blob([json], { type: 'application/json' });
+      const file = new File([blob], nomeFile, { type: 'application/json' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'PromemoriaMio backup' });
+        try { localStorage.setItem('promemoriamio_ultimo_backup', Date.now().toString()); } catch(e) {}
+        aggiornaBackupBanner();
+        return;
+      }
+    } catch(err) {
+      if (err.name !== 'AbortError') console.warn('[condividiBackup] share fallito:', err);
+      else return; // utente ha annullato, non fare il download
+    }
+  }
+
+  // Fallback: download diretto
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeFile;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  try { localStorage.setItem('promemoriamio_ultimo_backup', Date.now().toString()); } catch(e) {}
+  aggiornaBackupBanner();
+}
+
 function importaBackup(input) {
   const file = input.files && input.files[0];
   input.value = '';           // reset così il prossimo click riapre il picker
@@ -4203,6 +4252,12 @@ function renderHome() {
     for (const ev of items) {
       const badge = (ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo) ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria);
       const dataStr = fmtDataEvento(ev);
+      // Orari per farmaci (extra.orari[]) o orario già incluso in dataStr per eventi datetime
+      const evExtra = ev.extra || {};
+      let oraCard = '';
+      if (ev.categoria === 'farmaci' && Array.isArray(evExtra.orari) && evExtra.orari.length) {
+        oraCard = evExtra.orari.join(' · ');
+      }
       html += `<div class="event-card ${g.cls}" data-id="${ev.id}">
         <div class="event-top">
           <div class="event-dot"></div>
@@ -4212,6 +4267,7 @@ function renderHome() {
         </div>
         <div class="event-meta">
           ${dataStr ? `<span class="event-date">${escHtml(dataStr)}</span>` : ''}
+          ${oraCard ? `<span class="event-date" style="font-weight:700">${escHtml(oraCard)}</span>` : ''}
           <span class="event-cat-badge">${badge}</span>
         </div>
         <div class="event-actions">
@@ -4373,6 +4429,8 @@ function caricaFormEvento(ev) {
     set('visite-tipo', e.tipo); set('visite-luogo', e.luogo);
   } else if (cat === 'farmaci') {
     set('farmaco-nome', e.nome);
+    const durEl = document.getElementById('farmaci-durata');
+    if (durEl && e.durata) durEl.value = e.durata;
     aggiornaOrari();
   } else if (cat === 'ricorrenze') {
     const selTipo = document.getElementById('ricorrenze-tipo'); if (selTipo) selTipo.value = e.tipo || '';
@@ -4446,7 +4504,8 @@ function raccogliCampiEvento(cat) {
         orari.push(el.value);
       }
     }
-    extra  = { nome, orari };
+    const durata = val('farmaci-durata');
+    extra  = { nome, orari, durata };
   } else if (cat === 'ricorrenze') {
     const _tipo = tipo(), _nome = val('ricorrenze-nome');
     titolo = (_tipo && _nome) ? _tipo + ' di ' + _nome : _nome || _tipo || 'Ricorrenza';
@@ -4540,7 +4599,7 @@ function salvaEvento(cat) {
 function resetForm(cat) {
   const ids = {
     visite: ['visite-tipo','visite-data','visite-luogo','visite-note','visite-freq','visite-anticipo'],
-    farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo','custom-prima-dose','custom-n-dosi','alterne-ora'],
+    farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo','custom-prima-dose','custom-n-dosi','alterne-ora','farmaci-durata'],
     ricorrenze: ['ricorrenze-tipo','ricorrenze-nome','ricorrenze-data','ricorrenze-note','ricorrenze-freq','ricorrenze-anticipo'],
     documenti: ['documenti-tipo','documenti-data','documenti-note','documenti-freq','documenti-anticipo'],
     auto: ['auto-tipo','auto-data','auto-note','auto-freq','auto-anticipo'],
@@ -5021,7 +5080,7 @@ window.addEventListener('load', () => {
 
 // ── Azzera app: disinstalla SW, svuota cache, ricarica ────────
 function aggiornaApp() {
-  window._reloading = true;   // impedisce a controllerchange di rimettere il bottone giallo
+  sessionStorage.setItem('_sw_reloading', '1');  // impedisce a controllerchange di rimettere il bottone giallo
   showToast('Pulizia in corso…');
   navigator.serviceWorker.getRegistrations()
     .then(regs => {
