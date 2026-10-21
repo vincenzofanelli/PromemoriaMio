@@ -4429,9 +4429,19 @@ function caricaFormEvento(ev) {
     set('visite-tipo', e.tipo); set('visite-luogo', e.luogo);
   } else if (cat === 'farmaci') {
     set('farmaco-nome', e.nome);
+    set('farmaci-note', e.note);
     const durEl = document.getElementById('farmaci-durata');
     if (durEl && e.durata) durEl.value = e.durata;
     aggiornaOrari();
+    // Ripristina orari salvati nei campi creati da aggiornaOrari()
+    if (Array.isArray(e.orari) && e.orari.length) {
+      const base = document.getElementById('time-base');
+      if (base && e.orari[0]) base.value = e.orari[0];
+      for (let i = 1; i < e.orari.length; i++) {
+        const calc = document.getElementById('time-calc-' + i);
+        if (calc && e.orari[i]) { calc.readOnly = false; calc.value = e.orari[i]; calc.readOnly = true; }
+      }
+    }
   } else if (cat === 'ricorrenze') {
     const selTipo = document.getElementById('ricorrenze-tipo'); if (selTipo) selTipo.value = e.tipo || '';
     set('ricorrenze-nome', e.nome);
