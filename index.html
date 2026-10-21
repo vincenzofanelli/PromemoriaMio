@@ -1828,6 +1828,10 @@ body {
     <button class="fab" onclick="goTo('nuovo')">
       <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
     </button>
+    <button class="nav-btn" onclick="goTo('archivio')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+      <span>Archivio</span>
+    </button>
     <button class="nav-btn" onclick="goTo('utente')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
       <span>Profilo</span>
@@ -1836,6 +1840,23 @@ body {
 
 </div>
 
+
+<!-- ============================================================
+     SCHERMATA: ARCHIVIO
+     ============================================================ -->
+<div class="screen hidden" id="screen-archivio">
+  <div class="header">
+    <button class="header-back" onclick="goTo('home')">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      Home
+    </button>
+    <h1 style="font-size:1rem;color:var(--fg)">Archivio</h1>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll-body" id="archivio-list">
+    <!-- popolato da renderArchivio() -->
+  </div>
+</div>
 
 <!-- ============================================================
      SCHERMATA: NUOVO IMPEGNO
@@ -3172,6 +3193,7 @@ body {
 <script>
 const screens = {
   home:                 'screen-home',
+  archivio:             'screen-archivio',
   nuovo:                'screen-nuovo',
   'form-visite':        'screen-form-visite',
   'form-farmaci':       'screen-form-farmaci',
@@ -3223,6 +3245,9 @@ function goTo(name) {
   if (name === 'home') {
     renderHome();
     scrollPrimoOggi();
+  }
+  if (name === 'archivio') {
+    renderArchivio();
   }
   if (name === 'liste') {
     renderListe();
@@ -4047,14 +4072,14 @@ function renderPannelloGiornata() {
 
   function eventiGiorno(inizio, fine) {
     return tutti.filter(ev => {
-      const extra = ev.extra || {};
-      const ds = extra.data || extra.dataInizio;
+      if (ev.archiviato) return false;
+      const ds = dataEventoEffettiva(ev);
       if (!ds) return false;
       const d = parseDataLocale(ds);
       return !isNaN(d) && d >= inizio && d <= fine;
     }).sort((a, b) => {
-      const da = parseDataLocale((a.extra||{}).data || (a.extra||{}).dataInizio || '');
-      const db = parseDataLocale((b.extra||{}).data || (b.extra||{}).dataInizio || '');
+      const da = parseDataLocale(dataEventoEffettiva(a) || '');
+      const db = parseDataLocale(dataEventoEffettiva(b) || '');
       return da - db;
     });
   }
@@ -4069,7 +4094,9 @@ function renderPannelloGiornata() {
         const extra = ev.extra || {};
         const ds = extra.data || extra.dataInizio || '';
         let oraStr = '';
-        if (ds.includes('T')) {
+        if (ev.categoria === 'farmaci' && Array.isArray(extra.orari) && extra.orari.length) {
+          oraStr = extra.orari.join(' · ');
+        } else if (ds.includes('T')) {
           const tp = ds.split('T')[1] || '';
           oraStr = tp.slice(0, 5);
         }
@@ -4098,10 +4125,51 @@ function renderPannelloGiornata() {
   return html;
 }
 
+function renderArchivio() {
+  const lista = document.getElementById('archivio-list');
+  if (!lista) return;
+  const archiviati = leggiEventi()
+    .filter(ev => ev.archiviato)
+    .sort((a, b) => (b.fattaIl || 0) - (a.fattaIl || 0));
+
+  if (!archiviati.length) {
+    lista.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--fg-3);font-size:0.95rem">Nessun evento in archivio</div>';
+    return;
+  }
+
+  const giorni = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  const mesi = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  const fmtTs = ts => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return giorni[d.getDay()] + ' ' + d.getDate() + ' ' + mesi[d.getMonth()] + ' ' + d.getFullYear();
+  };
+
+  let html = '';
+  archiviati.forEach(ev => {
+    const extra = ev.extra || {};
+    const titolo = escHtml(titoloCarta(ev));
+    const badge = escHtml((ev.categoria === 'ricorrenze' && extra.tipo) ? extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria));
+    const fatto = ev.stato === 'fatto';
+    const dataArch = fmtTs(ev.fattaIl);
+    html += `<div class="event-card" onclick="apriEvento('${ev.id}')" style="opacity:${fatto ? '0.7' : '1'}">
+      <div class="event-header">
+        <span class="event-title" style="${fatto ? 'text-decoration:line-through' : ''}">${titolo}</span>
+        ${fatto ? '<span style="font-size:1rem;color:#22c55e">✓</span>' : ''}
+      </div>
+      <div class="event-meta">
+        <span class="event-cat-badge">${badge}</span>
+        ${dataArch ? `<span style="font-size:0.78rem;color:var(--fg-3)">${dataArch}</span>` : ''}
+      </div>
+    </div>`;
+  });
+  lista.innerHTML = html;
+}
+
 function renderHome() {
   const lista = document.getElementById('home-list');
   if (!lista) return;
-  const eventi = leggiEventi().filter(ev => mostraCompletati || ev.stato !== 'fatto');
+  const eventi = leggiEventi().filter(ev => !ev.archiviato && (mostraCompletati || ev.stato !== 'fatto'));
 
   let html = renderPannelloGiornata();
 
@@ -4228,6 +4296,10 @@ function segnaFatto(id) {
   if (!ev) return;
   ev.stato = 'fatto';
   ev.fattaIl = Date.now();
+  // Manda in archivio solo se non è una ricorrenza ciclica
+  const tipoRic = (ev.extra || {}).tipo || '';
+  const isCiclica = ev.categoria === 'ricorrenze' && RICORRENZE_ANNUALI.has(tipoRic);
+  if (!isCiclica) ev.archiviato = true;
   salvaEventiLS(eventi);
   renderHome();
   showToast('Segnato come fatto ✓');
@@ -4345,7 +4417,36 @@ function raccogliCampiEvento(cat) {
   } else if (cat === 'farmaci') {
     const nome = val('farmaco-nome');
     titolo = nome || 'Farmaco';
-    extra  = { nome };
+    // Raccogli orari di assunzione dai picker dinamici
+    const freqSel = document.getElementById('freq-select');
+    const freqVal = freqSel ? freqSel.value : '1';
+    let orari = [];
+    if (freqVal === 'alterne') {
+      const ora = val('alterne-ora'); if (ora) orari = [ora];
+    } else if (freqVal === 'custom') {
+      const prima = val('custom-prima-dose');
+      const nDosi = parseInt(document.getElementById('custom-n-dosi')?.value || '1');
+      if (prima && nDosi > 0) {
+        const [hh, mm] = prima.split(':').map(Number);
+        const baseMin = hh * 60 + mm;
+        const step = Math.round(1440 / nDosi);
+        for (let i = 0; i < nDosi; i++) {
+          const tot = (baseMin + step * i) % 1440;
+          orari.push(String(Math.floor(tot/60)).padStart(2,'0') + ':' + String(tot%60).padStart(2,'0'));
+        }
+      }
+    } else {
+      // 1, 2, 3, 8, 12 — leggi time-base e time-calc-N
+      const base = document.getElementById('time-base');
+      if (base) orari.push(base.value);
+      let i = 1;
+      while (true) {
+        const el = document.getElementById('time-calc-' + i++);
+        if (!el) break;
+        orari.push(el.value);
+      }
+    }
+    extra  = { nome, orari };
   } else if (cat === 'ricorrenze') {
     const _tipo = tipo(), _nome = val('ricorrenze-nome');
     titolo = (_tipo && _nome) ? _tipo + ' di ' + _nome : _nome || _tipo || 'Ricorrenza';
