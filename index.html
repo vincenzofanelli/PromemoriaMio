@@ -44,10 +44,10 @@ if ('serviceWorker' in navigator) {
     // Scatta quando il nuovo SW (con skipWaiting) prende il controllo.
     // Ignoriamo l'evento se stiamo già ricaricando la pagina (aggiornaApp).
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('_sw_reloading')) {
-        sessionStorage.removeItem('_sw_reloading');
-        return;
-      }
+      // Il flag rimane in sessionStorage per tutta la sessione (dura fino alla chiusura
+      // della tab) così blocca anche eventuali controllerchange multipli generati dal
+      // clients.claim() del nuovo SW durante l'activate.
+      if (sessionStorage.getItem('_sw_reloading')) return;
       setUtility('update');
     });
   });
