@@ -2215,19 +2215,14 @@ body {
       </div>
 
       <div class="form-group">
-        <label>Durata</label>
-        <select id="farmaci-durata">
-          <option>7 giorni</option>
-          <option selected>10 giorni</option>
-          <option>15 giorni</option>
-          <option>30 giorni</option>
-          <option>Indefinita</option>
-        </select>
+        <label>Durata (giorni)</label>
+        <input type="number" id="farmaci-durata" placeholder="es. 45 — lascia vuoto se indefinita" min="1" max="3650" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box" oninput="aggiornaDurataPrevista()">
+        <div id="farmaci-fine-prevista" style="font-size:0.82rem;color:var(--accent);margin-top:5px;min-height:1.2em"></div>
       </div>
 
       <div class="form-group">
         <label>Note (opzionale)</label>
-        <textarea placeholder="Prendere a stomaco pieno…"></textarea>
+        <textarea id="farmaci-note" placeholder="Prendere a stomaco pieno…"></textarea>
       </div>
 
       <div class="form-group">
@@ -3306,6 +3301,52 @@ function setFreq(btn, months) {
   localStorage.setItem('promemoriamio_backup_freq', months);
 }
 
+// === DURATA / SCADENZA FARMACI ===
+function aggiornaDurataPrevista() {
+  const durEl = document.getElementById('farmaci-durata');
+  const dataEl = document.getElementById('farmaci-data');
+  const lbl = document.getElementById('farmaci-fine-prevista');
+  if (!lbl) return;
+  const giorni = durEl ? parseInt(durEl.value, 10) : NaN;
+  const dataVal = dataEl ? dataEl.value : '';
+  if (!isNaN(giorni) && giorni > 0 && dataVal) {
+    const inizio = new Date(dataVal + 'T12:00');
+    const fine = new Date(inizio);
+    fine.setDate(fine.getDate() + giorni - 1);
+    const MM = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+    lbl.textContent = 'Fine prevista: ' + fine.getDate() + ' ' + MM[fine.getMonth()] + ' ' + fine.getFullYear();
+  } else if (!isNaN(giorni) && giorni > 0) {
+    lbl.textContent = 'Fine prevista: seleziona prima la data inizio';
+  } else {
+    lbl.textContent = '';
+  }
+}
+
+// Controlla e archivia farmaci scaduti — chiamato all'avvio del rendering
+function archiviaFarmaciScaduti() {
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const eventi = leggiEventi();
+  let modificato = false;
+  eventi.forEach(ev => {
+    if (ev.archiviato || ev.categoria !== 'farmaci') return;
+    const extra = ev.extra || {};
+    if (!extra.durata || !extra.data) return; // durata indefinita → mai archiviare
+    const inizio = new Date(extra.data + 'T12:00');
+    if (isNaN(inizio.getTime())) return;
+    const fine = new Date(inizio);
+    fine.setDate(fine.getDate() + extra.durata - 1); // ultimo giorno di terapia
+    const scade = new Date(fine);
+    scade.setDate(scade.getDate() + 1); // archivia il giorno DOPO
+    scade.setHours(0,0,0,0);
+    if (oggi >= scade) {
+      ev.archiviato = true;
+      ev.fattaIl = ev.fattaIl || Date.now();
+      modificato = true;
+    }
+  });
+  if (modificato) salvaEventiLS(eventi);
+}
+
 // === LOGICA ORARI FARMACI ===
 function aggiornaOrari() {
   const freq = document.getElementById('freq-select').value;
@@ -4152,10 +4193,20 @@ function renderPannelloGiornata() {
         const fatto = ev.stato === 'fatto';
         const titolo = escHtml(titoloCarta(ev));
         const badge  = escHtml((ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo) ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria));
+        let doseTag = '';
+        if (ev.categoria === 'farmaci') {
+          const _oggiStr = new Date().toISOString().slice(0,10);
+          const _assunzioni = Array.isArray(extra.assunzioni) ? extra.assunzioni : [];
+          const _entry = _assunzioni.find(a => a.data === _oggiStr);
+          const _prese = _entry ? _entry.dosi : 0;
+          const _tot = Array.isArray(extra.orari) ? extra.orari.length : 1;
+          const _done = _prese >= _tot;
+          doseTag = `<button onclick="event.stopPropagation();farmacoDosaOggi('${ev.id}')" style="border:none;background:${_done ? 'var(--fg-3)' : 'var(--accent)'};color:#fff;border-radius:6px;padding:2px 7px;font-size:0.75rem;font-weight:700;cursor:pointer;${_done ? 'opacity:0.5;pointer-events:none' : ''}">${_done ? '✓' : '💊'} ${_prese}/${_tot}</button>`;
+        }
         h += `<div class="pannello-giornata-row" onclick="apriEvento('${ev.id}')" style="${fatto ? 'opacity:0.55' : ''}">
           <span class="pannello-giornata-ora">${oraStr}</span>
           <span class="pannello-giornata-titolo" style="${fatto ? 'text-decoration:line-through' : ''}">${titolo}</span>
-          ${fatto ? '<span style="font-size:1rem;color:#22c55e">✓</span>' : `<span class="pannello-giornata-badge">${badge}</span>`}
+          ${ev.categoria === 'farmaci' ? doseTag : fatto ? '<span style="font-size:1rem;color:#22c55e">✓</span>' : `<span class="pannello-giornata-badge">${badge}</span>`}
         </div>`;
       });
     }
@@ -4201,6 +4252,13 @@ function renderArchivio() {
     const badge = escHtml((ev.categoria === 'ricorrenze' && extra.tipo) ? extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria));
     const fatto = ev.stato === 'fatto';
     const dataArch = fmtTs(ev.fattaIl);
+    const noteArch = ev.categoria === 'farmaci' && extra.note ? escHtml(extra.note) : '';
+    // Per farmaci: mostra riepilogo dosi totali
+    let doseSummary = '';
+    if (ev.categoria === 'farmaci' && Array.isArray(extra.assunzioni) && extra.assunzioni.length) {
+      const totDosi = extra.assunzioni.reduce((s, a) => s + (a.dosi || 0), 0);
+      doseSummary = `<span style="font-size:0.78rem;color:var(--fg-3)">💊 ${totDosi} dosi totali</span>`;
+    }
     html += `<div class="event-card" onclick="apriEvento('${ev.id}')" style="opacity:${fatto ? '0.7' : '1'}">
       <div class="event-header">
         <span class="event-title" style="${fatto ? 'text-decoration:line-through' : ''}">${titolo}</span>
@@ -4209,13 +4267,16 @@ function renderArchivio() {
       <div class="event-meta">
         <span class="event-cat-badge">${badge}</span>
         ${dataArch ? `<span style="font-size:0.78rem;color:var(--fg-3)">${dataArch}</span>` : ''}
+        ${doseSummary}
       </div>
+      ${noteArch ? `<div style="font-size:0.82rem;color:var(--fg-2);margin-top:4px;font-style:italic">${noteArch}</div>` : ''}
     </div>`;
   });
   lista.innerHTML = html;
 }
 
 function renderHome() {
+  archiviaFarmaciScaduti(); // auto-archivia farmaci scaduti prima di rendere
   const lista = document.getElementById('home-list');
   if (!lista) return;
   const eventi = leggiEventi().filter(ev => !ev.archiviato && (mostraCompletati || ev.stato !== 'fatto'));
@@ -4275,7 +4336,17 @@ function renderHome() {
           <button class="ev-edit-btn" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="Modifica">
             <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           </button>
-          ${ev.stato !== 'fatto' ? `<button class="ev-done-btn" onclick="event.stopPropagation();segnaFatto('${ev.id}')" title="Segna come fatto">
+          ${ev.categoria === 'farmaci' ? (() => {
+            const _ex = ev.extra || {};
+            const _oggi = new Date().toISOString().slice(0,10);
+            const _entry = Array.isArray(_ex.assunzioni) ? _ex.assunzioni.find(a => a.data === _oggi) : null;
+            const _prese = _entry ? _entry.dosi : 0;
+            const _tot = Array.isArray(_ex.orari) ? _ex.orari.length : 1;
+            const _done = _prese >= _tot;
+            return `<button class="ev-done-btn" onclick="event.stopPropagation();farmacoDosaOggi('${ev.id}')" title="Segna dose" style="${_done ? 'opacity:0.5;pointer-events:none' : ''}">
+              <span style="font-size:0.8rem;font-weight:700;white-space:nowrap">${_done ? '✓' : '💊'} ${_prese}/${_tot}</span>
+            </button>`;
+          })() : ev.stato !== 'fatto' ? `<button class="ev-done-btn" onclick="event.stopPropagation();segnaFatto('${ev.id}')" title="Segna come fatto">
             <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
           </button>` : '<span style="font-size:0.72rem;color:var(--fg-3);white-space:nowrap">✓ Fatto</span>'}
           <button class="ev-del-btn" onclick="event.stopPropagation();eliminaEvento('${ev.id}')" title="Elimina">
@@ -4346,10 +4417,32 @@ function undoElimina() {
   showToast('Ripristinato ✓');
 }
 
+function farmacoDosaOggi(id) {
+  // Incrementa il contatore dosi per oggi sull'evento farmaco
+  const eventi = leggiEventi();
+  const ev = eventi.find(e => e.id === id);
+  if (!ev || ev.categoria !== 'farmaci') return;
+  const extra = ev.extra || {};
+  const oggi = new Date().toISOString().slice(0, 10);
+  if (!Array.isArray(extra.assunzioni)) extra.assunzioni = [];
+  let entry = extra.assunzioni.find(a => a.data === oggi);
+  if (!entry) { entry = { data: oggi, dosi: 0 }; extra.assunzioni.push(entry); }
+  const nOrari = Array.isArray(extra.orari) ? extra.orari.length : 1;
+  if (entry.dosi < nOrari) entry.dosi++;
+  ev.extra = extra;
+  salvaEventiLS(eventi);
+  renderHome();
+  const prese = entry.dosi;
+  const totali = nOrari;
+  showToast(prese >= totali ? `💊 Tutte le dosi di oggi prese ✓` : `💊 ${prese}/${totali} dosi segnate`);
+}
+
 function segnaFatto(id) {
   const eventi = leggiEventi();
   const ev = eventi.find(e => e.id === id);
   if (!ev) return;
+  // I farmaci usano farmacoDosaOggi — non vengono mai archiviati da qui
+  if (ev.categoria === 'farmaci') { farmacoDosaOggi(id); return; }
   ev.stato = 'fatto';
   ev.fattaIl = Date.now();
   // Manda in archivio solo se non è una ricorrenza ciclica
@@ -4431,7 +4524,9 @@ function caricaFormEvento(ev) {
     set('farmaco-nome', e.nome);
     set('farmaci-note', e.note);
     const durEl = document.getElementById('farmaci-durata');
-    if (durEl && e.durata) durEl.value = e.durata;
+    if (durEl) { durEl.value = (e.durata != null) ? e.durata : ''; }
+    // Aggiorna display "Fine prevista" dopo aver caricato data e durata
+    setTimeout(() => aggiornaDurataPrevista(), 0);
     // Ripristina freq-select in base al numero di orari salvati, PRIMA di aggiornaOrari()
     // così aggiornaOrari() crea il numero giusto di campi input
     if (Array.isArray(e.orari) && e.orari.length) {
@@ -4528,8 +4623,16 @@ function raccogliCampiEvento(cat) {
         orari.push(el.value);
       }
     }
-    const durata = val('farmaci-durata');
-    extra  = { nome, orari, durata };
+    const durataRaw = val('farmaci-durata');
+    const durata = durataRaw ? parseInt(durataRaw, 10) : null;
+    // Preserva assunzioni esistenti (non sovrascrivere quando si modifica l'evento)
+    let assunzioni = [];
+    if (eventoInModifica) {
+      const evEsistente = leggiEventi().find(e => e.id === eventoInModifica);
+      assunzioni = (evEsistente && evEsistente.extra && Array.isArray(evEsistente.extra.assunzioni))
+        ? evEsistente.extra.assunzioni : [];
+    }
+    extra  = { nome, orari, durata, assunzioni };
   } else if (cat === 'ricorrenze') {
     const _tipo = tipo(), _nome = val('ricorrenze-nome');
     titolo = (_tipo && _nome) ? _tipo + ' di ' + _nome : _nome || _tipo || 'Ricorrenza';
@@ -4623,7 +4726,7 @@ function salvaEvento(cat) {
 function resetForm(cat) {
   const ids = {
     visite: ['visite-tipo','visite-data','visite-luogo','visite-note','visite-freq','visite-anticipo'],
-    farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo','custom-prima-dose','custom-n-dosi','alterne-ora','farmaci-durata'],
+    farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo','custom-prima-dose','custom-n-dosi','alterne-ora','farmaci-durata','farmaci-note'],
     ricorrenze: ['ricorrenze-tipo','ricorrenze-nome','ricorrenze-data','ricorrenze-note','ricorrenze-freq','ricorrenze-anticipo'],
     documenti: ['documenti-tipo','documenti-data','documenti-note','documenti-freq','documenti-anticipo'],
     auto: ['auto-tipo','auto-data','auto-note','auto-freq','auto-anticipo'],
@@ -4666,6 +4769,9 @@ function resetForm(cat) {
     if (orariWrap) orariWrap.innerHTML = '';
     const fotoPreview = document.getElementById('foto-preview');
     if (fotoPreview) { fotoPreview.style.display = 'none'; fotoPreview.src = ''; }
+    // Reset label "Fine prevista"
+    const fineLbl = document.getElementById('farmaci-fine-prevista');
+    if (fineLbl) fineLbl.textContent = '';
     // Reset label orario alterne
     const alterneLbl = document.getElementById('alterne-ora-lbl');
     if (alterneLbl) alterneLbl.textContent = '08:00';
@@ -4879,6 +4985,10 @@ window.addEventListener('load', () => {
         lbl.textContent = fmtLbl(d, false);
       }
       markFilled(_fieldId + '-btn');
+    }
+    // Aggiorna "Fine prevista" se si è scelto la data inizio farmaco
+    if (_fieldId === 'farmaci-data' && typeof aggiornaDurataPrevista === 'function') {
+      aggiornaDurataPrevista();
     }
     hideOverlay();
   };
