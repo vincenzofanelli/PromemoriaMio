@@ -4432,8 +4432,22 @@ function caricaFormEvento(ev) {
     set('farmaci-note', e.note);
     const durEl = document.getElementById('farmaci-durata');
     if (durEl && e.durata) durEl.value = e.durata;
+    // Ripristina freq-select in base al numero di orari salvati, PRIMA di aggiornaOrari()
+    // così aggiornaOrari() crea il numero giusto di campi input
+    if (Array.isArray(e.orari) && e.orari.length) {
+      const freqSel = document.getElementById('freq-select');
+      if (freqSel) {
+        const n = e.orari.length;
+        // mappa numero orari → valore del select (1,2,3 diretti; 2 ogni12h, 3 ogni8h)
+        // usiamo il numero diretto; se l'utente aveva scelto "ogni 8h" o "ogni 12h"
+        // non lo sappiamo più (non lo salviamo), ma gli orari vengono comunque ripristinati
+        // 1,2,3 orari corrispondono direttamente ai valori del select
+        const valoreTarget = (n === 1 || n === 2 || n === 3) ? String(n) : '1';
+        freqSel.value = valoreTarget;
+      }
+    }
     aggiornaOrari();
-    // Ripristina orari salvati nei campi creati da aggiornaOrari()
+    // Ora i campi esistono: popola gli orari salvati
     if (Array.isArray(e.orari) && e.orari.length) {
       const base = document.getElementById('time-base');
       if (base && e.orari[0]) base.value = e.orari[0];
