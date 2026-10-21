@@ -4225,6 +4225,53 @@ function renderPannelloGiornata() {
   return html;
 }
 
+function riattivaFarmaco(id) {
+  // Mostra mini-dialog con input data (default oggi) poi riattiva
+  const oggi = new Date().toISOString().slice(0, 10);
+  const eventi = leggiEventi();
+  const ev = eventi.find(e => e.id === id);
+  if (!ev) return;
+
+  // Crea overlay dialog
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  const MM = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  const fmtData = ds => { const d = new Date(ds+'T12:00'); return d.getDate()+' '+MM[d.getMonth()]+' '+d.getFullYear(); };
+  overlay.innerHTML = `
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px 20px;width:100%;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
+      <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px">Riattiva farmaco</div>
+      <div style="font-size:0.88rem;color:var(--fg-2);margin-bottom:16px">${escHtml(ev.extra && ev.extra.nome ? ev.extra.nome : 'Farmaco')}</div>
+      <label style="font-size:0.85rem;color:var(--fg-2);display:block;margin-bottom:6px">Data inizio nuova terapia</label>
+      <input type="date" id="riattiva-data-input" value="${oggi}" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-bottom:20px">
+      <div style="display:flex;gap:10px">
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:10px;background:none;color:var(--fg);font-size:0.95rem;cursor:pointer">Annulla</button>
+        <button id="riattiva-conferma-btn" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer">Riattiva</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#riattiva-conferma-btn').addEventListener('click', () => {
+    const nuovaData = overlay.querySelector('#riattiva-data-input').value;
+    if (!nuovaData) return;
+    const eventi2 = leggiEventi();
+    const ev2 = eventi2.find(e => e.id === id);
+    if (!ev2) { overlay.remove(); return; }
+    ev2.archiviato = false;
+    ev2.stato = 'aperto';
+    ev2.fattaIl = null;
+    if (!ev2.extra) ev2.extra = {};
+    ev2.extra.data = nuovaData;
+    ev2.extra.assunzioni = []; // azzera storico dosi
+    salvaEventiLS(eventi2);
+    overlay.remove();
+    renderHome();
+    goTo('home');
+    showToast('Farmaco riattivato ✓');
+  });
+  // Chiudi toccando fuori
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
 function renderArchivio() {
   const lista = document.getElementById('archivio-list');
   if (!lista) return;
@@ -4259,10 +4306,16 @@ function renderArchivio() {
       const totDosi = extra.assunzioni.reduce((s, a) => s + (a.dosi || 0), 0);
       doseSummary = `<span style="font-size:0.78rem;color:var(--fg-3)">💊 ${totDosi} dosi totali</span>`;
     }
+    const riattivaBtn = ev.categoria === 'farmaci'
+      ? `<button class="ev-edit-btn" onclick="event.stopPropagation();riattivaFarmaco('${ev.id}')" title="Riattiva" style="color:var(--accent)">
+           <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+         </button>` : '';
     html += `<div class="event-card" onclick="apriEvento('${ev.id}')" style="opacity:${fatto ? '0.7' : '1'}">
-      <div class="event-header">
-        <span class="event-title" style="${fatto ? 'text-decoration:line-through' : ''}">${titolo}</span>
-        ${fatto ? '<span style="font-size:1rem;color:#22c55e">✓</span>' : ''}
+      <div class="event-top">
+        <div class="event-dot"></div>
+        <div class="event-body">
+          <div class="event-title" style="${fatto ? 'text-decoration:line-through' : ''}">${titolo}</div>
+        </div>
       </div>
       <div class="event-meta">
         <span class="event-cat-badge">${badge}</span>
@@ -4270,6 +4323,15 @@ function renderArchivio() {
         ${doseSummary}
       </div>
       ${noteArch ? `<div style="font-size:0.82rem;color:var(--fg-2);margin-top:4px;font-style:italic">${noteArch}</div>` : ''}
+      <div class="event-actions">
+        <button class="ev-edit-btn" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="Modifica">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </button>
+        ${riattivaBtn}
+        <button class="ev-del-btn" onclick="event.stopPropagation();eliminaEvento('${ev.id}')" title="Elimina">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </div>
     </div>`;
   });
   lista.innerHTML = html;
@@ -4700,8 +4762,35 @@ function salvaEvento(cat) {
       eventi[idx].extra = extra;
       eventi[idx].notifiche = notifStati[cat] ? [...notifStati[cat]] : [];
       calcolaEsalvaTimestamp(eventi[idx]);   // calcola e salva timestamp in ogni notifica
+      // De-archivia automaticamente se il farmaco modificato è ancora in corso
+      if (cat === 'farmaci' && eventi[idx].archiviato) {
+        const _data = extra.data;
+        const _durata = extra.durata;
+        if (_data && _durata) {
+          const _oggi = new Date(); _oggi.setHours(0,0,0,0);
+          const _fine = new Date(_data + 'T12:00');
+          _fine.setDate(_fine.getDate() + _durata); // giorno di scadenza (data_fine+1)
+          if (_oggi < _fine) {
+            eventi[idx].archiviato = false;
+            eventi[idx].stato = 'aperto';
+            showToast('Farmaco riportato in lista ✓');
+          } else {
+            showToast('Impegno aggiornato ✓');
+          }
+        } else if (_data && !_durata) {
+          // durata indefinita → de-archivia sempre se ha una data futura o presente
+          eventi[idx].archiviato = false;
+          eventi[idx].stato = 'aperto';
+          showToast('Farmaco riportato in lista ✓');
+        } else {
+          showToast('Impegno aggiornato ✓');
+        }
+      } else {
+        showToast('Impegno aggiornato ✓');
+      }
+    } else {
+      showToast('Impegno aggiornato ✓');
     }
-    showToast('Impegno aggiornato ✓');
   } else {
     const nuovoEv = {
       id: uid(),
