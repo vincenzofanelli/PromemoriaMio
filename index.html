@@ -4340,7 +4340,8 @@ function renderPannelloGiornata() {
 
 function riattivaFarmaco(id) {
   // Mostra mini-dialog con input data (default oggi) poi riattiva
-  const oggi = new Date().toISOString().slice(0, 10);
+  const _rn = new Date(); const _pr = n => String(n).padStart(2,'0');
+  const oggi = _rn.getFullYear()+'-'+_pr(_rn.getMonth()+1)+'-'+_pr(_rn.getDate());
   const eventi = leggiEventi();
   const ev = eventi.find(e => e.id === id);
   if (!ev) return;
@@ -4461,7 +4462,8 @@ function segnaAvvisoLetto(evId, notifIdx) {
 
 function renderAvvisiProssimi() {
   const oggi = new Date(); oggi.setHours(0,0,0,0);
-  const oggiStr = oggi.toISOString().slice(0,10);
+  const _pa = n => String(n).padStart(2,'0');
+  const oggiStr = oggi.getFullYear()+'-'+_pa(oggi.getMonth()+1)+'-'+_pa(oggi.getDate());
   const eventi = leggiEventi();
   const avvisi = []; // { ev, notifIdx, descLabel, dataFmt }
 
@@ -4482,7 +4484,9 @@ function renderAvvisiProssimi() {
       const tsAvviso = calcolaTimestampNotifica(n.desc, dataEv, null);
       if (!tsAvviso) return;
       const dataAvviso = new Date(tsAvviso); dataAvviso.setHours(0,0,0,0);
-      if (dataAvviso.toISOString().slice(0,10) !== oggiStr) return;
+      const _av = dataAvviso; const _pav = n => String(n).padStart(2,'0');
+      const _avStr = _av.getFullYear()+'-'+_pav(_av.getMonth()+1)+'-'+_pav(_av.getDate());
+      if (_avStr !== oggiStr) return;
       avvisi.push({ ev, notifIdx: ni, descLabel: n.desc, dataFmt });
     });
   }
@@ -4581,7 +4585,8 @@ function renderHome() {
           </button>
           ${ev.categoria === 'farmaci' ? (() => {
             const _ex = ev.extra || {};
-            const _oggi = new Date().toISOString().slice(0,10);
+            const _nw = new Date(); const _pf = n => String(n).padStart(2,'0');
+            const _oggi = _nw.getFullYear()+'-'+_pf(_nw.getMonth()+1)+'-'+_pf(_nw.getDate());
             const _entry = Array.isArray(_ex.assunzioni) ? _ex.assunzioni.find(a => a.data === _oggi) : null;
             const _prese = _entry ? _entry.dosi : 0;
             const _tot = Array.isArray(_ex.orari) ? _ex.orari.length : 1;
@@ -4666,7 +4671,9 @@ function farmacoDosaOggi(id) {
   const ev = eventi.find(e => e.id === id);
   if (!ev || ev.categoria !== 'farmaci') return;
   const extra = ev.extra || {};
-  const oggi = new Date().toISOString().slice(0, 10);
+  const _n = new Date();
+  const _pp = n => String(n).padStart(2,'0');
+  const oggi = _n.getFullYear()+'-'+_pp(_n.getMonth()+1)+'-'+_pp(_n.getDate());
   if (!Array.isArray(extra.assunzioni)) extra.assunzioni = [];
   let entry = extra.assunzioni.find(a => a.data === oggi);
   if (!entry) { entry = { data: oggi, dosi: 0 }; extra.assunzioni.push(entry); }
