@@ -454,37 +454,38 @@ body {
 
 /* === LISTA IMPEGNI (HOME) === */
 .section-label {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: var(--fg-3);
-  margin: 20px 0 8px;
+  color: #fff;
+  background: #555;
+  padding: 6px 10px;
+  margin: 20px -16px 8px;
+  border-radius: 0;
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .section-label { background: #444; }
+}
+:root[data-theme="dark"] .section-label { background: #444; }
 
 /* Sezione "Oggi" evidenziata */
 .section-label-oggi {
-  color: #991B1B;
-  background: #FEE2E2;
-  border-left: 4px solid #991B1B;
+  color: #fff;
+  background: #DC2626;
   padding: 6px 10px;
-  margin-left: -16px;
-  margin-right: -16px;
+  margin: 20px -16px 8px;
   border-radius: 0;
   font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  border-left: none;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .section-label-oggi {
-    background: #2D0A0A;
-    border-left-color: #EF4444;
-    color: #FCA5A5;
-  }
+  :root:not([data-theme="light"]) .section-label-oggi { background: #991B1B; }
 }
-:root[data-theme="dark"] .section-label-oggi {
-  background: #2D0A0A;
-  border-left-color: #EF4444;
-  color: #FCA5A5;
-}
+:root[data-theme="dark"] .section-label-oggi { background: #991B1B; }
 
 /* ── Pannello appuntamenti giornata ── */
 .pannello-giornata {
