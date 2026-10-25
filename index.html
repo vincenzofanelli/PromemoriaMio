@@ -4297,14 +4297,17 @@ function renderPannelloGiornata() {
         let doseTag = '';
         if (ev.categoria === 'farmaci') {
           // Usa la data del blocco (oggi o domani) — non sempre oggi
-          const _dataStr = dataRifStr || new Date().toISOString().slice(0,10);
+          const _now = new Date();
+          const _p = n => String(n).padStart(2,'0');
+          const _todayStr = _now.getFullYear()+'-'+_p(_now.getMonth()+1)+'-'+_p(_now.getDate());
+          const _dataStr = dataRifStr || _todayStr;
           const _assunzioni = Array.isArray(extra.assunzioni) ? extra.assunzioni : [];
           const _entry = _assunzioni.find(a => a.data === _dataStr);
           const _prese = _entry ? _entry.dosi : 0;
           const _tot = Array.isArray(extra.orari) ? extra.orari.length : 1;
           const _done = _prese >= _tot;
           // Pulsante dose solo per oggi; domani solo informativo (0/N)
-          const _isOggi = _dataStr === new Date().toISOString().slice(0,10);
+          const _isOggi = _dataStr === _todayStr;
           if (_isOggi) {
             doseTag = `<button onclick="event.stopPropagation();farmacoDosaOggi('${ev.id}')" style="border:none;background:${_done ? 'var(--fg-3)' : 'var(--accent)'};color:#fff;border-radius:6px;padding:2px 7px;font-size:0.75rem;font-weight:700;cursor:pointer;${_done ? 'opacity:0.5;pointer-events:none' : ''}">${_done ? '✓' : '💊'} ${_prese}/${_tot}</button>`;
           } else {
@@ -4326,8 +4329,10 @@ function renderPannelloGiornata() {
   const domaniItems = eventiGiorno(inizioDomani, fineDomani);
 
   let html = '';
-  const oggiStr   = inizioOggi.toISOString().slice(0,10);
-  const domaniStr = inizioDomani.toISOString().slice(0,10);
+  const _pad = n => String(n).padStart(2,'0');
+  const _fmtLocal = d => d.getFullYear()+'-'+_pad(d.getMonth()+1)+'-'+_pad(d.getDate());
+  const oggiStr   = _fmtLocal(inizioOggi);
+  const domaniStr = _fmtLocal(inizioDomani);
   html += blocco('Oggi — ' + inizioOggi.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' }), oggiItems, '', oggiStr);
   html += blocco('Domani — ' + inizioDomani.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' }), domaniItems, 'domani', domaniStr);
   return html;
