@@ -3516,8 +3516,11 @@ window.addEventListener('load', () => {
 // scroll al primo evento "oggi" dopo render home
 function scrollPrimoOggi() {
   setTimeout(() => {
+    // Scrolla al label "Oggi" così è visibile in cima
+    const label = document.querySelector('.section-label-oggi');
+    if (label) { label.scrollIntoView({behavior:'smooth', block:'start'}); return; }
     const card = document.querySelector('.ev-prossimo');
-    if (card) card.scrollIntoView({behavior:'smooth', block:'center'});
+    if (card) card.scrollIntoView({behavior:'smooth', block:'start'});
   }, 320);
 }
 
