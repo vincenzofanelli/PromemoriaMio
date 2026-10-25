@@ -4183,7 +4183,25 @@ function importaBackup(input) {
       alert('File non riconosciuto: nessuna chiave valida trovata.');
       return;
     }
-    if (!confirm(`Importare il backup?\nVerranno sovrascritti i dati attuali (${trovate.length} sezioni trovate).\nQuesta operazione non può essere annullata.`)) return;
+
+    // ── Controllo versione ────────────────────────────────────────────────────
+    const tsFile = payload._backup_ts || 0;
+    let tsLocale = 0;
+    try { tsLocale = parseInt(localStorage.getItem('promemoriamio_ultimo_backup') || '0', 10); } catch(e) {}
+
+    if (tsFile && tsLocale && tsFile < tsLocale) {
+      const fmtData = ts => {
+        const d = new Date(ts);
+        const pad = n => String(n).padStart(2,'0');
+        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      };
+      const msg1 = `⚠️ Attenzione\n\nI dati su questo dispositivo sono più recenti del file che stai importando.\n\nDati locali:  ${fmtData(tsLocale)}\nFile backup: ${fmtData(tsFile)}\n\nVuoi procedere comunque?`;
+      if (!confirm(msg1)) return;
+      const msg2 = `Confermi di voler sostituire i dati più recenti con una versione precedente?\n\nQuesta operazione non può essere annullata.`;
+      if (!confirm(msg2)) return;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     trovate.forEach(k => {
       try { localStorage.setItem(k, JSON.stringify(payload[k])); } catch(e) {}
     });
