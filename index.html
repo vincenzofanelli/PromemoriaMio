@@ -4026,6 +4026,8 @@ function classificaEvento(ev) {
   }
   if (dataGiorno.getTime() === oggi.getTime()) return 'oggi';
   if (dataGiorno.getTime() === domani.getTime()) return 'domani';
+  // Un evento ricorrente giornaliero non può finire in "settimana" o "futuro"
+  if ((ev.extra || {}).freq === 'giornaliera') return 'oggi';
   if (dataGiorno <= sett) return 'settimana';
   return 'futuro';
 }
@@ -4230,13 +4232,45 @@ function renderPannelloGiornata() {
   function eventiGiorno(inizio, fine) {
     return tutti.filter(ev => {
       if (ev.archiviato) return false;
+      const extra = ev.extra || {};
+      const freq = extra.freq;
+      // Evento ricorrente: verifica se attivo nel giorno target (proiezione visiva)
+      if (freq) {
+        const dataInizioStr = extra.data;
+        if (!dataInizioStr) return false;
+        const dataInizio = parseDataLocale(dataInizioStr.split('T')[0]);
+        if (isNaN(dataInizio)) return false;
+        // Non ancora iniziato
+        if (dataInizio > fine) return false;
+        // Verifica durata: se definita, calcola ultimo giorno
+        if (extra.durata) {
+          const dataFine = new Date(dataInizio);
+          dataFine.setDate(dataFine.getDate() + extra.durata - 1);
+          dataFine.setHours(23, 59, 59, 999);
+          if (dataFine < inizio) return false;
+        }
+        // Per freq giornaliera è sempre attivo; per altre freq verifica che cada nel range
+        if (freq === 'giornaliera') return true;
+        // Per altre frequenze usa dataEventoEffettiva (funziona per oggi)
+        // Per domani e oltre, accetta se la prossima occorrenza cade nel range
+        const ds = dataEventoEffettiva(ev);
+        if (!ds) return false;
+        const d = parseDataLocale(ds.split('T')[0]);
+        if (!isNaN(d) && d >= inizio && d <= fine) return true;
+        // Calcola occorrenza successiva rispetto a oggi
+        const prossima = calcolaDataProssima(extra.data, freq, null);
+        if (!prossima) return false;
+        const dp = parseDataLocale(prossima.split('T')[0]);
+        return !isNaN(dp) && dp >= inizio && dp <= fine;
+      }
+      // Evento singolo: data esatta
       const ds = dataEventoEffettiva(ev);
       if (!ds) return false;
       const d = parseDataLocale(ds);
       return !isNaN(d) && d >= inizio && d <= fine;
     }).sort((a, b) => {
-      const da = parseDataLocale(dataEventoEffettiva(a) || '');
-      const db = parseDataLocale(dataEventoEffettiva(b) || '');
+      const da = parseDataLocale((dataEventoEffettiva(a) || '').split('T')[0]);
+      const db = parseDataLocale((dataEventoEffettiva(b) || '').split('T')[0]);
       return da - db;
     });
   }
