@@ -3515,15 +3515,12 @@ window.addEventListener('load', () => {
   aggiornaOrari();
 });
 
-// scroll al primo evento "oggi" dopo render home
+// scroll al top della home dopo render — mostra sempre il pannello Oggi/Domani
 function scrollPrimoOggi() {
   setTimeout(() => {
-    // Scrolla al label "Oggi" così è visibile in cima
-    const label = document.querySelector('.section-label-oggi');
-    if (label) { label.scrollIntoView({behavior:'smooth', block:'start'}); return; }
-    const card = document.querySelector('.ev-prossimo');
-    if (card) card.scrollIntoView({behavior:'smooth', block:'start'});
-  }, 320);
+    const lista = document.getElementById('home-list');
+    if (lista) lista.scrollTop = 0;
+  }, 50);
 }
 
 // ============================================================
