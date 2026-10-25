@@ -4096,7 +4096,7 @@ function aggiornaBackupBanner() {
 function esportaBackup() {
   const payload = {};
   const chiavi = [
-    'agendame_eventi', 'agendame_liste', 'promemoriamio_conti'
+    'agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo'
   ];
   chiavi.forEach(k => {
     try {
@@ -4123,7 +4123,7 @@ function esportaBackup() {
 async function condividiBackup() {
   // Costruisce il payload identico a esportaBackup()
   const payload = {};
-  const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti'];
+  const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo'];
   chiavi.forEach(k => {
     try {
       const v = localStorage.getItem(k);
@@ -4177,7 +4177,7 @@ function importaBackup(input) {
       alert('File non valido: JSON non leggibile.');
       return;
     }
-    const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti'];
+    const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo'];
     const trovate = chiavi.filter(k => k in payload);
     if (trovate.length === 0) {
       alert('File non riconosciuto: nessuna chiave valida trovata.');
