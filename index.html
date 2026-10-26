@@ -4326,7 +4326,8 @@ function renderPannelloGiornata() {
   }
 
   const oggiItems   = eventiGiorno(inizioOggi, fineOggi);
-  const domaniItems = eventiGiorno(inizioDomani, fineDomani);
+  // I farmaci appaiono solo nel blocco Oggi — rischio doppia dose se visibili in Domani
+  const domaniItems = eventiGiorno(inizioDomani, fineDomani).filter(ev => ev.categoria !== 'farmaci');
 
   let html = '';
   const _pad = n => String(n).padStart(2,'0');
