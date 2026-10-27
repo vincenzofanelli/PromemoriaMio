@@ -545,7 +545,7 @@ body {
 .pannello-giornata-vuoto {
   padding: 10px 14px;
   font-size: 0.85rem;
-  color: var(--fg-3);
+  color: #000000;
   font-style: italic;
 }
 @media (prefers-color-scheme: dark) {
@@ -962,7 +962,7 @@ body {
 .profile-sub {
   text-align: center;
   font-size: 0.8rem;
-  color: var(--fg-3);
+  color: #000000;
   margin-bottom: 20px;
 }
 
@@ -978,7 +978,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: var(--fg-3);
+  color: #000000;
   padding: 12px 16px 4px;
 }
 .settings-row {
@@ -993,7 +993,7 @@ body {
 .settings-row svg { width: 20px; height: 20px; color: var(--fg-2); flex-shrink: 0; }
 .settings-row-body { flex: 1; min-width: 0; }
 .settings-row-label { font-size: 0.9rem; font-weight: 600; color: var(--fg); }
-.settings-row-value { font-size: 0.78rem; color: var(--fg-3); margin-top: 1px; }
+.settings-row-value { font-size: 0.78rem; color: #000000; margin-top: 1px; }
 .settings-row-chevron { color: var(--fg-3); }
 .settings-row-chevron svg { width: 16px; height: 16px; }
 
@@ -1092,9 +1092,9 @@ body {
 .btn-nuova-lista svg { width: 14px; height: 14px; }
 
 .lista-card {
-  background: #f3e5f5;
-  border: 1.5px solid #9c6fb5;
-  border-left: 4px solid #6a1b9a;
+  background: #ffffff;
+  border: 1.5px solid #d8b4fe;
+  border-left: 4px solid #7c3aed;
   border-radius: var(--radius);
   padding: 14px 16px;
   margin-bottom: 10px;
@@ -1102,6 +1102,7 @@ body {
   align-items: center;
   gap: 12px;
   cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .lista-card:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(59,111,232,.18); }
@@ -1128,7 +1129,7 @@ body {
 }
 .lista-card-meta {
   font-size: 0.75rem;
-  color: var(--fg-3);
+  color: #000000;
   margin-top: 2px;
 }
 .lista-card-badge {
@@ -1144,42 +1145,69 @@ body {
 .lista-card-badge.zero { background: var(--bg); color: var(--fg-3); }
 
 /* ── COLORI SCHERMATE PRINCIPALI ─────────────────────────────────── */
+/*
+   Ogni schermata ha:
+   - sfondo proprio (tenue, non bianco)
+   - card bianca con ombra per contrasto netto
+   - accento colorato su bordo sinistro e label sezioni
+*/
 
-/* Home — giallo pesca caldo */
+/* ── HOME — arancio caldo ── */
 #home-list {
-  background: #fef9ee;
+  background: #fff7ed;
+}
+#home-list .event-card {
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10);
+  border-left: 4px solid #f97316;
+}
+#home-list .section-label {
+  background: #f97316;
+  color: #fff;
+}
+#home-list .section-label-oggi {
+  background: #dc2626;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) #home-list { background: #1c1a0d; }
+  :root:not([data-theme="light"]) #home-list { background: #1c1205; }
 }
-:root[data-theme="dark"] #home-list { background: #1c1a0d; }
+:root[data-theme="dark"] #home-list { background: #1c1205; }
 
-/* Archivio — rosa tenue */
+/* ── ARCHIVIO — viola ── */
 #archivio-list {
-  background: #fff0f0;
+  background: #faf5ff;
+}
+#archivio-list .event-card {
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10);
+  border-left: 4px solid #7c3aed;
+}
+#archivio-list .section-label {
+  background: #7c3aed;
+  color: #fff;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) #archivio-list { background: #1c0f0f; }
+  :root:not([data-theme="light"]) #archivio-list { background: #130d1f; }
 }
-:root[data-theme="dark"] #archivio-list { background: #1c0f0f; }
+:root[data-theme="dark"] #archivio-list { background: #130d1f; }
 
-/* Liste — verde salvia */
+/* ── LISTE — verde ── */
 #liste-scroll {
-  background: #e8f5e9;
+  background: #f0fdf4;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) #liste-scroll { background: #0d1a0e; }
+  :root:not([data-theme="light"]) #liste-scroll { background: #071a0a; }
 }
-:root[data-theme="dark"] #liste-scroll { background: #0d1a0e; }
+:root[data-theme="dark"] #liste-scroll { background: #071a0a; }
 
-/* Profilo — azzurro cielo */
+/* ── PROFILO — azzurro ── */
 #screen-utente .scroll-body {
-  background: #e8f4f8;
+  background: #f0f9ff;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) #screen-utente .scroll-body { background: #0d1a1f; }
+  :root:not([data-theme="light"]) #screen-utente .scroll-body { background: #071520; }
 }
-:root[data-theme="dark"] #screen-utente .scroll-body { background: #0d1a1f; }
+:root[data-theme="dark"] #screen-utente .scroll-body { background: #071520; }
 
 /* archivio */
 .archivio-section {
@@ -1193,7 +1221,7 @@ body {
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--fg-3);
+  color: #000000;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   border: none;
@@ -1319,7 +1347,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: var(--fg-3);
+  color: #000000;
   padding: 12px 2px 6px;
 }
 
