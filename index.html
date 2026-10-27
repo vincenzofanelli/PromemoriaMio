@@ -663,6 +663,7 @@ body {
   :root:not([data-theme="light"]) .cat-icon.condominio { background: #2D1A0A; }
   :root:not([data-theme="light"]) .cat-icon.conti     { background: #0F2318; }
   :root:not([data-theme="light"]) .cat-icon.liste     { background: #1a1f3a; }
+  :root:not([data-theme="light"]) .cat-icon.appunti   { background: #1c1a00; border-color: #3B82F6; }
 }
 :root[data-theme="dark"] .ev-oggi     { border-color: #7F1D1D; }
 :root[data-theme="dark"] .ev-domani   { border-color: #78350F; }
@@ -682,6 +683,7 @@ body {
 :root[data-theme="dark"] .cat-icon.condominio { background: #2D1A0A; }
 :root[data-theme="dark"] .cat-icon.conti     { background: #0F2318; }
 :root[data-theme="dark"] .cat-icon.liste     { background: #1a1f3a; }
+:root[data-theme="dark"] .cat-icon.appunti   { background: #1c1a00; border-color: #3B82F6; }
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 .ev-oggi     { background: var(--col-oggi-bg);    border-color: #FECACA; }
@@ -871,6 +873,12 @@ body {
 .cat-icon.conti svg   { color: #16A34A; }
 .cat-icon.liste       { background: #EFF6FF; }
 .cat-icon.liste svg   { color: #2563EB; }
+.cat-icon.appunti     { background: #FEFCE8; border: 3px solid #1D4ED8; }
+.cat-icon.appunti svg { color: #1D4ED8; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .cat-icon.appunti { background: #1c1a00; border-color: #3B82F6; }
+}
+:root[data-theme="dark"] .cat-icon.appunti { background: #1c1a00; border-color: #3B82F6; }
 
 .cat-label {
   font-size: 0.78rem;
@@ -1144,6 +1152,65 @@ body {
 }
 .lista-card-badge.zero { background: var(--bg); color: var(--fg-3); }
 
+/* ── APPUNTI RAPIDI ──────────────────────────────────────────────── */
+.appunto-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #ffffff;
+  border: 1.5px solid #fde68a;
+  border-left: 4px solid #1D4ED8;
+  border-radius: var(--radius-s);
+  padding: 12px 12px;
+  margin: 0 0 8px;
+  cursor: default;
+  transition: box-shadow 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.07);
+}
+.appunto-row.drag-over { border-color: #1D4ED8; box-shadow: 0 0 0 2px #93C5FD; }
+.appunto-row.dragging  { opacity: 0.4; }
+.appunto-drag-handle   { padding-top: 2px; cursor: grab; flex-shrink: 0; }
+.appunto-num {
+  font-size: 0.7rem; font-weight: 800; color: #1D4ED8;
+  min-width: 18px; padding-top: 3px; flex-shrink: 0;
+}
+.appunto-body { flex: 1; min-width: 0; }
+.appunto-testo {
+  display: block; font-size: 0.92rem; font-weight: 500;
+  color: #111; cursor: pointer; word-break: break-word; line-height: 1.5;
+}
+.appunto-testo.vuoto { color: #6B7280; font-style: italic; }
+.appunto-input {
+  width: 100%; border: 1.5px solid #1D4ED8; border-radius: 6px;
+  padding: 8px 10px; font-size: 0.92rem; font-family: inherit;
+  color: #111; background: #fff; resize: vertical; box-sizing: border-box;
+}
+.appunto-input:focus { outline: none; box-shadow: 0 0 0 2px #BFDBFE; }
+.appunto-actions {
+  display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;
+}
+.appunto-save {
+  background: #1D4ED8; color: #fff; border: none; border-radius: 6px;
+  padding: 5px 14px; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.appunto-cancel {
+  background: none; color: #6B7280; border: 1px solid #D1D5DB; border-radius: 6px;
+  padding: 5px 10px; font-size: 0.82rem; cursor: pointer; font-family: inherit;
+}
+.appunto-del {
+  background: none; color: #DC2626; border: 1px solid #FECACA; border-radius: 6px;
+  padding: 5px 10px; font-size: 0.82rem; cursor: pointer; font-family: inherit; margin-left: auto;
+}
+.hidden { display: none !important; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .appunto-row { background: #1a1a0a; border-color: #78350f; }
+  :root:not([data-theme="light"]) .appunto-testo { color: #f0f0f0; }
+  :root:not([data-theme="light"]) .appunto-input { background: #111; color: #f0f0f0; border-color: #3B82F6; }
+}
+:root[data-theme="dark"] .appunto-row { background: #1a1a0a; border-color: #78350f; }
+:root[data-theme="dark"] .appunto-testo { color: #f0f0f0; }
+:root[data-theme="dark"] .appunto-input { background: #111; color: #f0f0f0; border-color: #3B82F6; }
+
 /* ── COLORI SCHERMATE PRINCIPALI ─────────────────────────────────── */
 /*
    Ogni schermata ha:
@@ -1198,15 +1265,17 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 4px;
+  padding: 8px 12px;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: #000000;
+  color: #166534;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  border: none;
-  background: none;
+  border: 1.5px solid #86efac;
+  background: #dcfce7;
+  border-radius: 8px;
+  margin-bottom: 4px;
   width: 100%;
   font-family: inherit;
 }
@@ -1967,6 +2036,20 @@ body {
         <span class="cat-label">Acquisti</span>
       </div>
 
+      <!-- Appunti rapidi -->
+      <div class="cat-item" onclick="goTo('appunti')">
+        <div class="cat-icon appunti">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="6" y="3" width="20" height="26" rx="3"/>
+            <line x1="11" y1="10" x2="21" y2="10"/>
+            <line x1="11" y1="15" x2="21" y2="15"/>
+            <line x1="11" y1="20" x2="17" y2="20"/>
+            <path d="M19 22 L22 19 L26 23 L23 26 Z" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="cat-label">Appunti rapidi</span>
+      </div>
+
       <!-- Auto -->
       <div class="cat-item" onclick="goTo('form-auto')">
         <div class="cat-icon auto">
@@ -2110,6 +2193,28 @@ body {
   </div>
 </div>
 
+
+<!-- ============================================================
+     SCHERMATA: APPUNTI RAPIDI
+     ============================================================ -->
+<div class="screen hidden" id="screen-appunti">
+  <div class="header">
+    <button class="header-back" onclick="goTo('nuovo')">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      Categorie
+    </button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:28px;height:28px;background:#FEFCE8;border:2px solid #1D4ED8;border-radius:8px;display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" stroke-width="2" style="width:16px;height:16px"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+      </div>
+      <span style="font-size:0.95rem;font-weight:700;color:var(--fg)">Appunti rapidi</span>
+    </div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="scroll-body" id="appunti-list" style="background:#fefce8">
+    <!-- popolato da renderAppunti() -->
+  </div>
+</div>
 
 <!-- ============================================================
      FORM: VISITE MEDICHE (esempio)
@@ -3281,6 +3386,7 @@ const screens = {
   'form-condominio':    'screen-form-condominio',
   liste:                'screen-liste',
   'lista-dettaglio':    'screen-lista-dettaglio',
+  appunti:              'screen-appunti',
   conti:                'screen-conti',
   'conti-dettaglio':    'screen-conti-dettaglio',
   utente:               'screen-utente',
@@ -3372,6 +3478,9 @@ function goTo(name) {
   }
   if (name === 'liste') {
     renderListe();
+  }
+  if (name === 'appunti') {
+    renderAppunti();
   }
   if (name === 'conti') {
     renderListaConti();
@@ -3914,6 +4023,150 @@ function toggleArchivio() {
   const list = document.getElementById('archivio-lista-list');
   btn.classList.toggle('open');
   list.classList.toggle('open');
+}
+
+// ============================================================
+// APPUNTI RAPIDI
+// ============================================================
+const LS_APPUNTI = 'promemoriamio_appunti';
+const APPUNTI_MIN_SLOT = 5;
+
+function leggiAppunti() {
+  try { return JSON.parse(localStorage.getItem(LS_APPUNTI)) || []; }
+  catch { return []; }
+}
+function salvaAppunti(arr) {
+  localStorage.setItem(LS_APPUNTI, JSON.stringify(arr));
+}
+
+function renderAppunti() {
+  const container = document.getElementById('appunti-list');
+  if (!container) return;
+  const appunti = leggiAppunti();
+
+  // assicura almeno APPUNTI_MIN_SLOT slot, di cui almeno uno vuoto in fondo
+  const vuoti = appunti.filter(a => !a.testo.trim()).length;
+  if (appunti.length < APPUNTI_MIN_SLOT || vuoti === 0) {
+    const mancanti = Math.max(APPUNTI_MIN_SLOT - appunti.length, vuoti === 0 ? 1 : 0);
+    for (let i = 0; i < mancanti; i++) {
+      appunti.push({ id: 'ap_' + Date.now() + '_' + Math.random().toString(36).slice(2), testo: '' });
+    }
+    salvaAppunti(appunti);
+  }
+
+  container.innerHTML = '';
+  const ul = document.createElement('div');
+  ul.id = 'appunti-slots';
+  ul.style.cssText = 'padding:12px 0';
+
+  appunti.forEach((ap, idx) => {
+    const row = document.createElement('div');
+    row.className = 'appunto-row';
+    row.draggable = true;
+    row.dataset.id = ap.id;
+    row.innerHTML = `
+      <div class="appunto-drag-handle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:#9CA3AF">
+          <circle cx="9" cy="6" r="1.2" fill="currentColor"/><circle cx="15" cy="6" r="1.2" fill="currentColor"/>
+          <circle cx="9" cy="12" r="1.2" fill="currentColor"/><circle cx="15" cy="12" r="1.2" fill="currentColor"/>
+          <circle cx="9" cy="18" r="1.2" fill="currentColor"/><circle cx="15" cy="18" r="1.2" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="appunto-num">${idx + 1}</div>
+      <div class="appunto-body">
+        <span class="appunto-testo${!ap.testo ? ' vuoto' : ''}" data-id="${ap.id}">
+          ${ap.testo ? ap.testo.replace(/</g,'&lt;') : 'Tocca per scrivere…'}
+        </span>
+        <textarea class="appunto-input hidden" data-id="${ap.id}" rows="2" placeholder="Scrivi qui…">${ap.testo}</textarea>
+        <div class="appunto-actions hidden">
+          <button class="appunto-save" data-id="${ap.id}">Salva</button>
+          <button class="appunto-cancel" data-id="${ap.id}">Annulla</button>
+          <button class="appunto-del" data-id="${ap.id}">Elimina</button>
+        </div>
+      </div>`;
+    ul.appendChild(row);
+  });
+
+  container.appendChild(ul);
+  abilitaDragDropAppunti(ul);
+
+  // eventi tap → editing
+  ul.querySelectorAll('.appunto-testo').forEach(el => {
+    el.addEventListener('click', () => apriAppunto(el.dataset.id));
+  });
+  ul.querySelectorAll('.appunto-save').forEach(btn => {
+    btn.addEventListener('click', () => salvaAppunto(btn.dataset.id));
+  });
+  ul.querySelectorAll('.appunto-cancel').forEach(btn => {
+    btn.addEventListener('click', () => annullaAppunto(btn.dataset.id));
+  });
+  ul.querySelectorAll('.appunto-del').forEach(btn => {
+    btn.addEventListener('click', () => eliminaAppunto(btn.dataset.id));
+  });
+}
+
+function apriAppunto(id) {
+  const row = document.querySelector(`.appunto-testo[data-id="${id}"]`)?.closest('.appunto-row');
+  if (!row) return;
+  row.querySelector('.appunto-testo').classList.add('hidden');
+  row.querySelector('.appunto-input').classList.remove('hidden');
+  row.querySelector('.appunto-actions').classList.remove('hidden');
+  row.querySelector('.appunto-input').focus();
+}
+
+function salvaAppunto(id) {
+  const appunti = leggiAppunti();
+  const ap = appunti.find(a => a.id === id);
+  const input = document.querySelector(`.appunto-input[data-id="${id}"]`);
+  if (!ap || !input) return;
+  ap.testo = input.value.trim();
+  salvaAppunti(appunti);
+  renderAppunti();
+}
+
+function annullaAppunto(id) {
+  renderAppunti();
+}
+
+function eliminaAppunto(id) {
+  const appunti = leggiAppunti().filter(a => a.id !== id);
+  salvaAppunti(appunti);
+  renderAppunti();
+}
+
+function abilitaDragDropAppunti(container) {
+  let dragged = null;
+  container.querySelectorAll('.appunto-row').forEach(item => {
+    item.addEventListener('dragstart', e => {
+      dragged = item;
+      setTimeout(() => item.classList.add('dragging'), 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      container.querySelectorAll('.appunto-row').forEach(i => i.classList.remove('drag-over'));
+      dragged = null;
+      // salva nuovo ordine
+      const nuovoOrdine = [...container.querySelectorAll('.appunto-row')].map(i => i.dataset.id);
+      const appunti = leggiAppunti();
+      const riordinati = nuovoOrdine.map(id => appunti.find(a => a.id === id)).filter(Boolean);
+      // mantieni eventuali non presenti nel DOM
+      const extra = appunti.filter(a => !nuovoOrdine.includes(a.id));
+      salvaAppunti([...riordinati, ...extra]);
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (dragged && dragged !== item) {
+        item.classList.add('drag-over');
+        const rect = item.getBoundingClientRect();
+        const mid  = rect.top + rect.height / 2;
+        if (e.clientY < mid) container.insertBefore(dragged, item);
+        else container.insertBefore(dragged, item.nextSibling);
+      }
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => { e.preventDefault(); item.classList.remove('drag-over'); });
+  });
 }
 
 // ============================================================
