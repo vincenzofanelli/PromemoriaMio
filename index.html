@@ -1092,9 +1092,9 @@ body {
 .btn-nuova-lista svg { width: 14px; height: 14px; }
 
 .lista-card {
-  background: #eef3ff;
-  border: 1.5px solid #c7d7fb;
-  border-left: 4px solid var(--accent);
+  background: #f3e5f5;
+  border: 1.5px solid #9c6fb5;
+  border-left: 4px solid #6a1b9a;
   border-radius: var(--radius);
   padding: 14px 16px;
   margin-bottom: 10px;
@@ -1143,14 +1143,43 @@ body {
 }
 .lista-card-badge.zero { background: var(--bg); color: var(--fg-3); }
 
-/* sfondo schermata liste */
-#liste-scroll {
-  background: #f0f4ff;
+/* ── COLORI SCHERMATE PRINCIPALI ─────────────────────────────────── */
+
+/* Home — giallo pesca caldo */
+#home-list {
+  background: #fef9ee;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) #liste-scroll { background: #111827; }
+  :root:not([data-theme="light"]) #home-list { background: #1c1a0d; }
 }
-:root[data-theme="dark"] #liste-scroll { background: #111827; }
+:root[data-theme="dark"] #home-list { background: #1c1a0d; }
+
+/* Archivio — rosa tenue */
+#archivio-list {
+  background: #fff0f0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #archivio-list { background: #1c0f0f; }
+}
+:root[data-theme="dark"] #archivio-list { background: #1c0f0f; }
+
+/* Liste — verde salvia */
+#liste-scroll {
+  background: #e8f5e9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #liste-scroll { background: #0d1a0e; }
+}
+:root[data-theme="dark"] #liste-scroll { background: #0d1a0e; }
+
+/* Profilo — azzurro cielo */
+#screen-utente .scroll-body {
+  background: #e8f4f8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #screen-utente .scroll-body { background: #0d1a1f; }
+}
+:root[data-theme="dark"] #screen-utente .scroll-body { background: #0d1a1f; }
 
 /* archivio */
 .archivio-section {
