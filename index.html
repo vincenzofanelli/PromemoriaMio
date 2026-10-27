@@ -1092,8 +1092,9 @@ body {
 .btn-nuova-lista svg { width: 14px; height: 14px; }
 
 .lista-card {
-  background: var(--bg-card);
-  border: 1.5px solid var(--border);
+  background: #eef3ff;
+  border: 1.5px solid #c7d7fb;
+  border-left: 4px solid var(--accent);
   border-radius: var(--radius);
   padding: 14px 16px;
   margin-bottom: 10px;
@@ -1103,7 +1104,11 @@ body {
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.lista-card:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(59,111,232,.1); }
+.lista-card:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(59,111,232,.18); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lista-card { background: #1a2340; border-color: #2d3f6e; border-left-color: var(--accent); }
+}
+:root[data-theme="dark"] .lista-card { background: #1a2340; border-color: #2d3f6e; border-left-color: var(--accent); }
 .lista-card-icon {
   width: 42px; height: 42px;
   border-radius: 12px;
@@ -1137,6 +1142,15 @@ body {
   flex-shrink: 0;
 }
 .lista-card-badge.zero { background: var(--bg); color: var(--fg-3); }
+
+/* sfondo schermata liste */
+#liste-scroll {
+  background: #f0f4ff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #liste-scroll { background: #111827; }
+}
+:root[data-theme="dark"] #liste-scroll { background: #111827; }
 
 /* archivio */
 .archivio-section {
@@ -1208,17 +1222,17 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--bg-card);
-  border: 1.5px solid #d1d5db;
-  border-left: 4px solid var(--accent);
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-left: 4px solid #f59e0b;
   border-radius: var(--radius-s);
   padding: 13px 14px;
   margin-bottom: 6px;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .todo-item { border-color: #374151; border-left-color: var(--accent); }
+  :root:not([data-theme="light"]) .todo-item { background: #1c1a0f; border-color: #78350f; border-left-color: #f59e0b; }
 }
-:root[data-theme="dark"] .todo-item { border-color: #374151; border-left-color: var(--accent); }
+:root[data-theme="dark"] .todo-item { background: #1c1a0f; border-color: #78350f; border-left-color: #f59e0b; }
 .todo-item.done {
   background: #f0fdf4;
   border-color: #bbf7d0;
