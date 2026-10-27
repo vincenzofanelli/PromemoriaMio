@@ -1213,9 +1213,17 @@ body {
   border-radius: var(--radius-s);
   padding: 13px 14px;
   margin-bottom: 6px;
-  transition: opacity 0.2s;
 }
-.todo-item.done { opacity: 0.45; }
+.todo-item.done {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .todo-item.done { background: #052e16; border-color: #166534; }
+}
+:root[data-theme="dark"] .todo-item.done { background: #052e16; border-color: #166534; }
+/* drag-over highlight */
+.todo-item.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
 .todo-checkbox {
   width: 22px; height: 22px;
   border-radius: 6px;
@@ -1235,7 +1243,10 @@ body {
   color: var(--fg);
   word-break: break-word;
 }
-.todo-item.done .todo-text { text-decoration: line-through; color: var(--fg-3); }
+.todo-item.done .todo-text { color: var(--fg); }
+/* handle drag */
+.todo-item[draggable="true"] { cursor: grab; }
+.todo-item.dragging { opacity: 0.4; }
 .todo-del {
   color: var(--fg-3);
   border: none;
@@ -3022,8 +3033,9 @@ body {
       <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
       Liste
     </button>
-    <span id="lista-dettaglio-title" style="font-size:0.95rem;font-weight:700;color:var(--fg);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-    <div style="width:60px"></div>
+    <span id="lista-dettaglio-title" style="font-size:0.95rem;font-weight:700;color:var(--fg);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+    <button id="btn-sort-az" onclick="ordinaAlfabetico()" title="Ordina A→Z"
+      style="border:1.5px solid var(--border);background:var(--bg-card);color:var(--fg-2);border-radius:8px;padding:5px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">A→Z</button>
   </div>
 
   <div class="scroll-body" id="lista-dettaglio-scroll">
@@ -3633,8 +3645,19 @@ function renderDettaglio() {
   document.getElementById('lista-dettaglio-title').textContent = lista.nome;
   document.getElementById('todo-new-input').value = '';
 
-  const aperte  = lista.voci.filter(v => !v.done);
+  // Ordina voci aperte: manuale se ordineManuale=true, altrimenti alfabetico
+  let aperte = lista.voci.filter(v => !v.done);
   const chiuse  = lista.voci.filter(v =>  v.done);
+  if (!lista.ordineManuale) {
+    aperte = aperte.slice().sort((a, b) => a.testo.localeCompare(b.testo, 'it'));
+  }
+
+  // Aggiorna aspetto pulsante A→Z
+  const btnAZ = document.getElementById('btn-sort-az');
+  if (btnAZ) {
+    btnAZ.style.opacity = lista.ordineManuale ? '1' : '0.4';
+    btnAZ.title = lista.ordineManuale ? 'Torna all\'ordine alfabetico' : 'Ordine alfabetico attivo';
+  }
 
   const wAperte = document.getElementById('todo-aperte-wrap');
   const wChiuse = document.getElementById('todo-chiuse-wrap');
@@ -3650,6 +3673,9 @@ function renderDettaglio() {
   aperte.forEach(v => wAperte.appendChild(buildTodoItem(v, lista)));
   sep.style.display = chiuse.length > 0 ? 'block' : 'none';
   chiuse.forEach(v => wChiuse.appendChild(buildTodoItem(v, lista)));
+
+  // Attiva drag & drop sulle voci aperte
+  abilitaDragDrop(wAperte);
 
   // disabilita "Archivia" se già archiviata
   const btnArch = document.querySelector('.btn-archivia');
@@ -3667,6 +3693,7 @@ function buildTodoItem(voce, lista) {
   const div = document.createElement('div');
   div.className = 'todo-item' + (voce.done ? ' done' : '');
   div.dataset.id = voce.id;
+  if (!voce.done) div.draggable = true;
 
   div.innerHTML = `
     <div class="todo-checkbox ${voce.done ? 'checked' : ''}" onclick="toggleTodo('${lista.id}','${voce.id}')">
@@ -3692,6 +3719,7 @@ function aggiungiTodo() {
   const lista = liste.find(l => l.id === listaCorrenteId);
   if (!lista) return;
   lista.voci.push({ id: uid(), testo, done: false, creata: Date.now() });
+  lista.ordineManuale = false; // nuova voce → torna alfabetico
   salvaListe(liste);
   input.value = '';
   renderDettaglio();
@@ -3715,6 +3743,69 @@ function eliminaTodo(listaId, voceId) {
   lista.voci = lista.voci.filter(v => v.id !== voceId);
   salvaListe(liste);
   renderDettaglio();
+}
+
+// ---- ordina alfabetico ----
+function ordinaAlfabetico() {
+  const liste = leggiListe();
+  const lista = liste.find(l => l.id === listaCorrenteId);
+  if (!lista) return;
+  lista.ordineManuale = false;
+  // Riordina fisicamente l'array: aperte alfabetiche + done invariate
+  const aperte = lista.voci.filter(v => !v.done).sort((a, b) => a.testo.localeCompare(b.testo, 'it'));
+  const chiuse = lista.voci.filter(v => v.done);
+  lista.voci = [...aperte, ...chiuse];
+  salvaListe(liste);
+  renderDettaglio();
+}
+
+// ---- drag & drop voci aperte ----
+function abilitaDragDrop(container) {
+  let dragged = null;
+
+  container.querySelectorAll('.todo-item[draggable="true"]').forEach(item => {
+    item.addEventListener('dragstart', e => {
+      dragged = item;
+      setTimeout(() => item.classList.add('dragging'), 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      container.querySelectorAll('.todo-item').forEach(i => i.classList.remove('drag-over'));
+      dragged = null;
+      // Salva nuovo ordine
+      const nuovoOrdineIds = [...container.querySelectorAll('.todo-item')].map(i => i.dataset.id);
+      const liste = leggiListe();
+      const lista = liste.find(l => l.id === listaCorrenteId);
+      if (!lista) return;
+      const chiuse = lista.voci.filter(v => v.done);
+      const aperte = lista.voci.filter(v => !v.done);
+      const riordinate = nuovoOrdineIds.map(id => aperte.find(v => v.id === id)).filter(Boolean);
+      lista.voci = [...riordinate, ...chiuse];
+      lista.ordineManuale = true;
+      salvaListe(liste);
+      // Aggiorna solo il pulsante senza re-render completo
+      const btnAZ = document.getElementById('btn-sort-az');
+      if (btnAZ) { btnAZ.style.opacity = '1'; btnAZ.title = 'Torna all\'ordine alfabetico'; }
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragged && item !== dragged) {
+        container.querySelectorAll('.todo-item').forEach(i => i.classList.remove('drag-over'));
+        item.classList.add('drag-over');
+        const rect = item.getBoundingClientRect();
+        const mid  = rect.top + rect.height / 2;
+        if (e.clientY < mid) {
+          container.insertBefore(dragged, item);
+        } else {
+          container.insertBefore(dragged, item.nextSibling);
+        }
+      }
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => { e.preventDefault(); item.classList.remove('drag-over'); });
+  });
 }
 
 // ---- archivia ----
