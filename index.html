@@ -13,6 +13,16 @@
 
 .farmaci-pillole-panel{margin:6px 0 4px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:0.8rem}.fpp-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0}.fpp-label{color:var(--fg-2)}.fpp-val{font-weight:700;color:var(--fg)}.fpp-divider{border-top:1px solid var(--border);margin:6px 0}.fpp-hint{color:var(--fg);padding:2px 0;font-size:0.79rem;line-height:1.4}.fpp-note{color:var(--fg-3);font-size:0.72rem;margin-top:5px;font-style:italic}
 .fpp-stato{margin-top:5px;padding:5px 8px;border-radius:7px;font-size:0.79rem;font-weight:600}.fpp-stato.ok{background:#dcfce7;color:#166534}.fpp-stato.warn{background:#fef3c7;color:#92400e}.fpp-warn{color:#dc2626}.fpp-delta{font-size:0.75rem;background:#fee2e2;color:#dc2626;border-radius:4px;padding:1px 4px;margin-left:3px}.fpp-allinea{display:block;width:100%;margin-top:7px;padding:6px 0;background:none;border:1.5px solid var(--accent);border-radius:7px;color:var(--accent);font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit}
+.fpp-big-row{display:flex;gap:6px;margin-bottom:8px}
+.fpp-big-cell{flex:1;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 4px}
+.fpp-big-cell--warn{background:#fef9ec;border-color:#f59e0b}
+.fpp-big-cell--accent{background:#eff6ff;border-color:var(--accent)}
+@media(prefers-color-scheme:dark){.fpp-big-cell--warn{background:#422006;border-color:#d97706}.fpp-big-cell--accent{background:#1e3a5f;border-color:#3b82f6}}
+.fpp-big-num{font-size:1.6rem;font-weight:800;line-height:1;color:var(--fg)}
+.fpp-big-cell--warn .fpp-big-num{color:#b45309}
+.fpp-big-cell--accent .fpp-big-num{color:var(--accent)}
+.fpp-big-lbl{font-size:0.68rem;font-weight:600;color:var(--fg-2);margin-top:3px;text-transform:uppercase;letter-spacing:0.3px}
+.fpp-small-row{display:flex;gap:8px;align-items:center;font-size:0.78rem;color:var(--fg-2);margin-bottom:4px;flex-wrap:wrap}
 </style></head><body>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -5228,11 +5238,27 @@ function renderHome() {
           const _allineaHtml = _diff !== 0
             ? `<button class="fpp-allinea" onclick="event.stopPropagation();allineaPillole('${ev.id}')">Allinea conteggio</button>`
             : '';
+          const _daAssumere = Math.max(0, _r.pillole_attese - _r.pillole_spuntate);
           return `<div class="farmaci-pillole-panel">
-            <div class="fpp-row"><span class="fpp-label">📅 Pillole attese</span><span class="fpp-val">${_r.pillole_attese}</span></div>
-            <div class="fpp-row"><span class="fpp-label">✓ Spuntate</span><span class="fpp-val${_diff > 0 ? ' fpp-warn' : ''}">${_r.pillole_spuntate}${_diff > 0 ? ` <span class="fpp-delta">−${_diff}</span>` : ''}</span></div>
-            <div class="fpp-row"><span class="fpp-label">📦 Scatola corrente</span><span class="fpp-val">${_r.scatola_corrente}${_scatBox}</span></div>
-            <div class="fpp-row"><span class="fpp-label">Rimaste (su attese)</span><span class="fpp-val">${_r.rimaste_attese}</span></div>
+            <div class="fpp-big-row">
+              <div class="fpp-big-cell">
+                <div class="fpp-big-num">${_r.pillole_spuntate}</div>
+                <div class="fpp-big-lbl">Assunte</div>
+              </div>
+              <div class="fpp-big-cell fpp-big-cell--warn">
+                <div class="fpp-big-num">${_daAssumere}</div>
+                <div class="fpp-big-lbl">Da assumere</div>
+              </div>
+              <div class="fpp-big-cell fpp-big-cell--accent">
+                <div class="fpp-big-num">${_r.rimaste_attese}</div>
+                <div class="fpp-big-lbl">In scatola</div>
+              </div>
+            </div>
+            <div class="fpp-small-row">
+              <span>Spuntate: <strong>${_r.pillole_spuntate}</strong></span>
+              <span>·</span>
+              <span>Scatola: <strong>${_r.scatola_corrente}${_scatBox}</strong></span>
+            </div>
             ${_statoHtml}
             ${_allineaHtml}
           </div>`;
