@@ -710,12 +710,8 @@ body {
 .ev-prossimo .event-dot  { background: var(--accent); }
 .ev-prossimo .event-title { color: var(--accent); font-weight: 700; }
 .ev-prossimo::before {
-  content: "PROSSIMO";
-  position: absolute;
-  top: -1px; right: 14px;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.8px;
+  content: "";
+  display: none;
   background: var(--accent);
   color: #fff;
   padding: 2px 8px;
@@ -1201,6 +1197,16 @@ body {
   background: none; color: #DC2626; border: 1px solid #FECACA; border-radius: 6px;
   padding: 5px 10px; font-size: 0.82rem; cursor: pointer; font-family: inherit; margin-left: auto;
 }
+.appunto-mic {
+  background: none; border: 1.5px solid #1D4ED8; border-radius: 6px;
+  padding: 5px 9px; font-size: 1rem; cursor: pointer; line-height: 1;
+  transition: background 0.15s;
+}
+.appunto-mic.recording {
+  background: #fee2e2; border-color: #DC2626;
+  animation: mic-pulse 0.8s infinite alternate;
+}
+@keyframes mic-pulse { from { opacity: 1; } to { opacity: 0.5; } }
 .hidden { display: none !important; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .appunto-row { background: #1a1a0a; border-color: #78350f; }
@@ -1960,7 +1966,7 @@ body {
   <div class="backup-banner" id="backup-banner">
     <div style="display:flex;gap:8px;width:100%">
       <button id="btn-update" class="backup-banner-btn backup-banner-btn--sec" style="flex:1.2">Aggiornamenti</button>
-      <button class="backup-banner-btn" style="flex:1" onclick="esportaBackup()">Salva dati</button>
+      <button class="backup-banner-btn" style="flex:1;background:#16a34a;border-color:#16a34a" onclick="esportaBackup()">Salva dati</button>
       <button class="backup-banner-btn backup-banner-btn--sec" style="flex:1" onclick="document.getElementById('importa-file-input').click()">Importa dati</button>
       <input type="file" id="importa-file-input" accept=".json" style="display:none" onchange="importaBackup(this)">
     </div>
@@ -4081,6 +4087,7 @@ function renderAppunti() {
         <div class="appunto-actions hidden">
           <button class="appunto-save" data-id="${ap.id}">Salva</button>
           <button class="appunto-cancel" data-id="${ap.id}">Annulla</button>
+          <button class="appunto-mic hidden" data-id="${ap.id}" title="Dettatura vocale">🎤</button>
           <button class="appunto-del" data-id="${ap.id}">Elimina</button>
         </div>
       </div>`;
@@ -4103,15 +4110,30 @@ function renderAppunti() {
   ul.querySelectorAll('.appunto-del').forEach(btn => {
     btn.addEventListener('click', () => eliminaAppunto(btn.dataset.id));
   });
+  // mostra il pulsante mic solo se browser supporta SpeechRecognition
+  if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+    ul.querySelectorAll('.appunto-mic').forEach(btn => {
+      btn.classList.remove('hidden');
+      btn.addEventListener('click', () => avviaMic(btn, btn.dataset.id));
+    });
+  }
 }
 
 function apriAppunto(id) {
   const row = document.querySelector(`.appunto-testo[data-id="${id}"]`)?.closest('.appunto-row');
   if (!row) return;
   row.querySelector('.appunto-testo').classList.add('hidden');
-  row.querySelector('.appunto-input').classList.remove('hidden');
+  const ta = row.querySelector('.appunto-input');
+  ta.classList.remove('hidden');
   row.querySelector('.appunto-actions').classList.remove('hidden');
-  row.querySelector('.appunto-input').focus();
+  // auto-resize mentre si digita
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+  ta.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
+  });
+  ta.focus();
 }
 
 function salvaAppunto(id) {
@@ -4132,6 +4154,44 @@ function eliminaAppunto(id) {
   const appunti = leggiAppunti().filter(a => a.id !== id);
   salvaAppunti(appunti);
   renderAppunti();
+}
+
+// ── Dettatura vocale appunti ──────────────────────────────────────────────────
+let _micRec = null; // istanza SpeechRecognition attiva
+
+function avviaMic(btn, id) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+
+  // se sta già registrando → ferma
+  if (_micRec) {
+    _micRec.stop();
+    return;
+  }
+
+  const ta = document.querySelector(`.appunto-input[data-id="${id}"]`);
+  if (!ta) return;
+
+  const rec = new SR();
+  rec.lang = 'it-IT';
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  _micRec = rec;
+
+  btn.classList.add('recording');
+
+  rec.onresult = e => {
+    const testo = e.results[0][0].transcript;
+    ta.value = ta.value ? ta.value + ' ' + testo : testo;
+    // aggiorna altezza
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+  };
+
+  rec.onerror = () => { btn.classList.remove('recording'); _micRec = null; };
+  rec.onend   = () => { btn.classList.remove('recording'); _micRec = null; };
+
+  rec.start();
 }
 
 function abilitaDragDropAppunti(container) {
@@ -4901,7 +4961,7 @@ function renderAvvisiProssimi() {
 
   if (!avvisi.length) return '';
 
-  let html = `<div class="section-label" style="color:var(--accent)">🔔 Avvisi prossimi</div>`;
+  let html = `<div class="section-label">🔔 Avvisi prossimi</div>`;
   for (const { ev, notifIdx, descLabel, dataFmt } of avvisi) {
     const badge = (ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo) ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria);
     const titolo = titoloCarta(ev);
@@ -4915,7 +4975,6 @@ function renderAvvisiProssimi() {
       <div class="event-meta">
         <span class="event-date">📅 ${escHtml(dataFmt)}</span>
         <span class="event-date" style="color:var(--accent);font-weight:600">⏰ ${escHtml(descLabel)}</span>
-        <span class="event-cat-badge">${badge}</span>
       </div>
       <div class="event-actions">
         <button class="ev-edit-btn" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="Modifica">
