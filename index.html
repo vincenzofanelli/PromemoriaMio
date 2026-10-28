@@ -11,6 +11,7 @@
   .btn-utility-warn { background: #1e1a00 !important; border-color: #6a5500 !important; color: #d4aa00 !important; }
 }
 
+.farmaci-pillole-panel{margin:6px 0 4px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:0.8rem}.fpp-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0}.fpp-label{color:var(--fg-2)}.fpp-val{font-weight:700;color:var(--fg)}.fpp-divider{border-top:1px solid var(--border);margin:6px 0}.fpp-hint{color:var(--fg);padding:2px 0;font-size:0.79rem;line-height:1.4}.fpp-note{color:var(--fg-3);font-size:0.72rem;margin-top:5px;font-style:italic}
 </style></head><body>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2422,6 +2423,17 @@ body {
       </div>
 
       <div class="form-group">
+        <label>Pillole per scatola (opzionale)</label>
+        <input type="number" id="farmaci-pillole-scatola" placeholder="es. 30" min="1" max="9999" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box" oninput="togglePilloleDose()">
+        <div style="font-size:0.78rem;color:var(--fg-2);margin-top:4px">Se indicato, verrà mostrato un riepilogo conteggio pillole</div>
+      </div>
+
+      <div class="form-group" id="farmaci-pillole-dose-wrap" style="display:none">
+        <label>Pillole per dose (default 1)</label>
+        <input type="number" id="farmaci-pillole-dose" value="1" min="1" max="20" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      </div>
+
+      <div class="form-group">
         <label>Note (opzionale)</label>
         <textarea id="farmaci-note" placeholder="Prendere a stomaco pieno…"></textarea>
       </div>
@@ -2906,6 +2918,10 @@ body {
           <span id="auto-data-lbl">Scegli data</span>
         </button>
         <input type="hidden" id="auto-data" value="">
+      </div>
+      <div class="form-group">
+        <label>Veicolo (opzionale)</label>
+        <input type="text" id="auto-veicolo" placeholder="es. Fiat 500, AB123CD…" autocomplete="off">
       </div>
       <div class="form-group">
         <label>Note (opzionale)</label>
@@ -3557,6 +3573,50 @@ function setFreq(btn, months) {
   btn.closest('.backup-freq').querySelectorAll('.freq-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   localStorage.setItem('promemoriamio_backup_freq', months);
+}
+
+// === PILLOLE: toggle campo dose ===
+function togglePilloleDose() {
+  const ps = document.getElementById('farmaci-pillole-scatola');
+  const wrap = document.getElementById('farmaci-pillole-dose-wrap');
+  if (!ps || !wrap) return;
+  wrap.style.display = ps.value ? '' : 'none';
+}
+
+// === PILLOLE: calcolo riepilogo ===
+function calcolaRiepilogoPillole(extra) {
+  const pilloleXScatola = extra.pilloleXScatola;
+  if (!pilloleXScatola || pilloleXScatola < 1) return null;
+  const assunzioni = Array.isArray(extra.assunzioni) ? extra.assunzioni : [];
+  const dosi_al_giorno = Array.isArray(extra.orari) ? extra.orari.length : 1;
+  const pilloleXDose = extra.pilloleXDose || 1;
+
+  // pillole assunte = somma delle dosi giornaliere * pillole per dose
+  const pillole_assunte = assunzioni.reduce((s, a) => s + ((a.dosi || 0) * pilloleXDose), 0);
+  if (pillole_assunte <= 0) {
+    return {
+      assunte: 0,
+      scatola: 1,
+      rimaste: pilloleXScatola,
+      msg_trovare_no: pilloleXScatola,
+      msg_trovare_si: pilloleXScatola - (dosi_al_giorno * pilloleXDose),
+      dosi_al_giorno,
+      pilloleXDose
+    };
+  }
+  const scatola_corrente = Math.floor(pillole_assunte / pilloleXScatola) + 1;
+  const pillole_nella_scatola_corrente = pillole_assunte % pilloleXScatola;
+  const rimaste = pilloleXScatola - pillole_nella_scatola_corrente;
+  const dosi_oggi = dosi_al_giorno * pilloleXDose;
+  return {
+    assunte: pillole_assunte,
+    scatola: scatola_corrente,
+    rimaste,
+    msg_trovare_no: rimaste,                  // se NON hai ancora assunto oggi
+    msg_trovare_si: rimaste - dosi_oggi,      // se HAI già assunto oggi
+    dosi_al_giorno,
+    pilloleXDose
+  };
 }
 
 // === DURATA / SCADENZA FARMACI ===
@@ -5079,6 +5139,21 @@ function renderHome() {
           ${oraCard ? `<span class="event-date" style="font-weight:700">${escHtml(oraCard)}</span>` : ''}
           <span class="event-cat-badge">${badge}</span>
         </div>
+        ${ev.categoria === 'farmaci' ? (() => {
+          const _r = calcolaRiepilogoPillole(evExtra);
+          if (!_r) return '';
+          const _si = Math.max(0, _r.msg_trovare_si);
+          const _no = _r.msg_trovare_no;
+          return `<div class="farmaci-pillole-panel">
+            <div class="fpp-row"><span class="fpp-label">💊 Pillole assunte</span><span class="fpp-val">${_r.assunte}</span></div>
+            <div class="fpp-row"><span class="fpp-label">📦 Scatola corrente</span><span class="fpp-val">${_r.scatola}</span></div>
+            <div class="fpp-row"><span class="fpp-label">Rimaste nella scatola</span><span class="fpp-val">${_r.rimaste}</span></div>
+            <div class="fpp-divider"></div>
+            <div class="fpp-hint">Se trovi <strong>${_no}</strong> → non hai ancora assunto oggi</div>
+            <div class="fpp-hint">Se trovi <strong>${_si < 0 ? '?' : _si}</strong> → hai già assunto oggi</div>
+            <div class="fpp-note">⚠️ Valido solo se hai sempre spuntato le dosi</div>
+          </div>`;
+        })() : ''}
         <div class="event-actions">
           ${(ev.extra && ev.extra.freq) ? `<button class="ev-edit-btn" style="background:var(--accent);color:#fff" onclick="event.stopPropagation();creaProssima('${ev.id}')" title="Crea prossima">↻</button>` : ''}
           <button class="ev-edit-btn" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="Modifica">
@@ -5276,6 +5351,13 @@ function caricaFormEvento(ev) {
     set('farmaci-note', e.note);
     const durEl = document.getElementById('farmaci-durata');
     if (durEl) { durEl.value = (e.durata != null) ? e.durata : ''; }
+    // Pillole per scatola / dose
+    const psEl = document.getElementById('farmaci-pillole-scatola');
+    if (psEl) psEl.value = (e.pilloleXScatola != null) ? e.pilloleXScatola : '';
+    const pdEl = document.getElementById('farmaci-pillole-dose');
+    if (pdEl) pdEl.value = (e.pilloleXDose != null) ? e.pilloleXDose : 1;
+    const doseWrap = document.getElementById('farmaci-pillole-dose-wrap');
+    if (doseWrap) doseWrap.style.display = (e.pilloleXScatola) ? '' : 'none';
     // Aggiorna display "Fine prevista" dopo aver caricato data e durata
     setTimeout(() => aggiornaDurataPrevista(), 0);
     // Ripristina freq-select in base al numero di orari salvati, PRIMA di aggiornaOrari()
@@ -5310,6 +5392,7 @@ function caricaFormEvento(ev) {
     set('documenti-tipo', e.tipo);
   } else if (cat === 'auto') {
     set('auto-tipo', e.tipo);
+    set('auto-veicolo', e.veicolo || '');
   } else if (cat === 'generico') {
     set('generico-titolo', e.titolo); set('generico-luogo', e.luogo);
   } else if (cat === 'acquisti') {
@@ -5383,7 +5466,9 @@ function raccogliCampiEvento(cat) {
       assunzioni = (evEsistente && evEsistente.extra && Array.isArray(evEsistente.extra.assunzioni))
         ? evEsistente.extra.assunzioni : [];
     }
-    extra  = { nome, orari, durata, assunzioni };
+    const pilloleXScatola = parseInt(val('farmaci-pillole-scatola'), 10) || null;
+    const pilloleXDose    = parseInt(val('farmaci-pillole-dose'), 10) || 1;
+    extra  = { nome, orari, durata, assunzioni, pilloleXScatola, pilloleXDose };
   } else if (cat === 'ricorrenze') {
     const _tipo = tipo(), _nome = val('ricorrenze-nome');
     titolo = (_tipo && _nome) ? _tipo + ' di ' + _nome : _nome || _tipo || 'Ricorrenza';
@@ -5392,8 +5477,9 @@ function raccogliCampiEvento(cat) {
     titolo = tipo() || 'Documento';
     extra  = { tipo: tipo() };
   } else if (cat === 'auto') {
-    titolo = tipo() || 'Auto';
-    extra  = { tipo: tipo() };
+    const _veicolo = val('auto-veicolo');
+    titolo = (tipo() || 'Auto') + (_veicolo ? ' — ' + _veicolo : '');
+    extra  = { tipo: tipo(), veicolo: _veicolo };
   } else if (cat === 'generico') {
     titolo = val('generico-titolo') || 'Impegno';
     extra  = { luogo: luogo() };
@@ -5504,10 +5590,10 @@ function salvaEvento(cat) {
 function resetForm(cat) {
   const ids = {
     visite: ['visite-tipo','visite-data','visite-luogo','visite-note','visite-freq','visite-anticipo'],
-    farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo','custom-prima-dose','custom-n-dosi','alterne-ora','farmaci-durata','farmaci-note'],
+    farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo','custom-prima-dose','custom-n-dosi','alterne-ora','farmaci-durata','farmaci-note','farmaci-pillole-scatola','farmaci-pillole-dose'],
     ricorrenze: ['ricorrenze-tipo','ricorrenze-nome','ricorrenze-data','ricorrenze-note','ricorrenze-freq','ricorrenze-anticipo'],
     documenti: ['documenti-tipo','documenti-data','documenti-note','documenti-freq','documenti-anticipo'],
-    auto: ['auto-tipo','auto-data','auto-note','auto-freq','auto-anticipo'],
+    auto: ['auto-tipo','auto-veicolo','auto-data','auto-note','auto-freq','auto-anticipo'],
     generico: ['generico-titolo','generico-data','generico-luogo','generico-note','generico-freq','generico-anticipo'],
     acquisti: ['acquisti-titolo','acquisti-data','acquisti-note','acquisti-freq','acquisti-anticipo'],
     lavoro: ['lavoro-tipo','lavoro-titolo','lavoro-data','lavoro-luogo','lavoro-note','lavoro-freq','lavoro-anticipo'],
