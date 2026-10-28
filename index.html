@@ -1195,6 +1195,21 @@ body {
   background: none; color: #DC2626; border: 1px solid #FECACA; border-radius: 6px;
   padding: 5px 10px; font-size: 0.82rem; cursor: pointer; font-family: inherit; margin-left: auto;
 }
+.appunti-add-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 12px 0 4px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1D4ED8;
+  text-align: center;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+  font-family: inherit;
+}
+.appunti-add-btn:hover { text-decoration: underline; }
 .appunto-mic {
   background: none; border: 1.5px solid #1D4ED8; border-radius: 6px;
   padding: 5px 9px; font-size: 1rem; cursor: pointer; line-height: 1;
@@ -4100,6 +4115,21 @@ function renderAppunti() {
 
   container.appendChild(ul);
   abilitaDragDropAppunti(ul);
+
+  // "Aggiungi nota" sempre visibile in fondo
+  const addBtn = document.createElement('button');
+  addBtn.className = 'appunti-add-btn';
+  addBtn.textContent = '＋ Aggiungi nota';
+  addBtn.addEventListener('click', () => {
+    const nuova = { id: 'ap_' + Date.now() + '_' + Math.random().toString(36).slice(2), testo: '' };
+    const arr = leggiAppunti();
+    arr.push(nuova);
+    salvaAppunti(arr);
+    renderAppunti();
+    // apre subito in editing
+    setTimeout(() => apriAppunto(nuova.id), 30);
+  });
+  container.appendChild(addBtn);
 
   // eventi tap → editing
   ul.querySelectorAll('.appunto-testo').forEach(el => {
