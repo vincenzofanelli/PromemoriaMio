@@ -3612,11 +3612,15 @@ function calcolaRiepilogoPillole(extra) {
 
   const _pp = n => String(n).padStart(2, '0');
   const oggiStr = now.getFullYear()+'-'+_pp(now.getMonth()+1)+'-'+_pp(now.getDate());
+  const inizioStr = dataInizio; // 'YYYY-MM-DD'
+
+  // Se la terapia non è ancora iniziata → pannello non applicabile
+  if (inizioStr > oggiStr) return { nonAncoraIniziata: true, inizioStr };
 
   // Giorni completi già passati (non conta oggi)
-  const giorniCompleti = Math.floor((now - inizio) / 86400000);
+  const giorniCompleti = Math.max(0, Math.floor((now - inizio) / 86400000));
 
-  // Orari di oggi già passati
+  // Orari di oggi già passati (solo se oggi >= data inizio)
   let dosi_oggi_attese = 0;
   for (const ora of orari) {
     const [hh, mm] = (ora || '00:00').split(':').map(Number);
@@ -3626,7 +3630,7 @@ function calcolaRiepilogoPillole(extra) {
   if (orari.length === 0) dosi_oggi_attese = 1; // fallback
 
   const dosi_attese_totali = (giorniCompleti * dosi_al_giorno) + dosi_oggi_attese;
-  const pillole_attese = dosi_attese_totali * pilloleXDose;
+  const pillole_attese = Math.max(0, dosi_attese_totali * pilloleXDose);
 
   // Pillole effettivamente spuntate
   const pillole_spuntate = assunzioni.reduce((s, a) => s + ((a.dosi || 0) * pilloleXDose), 0);
@@ -5226,6 +5230,12 @@ function renderHome() {
         ${ev.categoria === 'farmaci' ? (() => {
           const _r = calcolaRiepilogoPillole(evExtra);
           if (!_r) return '';
+          if (_r.nonAncoraIniziata) {
+            const _MM = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+            const _d = new Date(_r.inizioStr + 'T00:00:00');
+            const _dFmt = _d.getDate() + ' ' + _MM[_d.getMonth()] + ' ' + _d.getFullYear();
+            return `<div class="farmaci-pillole-panel"><div class="fpp-stato" style="background:var(--bg);color:var(--fg-2);font-weight:500">🗓 Terapia inizia il ${_dFmt}</div></div>`;
+          }
           const _scatBox = _r.totale_scatole ? ` di ${_r.totale_scatole}` : '';
           const _diff = _r.differenza;
           let _statoHtml = '';
