@@ -23,6 +23,11 @@
 .fpp-big-cell--accent .fpp-big-num{color:var(--accent)}
 .fpp-big-lbl{font-size:0.68rem;font-weight:600;color:var(--fg-2);margin-top:3px;text-transform:uppercase;letter-spacing:0.3px}
 .fpp-small-row{display:flex;gap:8px;align-items:center;font-size:0.78rem;color:var(--fg-2);margin-bottom:4px;flex-wrap:wrap}
+.fpp-big-cell--edit{cursor:pointer;position:relative}.fpp-big-cell--edit:after{content:'✎';position:absolute;top:4px;right:6px;font-size:0.65rem;color:var(--fg-3);opacity:0.7}
+.fpp-edit-mode .fpp-big-num{display:none}.fpp-edit-mode .fpp-edit-input-wrap{display:flex!important}
+.fpp-edit-input-wrap{display:none;flex-direction:column;align-items:center;gap:4px;width:100%}
+.fpp-edit-input{width:70px;text-align:center;font-size:1.3rem;font-weight:800;border:2px solid var(--accent);border-radius:7px;padding:3px 6px;background:var(--bg-card);color:var(--fg);font-family:inherit}
+.fpp-edit-btns{display:flex;gap:4px}.fpp-edit-ok{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit}.fpp-edit-cancel{background:none;border:1.5px solid var(--border);border-radius:6px;padding:3px 8px;font-size:0.82rem;color:var(--fg-2);cursor:pointer;font-family:inherit}
 </style></head><body>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3707,6 +3712,53 @@ function allineaPillole(evId) {
   showToast('✓ Conteggio aggiornato a ' + target + ' pillole');
 }
 
+function apriEditPillole(evId, cellId, currentVal) {
+  // Attiva modalità edit sul riquadro Assunte
+  const cell = document.getElementById(cellId);
+  if (!cell) return;
+  cell.classList.add('fpp-edit-mode');
+  const inp = cell.querySelector('.fpp-edit-input');
+  if (inp) { inp.value = currentVal; inp.focus(); inp.select(); }
+}
+
+function annullaEditPillole(cellId) {
+  const cell = document.getElementById(cellId);
+  if (cell) cell.classList.remove('fpp-edit-mode');
+}
+
+function confermaPillole(evId, cellId) {
+  const cell = document.getElementById(cellId);
+  if (!cell) return;
+  const inp = cell.querySelector('.fpp-edit-input');
+  const target = inp ? parseInt(inp.value, 10) : NaN;
+  if (isNaN(target) || target < 0) { showToast('Numero non valido'); return; }
+
+  const eventi = leggiEventi();
+  const ev = eventi.find(e => e.id === evId);
+  if (!ev || ev.categoria !== 'farmaci') return;
+  const extra = ev.extra;
+  const dosi_al_giorno = Array.isArray(extra.orari) ? extra.orari.length : 1;
+  const pilloleXDose = extra.pilloleXDose || 1;
+  const dosi_target = Math.round(target / pilloleXDose);
+  const now = new Date();
+  const _pp = n => String(n).padStart(2, '0');
+  const nuoveAssunzioni = [];
+  let dosi_rimaste = dosi_target;
+  const cursore = new Date(extra.data + 'T00:00:00');
+  while (dosi_rimaste > 0 && cursore <= now) {
+    const dataStr = cursore.getFullYear()+'-'+_pp(cursore.getMonth()+1)+'-'+_pp(cursore.getDate());
+    const dosi_giorno = Math.min(dosi_rimaste, dosi_al_giorno);
+    nuoveAssunzioni.push({ data: dataStr, dosi: dosi_giorno });
+    dosi_rimaste -= dosi_giorno;
+    cursore.setDate(cursore.getDate() + 1);
+  }
+  extra.assunzioni = nuoveAssunzioni;
+  ev.extra = extra;
+  salvaEventiLS(eventi);
+  renderHome();
+  showToast('✓ Conteggio aggiornato a ' + target + ' pillole');
+}
+
 // === DURATA / SCADENZA FARMACI ===
 function aggiornaDurataPrevista() {
   const durEl = document.getElementById('farmaci-durata');
@@ -5245,15 +5297,23 @@ function renderHome() {
             const _mancanti = _r.dosi_oggi_attese - _r.dosi_oggi_spuntate;
             _statoHtml = `<div class="fpp-stato warn">⚠ Oggi: ${_r.dosi_oggi_spuntate}/${_r.dosi_oggi_attese} dosi spuntate${_mancanti > 0 ? ' — mancano ' + _mancanti : ''}</div>`;
           }
-          const _allineaHtml = _diff !== 0
-            ? `<button class="fpp-allinea" onclick="event.stopPropagation();allineaPillole('${ev.id}')">Allinea conteggio</button>`
-            : '';
           const _daAssumere = Math.max(0, _r.pillole_attese - _r.pillole_spuntate);
+          const _cellId = 'fpp-cell-assunte-' + ev.id;
           return `<div class="farmaci-pillole-panel">
             <div class="fpp-big-row">
-              <div class="fpp-big-cell">
+              <div class="fpp-big-cell fpp-big-cell--edit" id="${_cellId}"
+                onclick="event.stopPropagation();apriEditPillole('${ev.id}','${_cellId}',${_r.pillole_spuntate})">
                 <div class="fpp-big-num">${_r.pillole_spuntate}</div>
                 <div class="fpp-big-lbl">Assunte</div>
+                <div class="fpp-edit-input-wrap">
+                  <input class="fpp-edit-input" type="number" min="0" max="9999"
+                    onclick="event.stopPropagation()"
+                    onkeydown="if(event.key==='Enter'){event.stopPropagation();confermaPillole('${ev.id}','${_cellId}')}else if(event.key==='Escape'){event.stopPropagation();annullaEditPillole('${_cellId}')}">
+                  <div class="fpp-edit-btns">
+                    <button class="fpp-edit-ok" onclick="event.stopPropagation();confermaPillole('${ev.id}','${_cellId}')">✓</button>
+                    <button class="fpp-edit-cancel" onclick="event.stopPropagation();annullaEditPillole('${_cellId}')">✗</button>
+                  </div>
+                </div>
               </div>
               <div class="fpp-big-cell fpp-big-cell--warn">
                 <div class="fpp-big-num">${_daAssumere}</div>
@@ -5270,7 +5330,6 @@ function renderHome() {
               <span>Scatola: <strong>${_r.scatola_corrente}${_scatBox}</strong></span>
             </div>
             ${_statoHtml}
-            ${_allineaHtml}
           </div>`;
         })() : ''}
         <div class="event-actions">
