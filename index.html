@@ -12,6 +12,7 @@
 }
 
 .farmaci-pillole-panel{margin:6px 0 4px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:0.8rem}.fpp-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0}.fpp-label{color:var(--fg-2)}.fpp-val{font-weight:700;color:var(--fg)}.fpp-divider{border-top:1px solid var(--border);margin:6px 0}.fpp-hint{color:var(--fg);padding:2px 0;font-size:0.79rem;line-height:1.4}.fpp-note{color:var(--fg-3);font-size:0.72rem;margin-top:5px;font-style:italic}
+.fpp-stato{margin-top:5px;padding:5px 8px;border-radius:7px;font-size:0.79rem;font-weight:600}.fpp-stato.ok{background:#dcfce7;color:#166534}.fpp-stato.warn{background:#fef3c7;color:#92400e}.fpp-warn{color:#dc2626}.fpp-delta{font-size:0.75rem;background:#fee2e2;color:#dc2626;border-radius:4px;padding:1px 4px;margin-left:3px}.fpp-allinea{display:block;width:100%;margin-top:7px;padding:6px 0;background:none;border:1.5px solid var(--accent);border-radius:7px;color:var(--accent);font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit}
 </style></head><body>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3587,36 +3588,109 @@ function togglePilloleDose() {
 function calcolaRiepilogoPillole(extra) {
   const pilloleXScatola = extra.pilloleXScatola;
   if (!pilloleXScatola || pilloleXScatola < 1) return null;
+  const dataInizio = extra.data;
+  if (!dataInizio) return null;
+
+  const dosi_al_giorno = Array.isArray(extra.orari) ? extra.orari.length : 1;
+  const orari = Array.isArray(extra.orari) ? extra.orari : [];
+  const pilloleXDose = extra.pilloleXDose || 1;
   const assunzioni = Array.isArray(extra.assunzioni) ? extra.assunzioni : [];
+
+  const now = new Date();
+  const inizio = new Date(dataInizio + 'T00:00:00');
+  if (isNaN(inizio.getTime())) return null;
+
+  const _pp = n => String(n).padStart(2, '0');
+  const oggiStr = now.getFullYear()+'-'+_pp(now.getMonth()+1)+'-'+_pp(now.getDate());
+
+  // Giorni completi già passati (non conta oggi)
+  const giorniCompleti = Math.floor((now - inizio) / 86400000);
+
+  // Orari di oggi già passati
+  let dosi_oggi_attese = 0;
+  for (const ora of orari) {
+    const [hh, mm] = (ora || '00:00').split(':').map(Number);
+    const oraOggi = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0);
+    if (now >= oraOggi) dosi_oggi_attese++;
+  }
+  if (orari.length === 0) dosi_oggi_attese = 1; // fallback
+
+  const dosi_attese_totali = (giorniCompleti * dosi_al_giorno) + dosi_oggi_attese;
+  const pillole_attese = dosi_attese_totali * pilloleXDose;
+
+  // Pillole effettivamente spuntate
+  const pillole_spuntate = assunzioni.reduce((s, a) => s + ((a.dosi || 0) * pilloleXDose), 0);
+
+  // Stato di oggi
+  const entryOggi = assunzioni.find(a => a.data === oggiStr);
+  const dosi_oggi_spuntate = entryOggi ? entryOggi.dosi : 0;
+  let statoOggi;
+  if (dosi_oggi_attese === 0) statoOggi = 'anticipo';
+  else if (dosi_oggi_spuntate >= dosi_oggi_attese) statoOggi = 'ok';
+  else statoOggi = 'mancanti';
+
+  // Scatola basata su pillole ATTESE
+  const scatola_corrente = Math.floor(pillole_attese / pilloleXScatola) + 1;
+  const rimaste_attese = pilloleXScatola - (pillole_attese % pilloleXScatola);
+
+  // Totale scatole se durata definita
+  const durata = extra.durata;
+  const totale_scatole = durata ? Math.ceil((durata * dosi_al_giorno * pilloleXDose) / pilloleXScatola) : null;
+
+  return {
+    pillole_attese,
+    pillole_spuntate,
+    scatola_corrente,
+    totale_scatole,
+    rimaste_attese,
+    dosi_oggi_attese,
+    dosi_oggi_spuntate,
+    dosi_oggi_totali: dosi_al_giorno,
+    statoOggi,
+    differenza: pillole_attese - pillole_spuntate,
+    dosi_al_giorno,
+    pilloleXDose,
+    pilloleXScatola
+  };
+}
+
+// === PILLOLE: allinea spunte alle attese ===
+function allineaPillole(evId) {
+  const eventi = leggiEventi();
+  const ev = eventi.find(e => e.id === evId);
+  if (!ev || ev.categoria !== 'farmaci') return;
+  const r = calcolaRiepilogoPillole(ev.extra || {});
+  if (!r) return;
+  const input = prompt(
+    'Pillole attese: ' + r.pillole_attese + '\nSpuntate finora: ' + r.pillole_spuntate +
+    '\n\nInserisci il numero corretto di pillole assunte:',
+    String(r.pillole_attese)
+  );
+  if (input === null) return;
+  const target = parseInt(input, 10);
+  if (isNaN(target) || target < 0) { showToast('Numero non valido'); return; }
+
+  const extra = ev.extra;
   const dosi_al_giorno = Array.isArray(extra.orari) ? extra.orari.length : 1;
   const pilloleXDose = extra.pilloleXDose || 1;
-
-  // pillole assunte = somma delle dosi giornaliere * pillole per dose
-  const pillole_assunte = assunzioni.reduce((s, a) => s + ((a.dosi || 0) * pilloleXDose), 0);
-  if (pillole_assunte <= 0) {
-    return {
-      assunte: 0,
-      scatola: 1,
-      rimaste: pilloleXScatola,
-      msg_trovare_no: pilloleXScatola,
-      msg_trovare_si: pilloleXScatola - (dosi_al_giorno * pilloleXDose),
-      dosi_al_giorno,
-      pilloleXDose
-    };
+  const dosi_target = Math.round(target / pilloleXDose);
+  const now = new Date();
+  const _pp = n => String(n).padStart(2, '0');
+  const nuoveAssunzioni = [];
+  let dosi_rimaste = dosi_target;
+  const cursore = new Date(extra.data + 'T00:00:00');
+  while (dosi_rimaste > 0 && cursore <= now) {
+    const dataStr = cursore.getFullYear()+'-'+_pp(cursore.getMonth()+1)+'-'+_pp(cursore.getDate());
+    const dosi_giorno = Math.min(dosi_rimaste, dosi_al_giorno);
+    nuoveAssunzioni.push({ data: dataStr, dosi: dosi_giorno });
+    dosi_rimaste -= dosi_giorno;
+    cursore.setDate(cursore.getDate() + 1);
   }
-  const scatola_corrente = Math.floor(pillole_assunte / pilloleXScatola) + 1;
-  const pillole_nella_scatola_corrente = pillole_assunte % pilloleXScatola;
-  const rimaste = pilloleXScatola - pillole_nella_scatola_corrente;
-  const dosi_oggi = dosi_al_giorno * pilloleXDose;
-  return {
-    assunte: pillole_assunte,
-    scatola: scatola_corrente,
-    rimaste,
-    msg_trovare_no: rimaste,                  // se NON hai ancora assunto oggi
-    msg_trovare_si: rimaste - dosi_oggi,      // se HAI già assunto oggi
-    dosi_al_giorno,
-    pilloleXDose
-  };
+  extra.assunzioni = nuoveAssunzioni;
+  ev.extra = extra;
+  salvaEventiLS(eventi);
+  renderHome();
+  showToast('✓ Conteggio aggiornato a ' + target + ' pillole');
 }
 
 // === DURATA / SCADENZA FARMACI ===
@@ -5142,16 +5216,25 @@ function renderHome() {
         ${ev.categoria === 'farmaci' ? (() => {
           const _r = calcolaRiepilogoPillole(evExtra);
           if (!_r) return '';
-          const _si = Math.max(0, _r.msg_trovare_si);
-          const _no = _r.msg_trovare_no;
+          const _scatBox = _r.totale_scatole ? ` di ${_r.totale_scatole}` : '';
+          const _diff = _r.differenza;
+          let _statoHtml = '';
+          if (_r.statoOggi === 'ok') {
+            _statoHtml = `<div class="fpp-stato ok">✓ Hai assunto tutte le dosi previste finora</div>`;
+          } else if (_r.statoOggi === 'mancanti') {
+            const _mancanti = _r.dosi_oggi_attese - _r.dosi_oggi_spuntate;
+            _statoHtml = `<div class="fpp-stato warn">⚠ Oggi: ${_r.dosi_oggi_spuntate}/${_r.dosi_oggi_attese} dosi spuntate${_mancanti > 0 ? ' — mancano ' + _mancanti : ''}</div>`;
+          }
+          const _allineaHtml = _diff !== 0
+            ? `<button class="fpp-allinea" onclick="event.stopPropagation();allineaPillole('${ev.id}')">Allinea conteggio</button>`
+            : '';
           return `<div class="farmaci-pillole-panel">
-            <div class="fpp-row"><span class="fpp-label">💊 Pillole assunte</span><span class="fpp-val">${_r.assunte}</span></div>
-            <div class="fpp-row"><span class="fpp-label">📦 Scatola corrente</span><span class="fpp-val">${_r.scatola}</span></div>
-            <div class="fpp-row"><span class="fpp-label">Rimaste nella scatola</span><span class="fpp-val">${_r.rimaste}</span></div>
-            <div class="fpp-divider"></div>
-            <div class="fpp-hint">Se trovi <strong>${_no}</strong> → non hai ancora assunto oggi</div>
-            <div class="fpp-hint">Se trovi <strong>${_si < 0 ? '?' : _si}</strong> → hai già assunto oggi</div>
-            <div class="fpp-note">⚠️ Valido solo se hai sempre spuntato le dosi</div>
+            <div class="fpp-row"><span class="fpp-label">📅 Pillole attese</span><span class="fpp-val">${_r.pillole_attese}</span></div>
+            <div class="fpp-row"><span class="fpp-label">✓ Spuntate</span><span class="fpp-val${_diff > 0 ? ' fpp-warn' : ''}">${_r.pillole_spuntate}${_diff > 0 ? ` <span class="fpp-delta">−${_diff}</span>` : ''}</span></div>
+            <div class="fpp-row"><span class="fpp-label">📦 Scatola corrente</span><span class="fpp-val">${_r.scatola_corrente}${_scatBox}</span></div>
+            <div class="fpp-row"><span class="fpp-label">Rimaste (su attese)</span><span class="fpp-val">${_r.rimaste_attese}</span></div>
+            ${_statoHtml}
+            ${_allineaHtml}
           </div>`;
         })() : ''}
         <div class="event-actions">
