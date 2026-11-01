@@ -28,6 +28,8 @@
 .fpp-edit-input-wrap{display:none;flex-direction:column;align-items:center;gap:4px;width:100%}
 .fpp-edit-input{width:70px;text-align:center;font-size:1.3rem;font-weight:800;border:2px solid var(--accent);border-radius:7px;padding:3px 6px;background:var(--bg-card);color:var(--fg);font-family:inherit}
 .fpp-edit-btns{display:flex;gap:4px}.fpp-edit-ok{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit}.fpp-edit-cancel{background:none;border:1.5px solid var(--border);border-radius:6px;padding:3px 8px;font-size:0.82rem;color:var(--fg-2);cursor:pointer;font-family:inherit}
+.fpp-prossima{margin-top:5px;padding:5px 8px;border-radius:7px;font-size:0.79rem;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd}
+@media(prefers-color-scheme:dark){.fpp-prossima{background:#0c2d48;color:#7dd3fc;border-color:#1e4d70}}
 </style></head><body>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -5302,6 +5304,20 @@ function renderHome() {
           }
           const _daAssumere = Math.max(0, _r.pillole_attese - _r.pillole_spuntate);
           const _cellId = 'fpp-cell-assunte-' + ev.id;
+          // Prossima dose non ancora passata oggi
+          let _prossimaDoseHtml = '';
+          if (Array.isArray(evExtra.orari) && evExtra.orari.length) {
+            const _now = new Date();
+            const _orariOrdinati = [...evExtra.orari].sort();
+            const _prossima = _orariOrdinati.find(ora => {
+              const [hh, mm] = (ora || '00:00').split(':').map(Number);
+              const _t = new Date(_now.getFullYear(), _now.getMonth(), _now.getDate(), hh, mm, 0);
+              return _now < _t;
+            });
+            if (_prossima) {
+              _prossimaDoseHtml = `<div class="fpp-prossima">⏰ Prossima dose: <strong>${_prossima}</strong></div>`;
+            }
+          }
           return `<div class="farmaci-pillole-panel">
             <div class="fpp-big-row">
               <div class="fpp-big-cell fpp-big-cell--edit" id="${_cellId}"
@@ -5332,6 +5348,7 @@ function renderHome() {
               <span>·</span>
               <span>Scatola: <strong>${_r.scatola_corrente}${_scatBox}</strong></span>
             </div>
+            ${_prossimaDoseHtml}
             ${_statoHtml}
           </div>`;
         })() : ''}
