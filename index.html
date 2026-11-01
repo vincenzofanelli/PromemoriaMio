@@ -5189,6 +5189,9 @@ function renderAvvisiProssimi() {
       const _av = dataAvviso; const _pav = n => String(n).padStart(2,'0');
       const _avStr = _av.getFullYear()+'-'+_pav(_av.getMonth()+1)+'-'+_pav(_av.getDate());
       if (_avStr !== oggiStr) return;
+      // Escludi se l'evento stesso scade oggi — è già visibile nella sezione "Oggi"
+      const dataEvStr = dataExtra.substring(0, 10);
+      if (dataEvStr === oggiStr) return;
       avvisi.push({ ev, notifIdx: ni, descLabel: n.desc, dataFmt });
     });
   }
