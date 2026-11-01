@@ -5318,6 +5318,10 @@ function renderHome() {
               _prossimaDoseHtml = `<div class="fpp-prossima">⏰ Prossima dose: <strong>${_prossima}</strong></div>`;
             }
           }
+          // Se c'è una dose futura oggi, mostra spuntate/totali nel riquadro giallo
+          const _daAssumereNum = _prossimaDoseHtml
+            ? `<span style="font-size:1.1rem">${_r.dosi_oggi_spuntate}</span><span style="font-size:1rem;font-weight:600;color:var(--fg-2)">/</span><span style="font-size:1.1rem">${_r.dosi_oggi_totali}</span>`
+            : String(_daAssumere);
           return `<div class="farmaci-pillole-panel">
             <div class="fpp-big-row">
               <div class="fpp-big-cell fpp-big-cell--edit" id="${_cellId}"
@@ -5335,7 +5339,7 @@ function renderHome() {
                 </div>
               </div>
               <div class="fpp-big-cell fpp-big-cell--warn">
-                <div class="fpp-big-num">${_daAssumere}</div>
+                <div class="fpp-big-num">${_daAssumereNum}</div>
                 <div class="fpp-big-lbl">Da assumere oggi</div>
               </div>
               <div class="fpp-big-cell fpp-big-cell--accent">
