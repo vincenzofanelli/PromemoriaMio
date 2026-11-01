@@ -5144,8 +5144,11 @@ function renderArchivio() {
       </div>
       ${noteArch ? `<div style="font-size:0.82rem;color:var(--fg-2);margin-top:4px;font-style:italic">${noteArch}</div>` : ''}
       <div class="event-actions">
-        <button class="ev-edit-btn" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="Modifica">
+        <button class="ev-edit-btn" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="Modifica storico">
           <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </button>
+        <button class="ev-edit-btn" onclick="event.stopPropagation();reattivaEvento('${ev.id}')" title="Ricrea come nuovo evento" style="color:var(--accent)">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1-4l-3 3m0 0l-3-3m3 3V4"/></svg>
         </button>
         ${riattivaBtn}
         <button class="ev-del-btn" onclick="event.stopPropagation();eliminaEvento('${ev.id}')" title="Elimina">
@@ -5508,6 +5511,25 @@ function apriEvento(id) {
   }
 }
 
+function reattivaEvento(id) {
+  // Apre il form precompilato con i dati dell'evento archiviato, ma come NUOVO evento
+  const eventi = leggiEventi();
+  const ev = eventi.find(e => e.id === id);
+  if (!ev) return;
+  eventoInModifica = null; // nuovo evento, non modifica
+  const target = 'form-' + ev.categoria;
+  // Prima vai alla schermata giusta, poi precompila
+  goTo(target);
+  setTimeout(() => {
+    try { caricaFormEvento(ev); } catch(err) { console.warn('[reattivaEvento]', err); }
+    // Pulisci le notifiche — il nuovo evento parte senza notifiche preesistenti
+    const fid = ev.categoria;
+    delete notifStati[fid];
+    setTimeout(() => initNotif(fid), 0);
+    showToast('Form precompilato — salva per creare un nuovo evento');
+  }, 100);
+}
+
 function markFilled(btnId) {
   const btn = document.getElementById(btnId);
   if (btn) btn.classList.add('filled');
@@ -5739,6 +5761,10 @@ function salvaEvento(cat) {
   if (eventoInModifica) {
     const idx = eventi.findIndex(e => e.id === eventoInModifica);
     if (idx !== -1) {
+      // Warning se si modifica un evento archiviato non-farmaco
+      if (eventi[idx].archiviato && cat !== 'farmaci') {
+        if (!confirm('Stai modificando un evento nello storico.\nLe modifiche aggiornano lo storico senza creare un nuovo evento.\n\nContinuare?')) return;
+      }
       cancellaNotificheEvento(eventi[idx]);  // cancella vecchie notifiche nel SW
       eventi[idx].extra = extra;
       eventi[idx].notifiche = notifStati[cat] ? [...notifStati[cat]] : [];
