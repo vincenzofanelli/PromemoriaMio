@@ -30,6 +30,8 @@
 .fpp-edit-btns{display:flex;gap:4px}.fpp-edit-ok{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit}.fpp-edit-cancel{background:none;border:1.5px solid var(--border);border-radius:6px;padding:3px 8px;font-size:0.82rem;color:var(--fg-2);cursor:pointer;font-family:inherit}
 .fpp-prossima{margin-top:5px;padding:5px 8px;border-radius:7px;font-size:0.79rem;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd}
 @media(prefers-color-scheme:dark){.fpp-prossima{background:#0c2d48;color:#7dd3fc;border-color:#1e4d70}}
+.fpp-configura{margin:6px 0 4px;padding:8px 12px;border-radius:9px;font-size:0.79rem;color:var(--accent);border:1px dashed var(--accent);background:var(--bg);cursor:pointer;text-align:center}
+.fpp-configura:hover{background:var(--bg-card)}
 </style></head><body>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -5286,7 +5288,7 @@ function renderHome() {
         </div>
         ${ev.categoria === 'farmaci' ? (() => {
           const _r = calcolaRiepilogoPillole(evExtra);
-          if (!_r) return '';
+          if (!_r) return `<div class="fpp-configura" onclick="event.stopPropagation();apriEvento('${ev.id}')">💊 Aggiungi pillole per scatola per attivare il conteggio</div>`;
           if (_r.nonAncoraIniziata) {
             const _MM = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
             const _d = new Date(_r.inizioStr + 'T00:00:00');
