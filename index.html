@@ -5309,11 +5309,13 @@ function renderHome() {
           if (Array.isArray(evExtra.orari) && evExtra.orari.length) {
             const _now = new Date();
             const _orariOrdinati = [...evExtra.orari].sort();
-            const _prossima = _orariOrdinati.find(ora => {
-              const [hh, mm] = (ora || '00:00').split(':').map(Number);
-              const _t = new Date(_now.getFullYear(), _now.getMonth(), _now.getDate(), hh, mm, 0);
-              return _now < _t;
-            });
+            const _prossima = (_r.dosi_oggi_spuntate < _r.dosi_oggi_totali)
+              ? _orariOrdinati.find(ora => {
+                  const [hh, mm] = (ora || '00:00').split(':').map(Number);
+                  const _t = new Date(_now.getFullYear(), _now.getMonth(), _now.getDate(), hh, mm, 0);
+                  return _now < _t;
+                })
+              : null;
             if (_prossima) {
               _prossimaDoseHtml = `<div class="fpp-prossima">⏰ Prossima dose: <strong>${_prossima}</strong></div>`;
             }
