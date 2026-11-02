@@ -6789,14 +6789,28 @@ function calcolaDataProssima(dataStr, freq, anticipoGiorni) {
   const isDatetime = dataStr && dataStr.includes('T');
   const base = isDatetime ? new Date(dataStr) : new Date(dataStr + 'T12:00');
   const d = new Date(base);
+
+  // Rileva se la data di partenza era l'ultimo giorno del suo mese
+  const ultimoGiornoBase = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  const eraUltimoGiorno = base.getDate() === ultimoGiornoBase;
+
+  // Aggiunge mesi preservando il giorno base per evitare overflow (es. 31 ott + 1 mese → 1 dic)
+  function addMesi(n) {
+    const annoTarget = d.getFullYear() + Math.floor((d.getMonth() + n) / 12);
+    const meseTarget = (d.getMonth() + n) % 12;
+    const ultimoGiornoTarget = new Date(annoTarget, meseTarget + 1, 0).getDate();
+    const giornoTarget = eraUltimoGiorno ? ultimoGiornoTarget : Math.min(base.getDate(), ultimoGiornoTarget);
+    d.setFullYear(annoTarget, meseTarget, giornoTarget);
+  }
+
   const freqMap = {
     giornaliera:     () => d.setDate(d.getDate() + 1),
     settimanale:     () => d.setDate(d.getDate() + 7),
-    mensile:         () => d.setMonth(d.getMonth() + 1),
-    bimestrale:      () => d.setMonth(d.getMonth() + 2),
-    trimestrale:     () => d.setMonth(d.getMonth() + 3),
-    quadrimestrale:  () => d.setMonth(d.getMonth() + 4),
-    semestrale:      () => d.setMonth(d.getMonth() + 6),
+    mensile:         () => addMesi(1),
+    bimestrale:      () => addMesi(2),
+    trimestrale:     () => addMesi(3),
+    quadrimestrale:  () => addMesi(4),
+    semestrale:      () => addMesi(6),
     annuale:         () => d.setFullYear(d.getFullYear() + 1),
   };
   if (!freqMap[freq]) return null;
