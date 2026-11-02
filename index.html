@@ -5377,7 +5377,6 @@ function renderHome() {
           </div>`;
         })() : ''}
         <div class="event-actions">
-          ${(ev.extra && ev.extra.freq) ? `<button class="ev-edit-btn" style="background:var(--accent);color:#fff" onclick="event.stopPropagation();creaProssima('${ev.id}')" title="Crea prossima">↻</button>` : ''}
           ${ev.categoria === 'ricorrenze' ? (() => {
             const _tel = (ev.extra || {}).telefono || '';
             const _telSan = _tel.replace(/\s/g,'');
