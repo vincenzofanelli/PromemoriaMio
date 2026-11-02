@@ -2789,6 +2789,19 @@ body {
         <label>Note (opzionale)</label>
         <textarea id="ricorrenze-note" placeholder="Informazioni aggiuntive…"></textarea>
       </div>
+      <div class="form-group">
+        <label>Telefono / WhatsApp (opzionale)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="tel" id="ricorrenze-telefono" placeholder="es. +39 333 1234567" autocomplete="tel"
+            style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem">
+          <button type="button" id="ricorrenze-contatti-btn" onclick="selezionaContattoRicorrenze()"
+            title="Seleziona dai contatti"
+            style="padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--accent);font-size:1rem;cursor:pointer;white-space:nowrap;display:none">
+            👤 Contatti
+          </button>
+        </div>
+        <div style="font-size:0.75rem;color:var(--fg-3);margin-top:4px">Sarà usato per le icone chiamata e WhatsApp nella home</div>
+      </div>
       <div class="form-group" id="ricorrenze-freq-wrap">
         <label>Frequenza</label>
         <select id="ricorrenze-freq" onchange="toggleAnticipo('ricorrenze')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
@@ -5365,6 +5378,21 @@ function renderHome() {
         })() : ''}
         <div class="event-actions">
           ${(ev.extra && ev.extra.freq) ? `<button class="ev-edit-btn" style="background:var(--accent);color:#fff" onclick="event.stopPropagation();creaProssima('${ev.id}')" title="Crea prossima">↻</button>` : ''}
+          ${ev.categoria === 'ricorrenze' ? (() => {
+            const _tel = (ev.extra || {}).telefono || '';
+            const _telSan = _tel.replace(/\s/g,'');
+            const _waNum = _telSan.replace(/^\+/,'');
+            const _telHref = _tel ? `tel:${_telSan}` : 'tel:';
+            const _waHref  = _tel ? `https://wa.me/${_waNum}` : 'https://wa.me/';
+            return `<a href="${_telHref}" onclick="event.stopPropagation()" title="Chiama${_tel ? ' '+_tel : ''}"
+              style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--bg-card);color:#16a34a;text-decoration:none;font-size:1.2rem">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            </a>
+            <a href="${_waHref}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="WhatsApp${_tel ? ' '+_tel : ''}"
+              style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--bg-card);color:#25d366;text-decoration:none;font-size:1.2rem">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.116 1.531 5.843L.057 23.5a.5.5 0 00.619.61l5.733-1.505A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.812 9.812 0 01-5.028-1.382l-.36-.214-3.733.979 1-3.645-.235-.374A9.818 9.818 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+            </a>`;
+          })() : ''}
           <button class="ev-edit-btn" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="Modifica">
             <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           </button>
@@ -5615,6 +5643,7 @@ function caricaFormEvento(ev) {
   } else if (cat === 'ricorrenze') {
     const selTipo = document.getElementById('ricorrenze-tipo'); if (selTipo) selTipo.value = e.tipo || '';
     set('ricorrenze-nome', e.nome);
+    set('ricorrenze-telefono', e.telefono || '');
     aggiornaFreqRicorrenza();
   } else if (cat === 'documenti') {
     set('documenti-tipo', e.tipo);
@@ -5699,8 +5728,9 @@ function raccogliCampiEvento(cat) {
     extra  = { nome, orari, durata, assunzioni, pilloleXScatola, pilloleXDose };
   } else if (cat === 'ricorrenze') {
     const _tipo = tipo(), _nome = val('ricorrenze-nome');
+    const _tel = val('ricorrenze-telefono');
     titolo = (_tipo && _nome) ? _tipo + ' di ' + _nome : _nome || _tipo || 'Ricorrenza';
-    extra  = { tipo: _tipo, nome: _nome };
+    extra  = { tipo: _tipo, nome: _nome, ..._tel ? { telefono: _tel } : {} };
   } else if (cat === 'documenti') {
     titolo = tipo() || 'Documento';
     extra  = { tipo: tipo() };
@@ -5823,7 +5853,7 @@ function resetForm(cat) {
   const ids = {
     visite: ['visite-tipo','visite-data','visite-luogo','visite-note','visite-freq','visite-anticipo'],
     farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo','custom-prima-dose','custom-n-dosi','alterne-ora','farmaci-durata','farmaci-note','farmaci-pillole-scatola','farmaci-pillole-dose'],
-    ricorrenze: ['ricorrenze-tipo','ricorrenze-nome','ricorrenze-data','ricorrenze-note','ricorrenze-freq','ricorrenze-anticipo'],
+    ricorrenze: ['ricorrenze-tipo','ricorrenze-nome','ricorrenze-data','ricorrenze-note','ricorrenze-telefono','ricorrenze-freq','ricorrenze-anticipo'],
     documenti: ['documenti-tipo','documenti-data','documenti-note','documenti-freq','documenti-anticipo'],
     auto: ['auto-tipo','auto-veicolo','auto-data','auto-note','auto-freq','auto-anticipo'],
     generico: ['generico-titolo','generico-data','generico-luogo','generico-note','generico-freq','generico-anticipo'],
@@ -6670,6 +6700,56 @@ function renderConti() {
 // ── Frequenza: mostra/nascondi anticipo ──────────────────────────────────────
 // Tipi ricorrenza con frequenza annuale implicita
 const RICORRENZE_ANNUALI = new Set(['Anniversario', 'Compleanno', 'Onomastico']);
+
+// Mostra pulsante "Contatti" nel form ricorrenze se API disponibile
+(function() {
+  function _initContattiBtn() {
+    const btn = document.getElementById('ricorrenze-contatti-btn');
+    if (btn && 'contacts' in navigator && 'select' in navigator.contacts) {
+      btn.style.display = '';
+    }
+  }
+  // Prova subito e dopo DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initContattiBtn);
+  } else {
+    _initContattiBtn();
+  }
+  // Anche ogni volta che si naviga al form ricorrenze
+  document.addEventListener('click', e => {
+    if (e.target && e.target.closest && e.target.closest('[data-nav="form-ricorrenze"], [onclick*="form-ricorrenze"]')) {
+      setTimeout(_initContattiBtn, 200);
+    }
+  });
+})();
+
+async function selezionaContattoRicorrenze() {
+  if (!('contacts' in navigator) || !('select' in navigator.contacts)) {
+    showToast('Selezione contatti non disponibile su questo dispositivo');
+    return;
+  }
+  try {
+    const result = await navigator.contacts.select(['name', 'tel'], { multiple: false });
+    if (!result || result.length === 0) return;
+    const contact = result[0];
+    const telArr = contact.tel || [];
+    if (telArr.length === 0) {
+      showToast('Nessun numero trovato per questo contatto');
+      return;
+    }
+    const tel = telArr[0];
+    const inp = document.getElementById('ricorrenze-telefono');
+    if (inp) { inp.value = tel; inp.dispatchEvent(new Event('input')); }
+    // Prova a precompilare il nome se il campo è vuoto
+    const nomeInp = document.getElementById('ricorrenze-nome');
+    if (nomeInp && !nomeInp.value.trim() && contact.name && contact.name[0]) {
+      nomeInp.value = contact.name[0];
+    }
+    showToast('✓ Contatto selezionato');
+  } catch (err) {
+    if (err.name !== 'AbortError') showToast('Errore selezione contatti: ' + err.message);
+  }
+}
 
 function aggiornaFreqRicorrenza() {
   const tipo = document.getElementById('ricorrenze-tipo');
