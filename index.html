@@ -32,6 +32,15 @@
 @media(prefers-color-scheme:dark){.fpp-prossima{background:#0c2d48;color:#7dd3fc;border-color:#1e4d70}}
 .fpp-configura{margin:6px 0 4px;padding:8px 12px;border-radius:9px;font-size:0.79rem;color:var(--accent);border:1px dashed var(--accent);background:var(--bg);cursor:pointer;text-align:center}
 .fpp-configura:hover{background:var(--bg-card)}
+/* Sfondo card farmaci per stato dosi */
+.event-card.farmaci-mancanti{background:#fffbeb;border-left:4px solid #f59e0b}
+.event-card.farmaci-ok{background:#f0fdf4;border-left:4px solid #22c55e}
+@media(prefers-color-scheme:dark){
+  .event-card.farmaci-mancanti{background:#2d1f00;border-left-color:#d97706}
+  .event-card.farmaci-ok{background:#052e16;border-left-color:#16a34a}
+}
+/* Hint microfono iPhone */
+.mic-hint{display:none;margin-top:5px;font-size:0.73rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:5px 9px;line-height:1.4}
 </style></head><body>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2000,17 +2009,13 @@ body {
 
   <!-- bottom nav -->
   <nav class="bottom-nav">
-    <button class="nav-btn active" onclick="goTo('home')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>
-      <span>Home</span>
+    <button class="nav-btn" onclick="goTo('archivio')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+      <span>Archivio</span>
     </button>
     <button class="fab" onclick="goTo('nuovo')">
       <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
       <span>Nuovo</span>
-    </button>
-    <button class="nav-btn" onclick="goTo('archivio')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
-      <span>Archivio</span>
     </button>
     <button class="nav-btn" onclick="goTo('utente')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -2314,7 +2319,13 @@ body {
           <option value="quadrimestrale">Quadrimestrale (ogni 4 mesi)</option>
           <option value="semestrale">Semestrale (ogni 6 mesi)</option>
           <option value="annuale">Annuale</option>
+          <option value="biennale">Biennale (ogni 2 anni)</option>
+          <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group freq-mesi-wrap" id="visite-freq-mesi-wrap" style="display:none">
+        <label>Ogni quanti mesi?</label>
+        <input type="number" id="visite-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="visite-anticipo-wrap">
         <label>Anticipo notifica</label>
@@ -2326,6 +2337,10 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
+        <div style="margin-top:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="visite-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -2370,16 +2385,7 @@ body {
         <input type="text" id="farmaco-nome" placeholder="es. Amoxicillina 500mg" required autocomplete="off">
       </div>
 
-      <div class="form-group">
-        <label>Foto scatola / blister (opzionale)</label>
-        <input type="file" accept="image/*" capture="environment" id="foto-input" style="display:none" onchange="mostraFoto(this)">
-        <div id="foto-area" onclick="document.getElementById('foto-input').click()"
-          style="border:2px dashed var(--border);border-radius:var(--radius-s);padding:20px;text-align:center;color:var(--fg-3);font-size:0.85rem;cursor:pointer;background:var(--bg)">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 6px;display:block"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
-          Tocca per aggiungere foto
-        </div>
-        <img id="foto-preview" style="display:none;width:100%;border-radius:var(--radius-s);margin-top:8px;max-height:180px;object-fit:cover">
-      </div>
+      <div id="farmaci-foto-wrap"></div>
 
       <div class="form-group">
         <label>Numero assunzioni</label>
@@ -2457,6 +2463,7 @@ body {
         <label>Note (opzionale)</label>
         <textarea id="farmaci-note" placeholder="Prendere a stomaco pieno…"></textarea>
       </div>
+      <div id="farmaci-foto-wrap"></div>
 
       <div class="form-group">
         <label>Ripetizione promemoria</label>
@@ -2470,7 +2477,13 @@ body {
           <option value="quadrimestrale">Quadrimestrale (ogni 4 mesi)</option>
           <option value="semestrale">Semestrale (ogni 6 mesi)</option>
           <option value="annuale">Annuale</option>
+          <option value="biennale">Biennale (ogni 2 anni)</option>
+          <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group freq-mesi-wrap" id="farmaci-freq-mesi-wrap" style="display:none">
+        <label>Ogni quanti mesi?</label>
+        <input type="number" id="farmaci-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="farmaci-anticipo-wrap">
         <label>Anticipo notifica</label>
@@ -2482,6 +2495,10 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
+        <div style="margin-top:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="farmaci-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -2814,7 +2831,13 @@ body {
           <option value="quadrimestrale">Quadrimestrale (ogni 4 mesi)</option>
           <option value="semestrale">Semestrale (ogni 6 mesi)</option>
           <option value="annuale">Annuale</option>
+          <option value="biennale">Biennale (ogni 2 anni)</option>
+          <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group freq-mesi-wrap" id="ricorrenze-freq-mesi-wrap" style="display:none">
+        <label>Ogni quanti mesi?</label>
+        <input type="number" id="ricorrenze-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="ricorrenze-anticipo-wrap">
         <label>Anticipo notifica</label>
@@ -2826,6 +2849,10 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
+        <div style="margin-top:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="ricorrenze-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -2879,6 +2906,7 @@ body {
         <label>Note (opzionale)</label>
         <textarea id="documenti-note" placeholder="es. Rinnovo in comune, numero documento…"></textarea>
       </div>
+      <div id="documenti-foto-wrap"></div>
       <div class="form-group">
         <label>Frequenza</label>
         <select id="documenti-freq" onchange="toggleAnticipo('documenti')" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
@@ -2891,7 +2919,13 @@ body {
           <option value="quadrimestrale">Quadrimestrale (ogni 4 mesi)</option>
           <option value="semestrale">Semestrale (ogni 6 mesi)</option>
           <option value="annuale">Annuale</option>
+          <option value="biennale">Biennale (ogni 2 anni)</option>
+          <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group freq-mesi-wrap" id="documenti-freq-mesi-wrap" style="display:none">
+        <label>Ogni quanti mesi?</label>
+        <input type="number" id="documenti-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="documenti-anticipo-wrap">
         <label>Anticipo notifica</label>
@@ -2903,6 +2937,10 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
+        <div style="margin-top:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="documenti-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -2972,7 +3010,13 @@ body {
           <option value="quadrimestrale">Quadrimestrale (ogni 4 mesi)</option>
           <option value="semestrale">Semestrale (ogni 6 mesi)</option>
           <option value="annuale">Annuale</option>
+          <option value="biennale">Biennale (ogni 2 anni)</option>
+          <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group freq-mesi-wrap" id="auto-freq-mesi-wrap" style="display:none">
+        <label>Ogni quanti mesi?</label>
+        <input type="number" id="auto-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="auto-anticipo-wrap">
         <label>Anticipo notifica</label>
@@ -2984,6 +3028,10 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
+        <div style="margin-top:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="auto-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3045,7 +3093,13 @@ body {
           <option value="quadrimestrale">Quadrimestrale (ogni 4 mesi)</option>
           <option value="semestrale">Semestrale (ogni 6 mesi)</option>
           <option value="annuale">Annuale</option>
+          <option value="biennale">Biennale (ogni 2 anni)</option>
+          <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group freq-mesi-wrap" id="generico-freq-mesi-wrap" style="display:none">
+        <label>Ogni quanti mesi?</label>
+        <input type="number" id="generico-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="generico-anticipo-wrap">
         <label>Anticipo notifica</label>
@@ -3057,6 +3111,10 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
+        <div style="margin-top:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="generico-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3114,7 +3172,13 @@ body {
           <option value="quadrimestrale">Quadrimestrale (ogni 4 mesi)</option>
           <option value="semestrale">Semestrale (ogni 6 mesi)</option>
           <option value="annuale">Annuale</option>
+          <option value="biennale">Biennale (ogni 2 anni)</option>
+          <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group freq-mesi-wrap" id="acquisti-freq-mesi-wrap" style="display:none">
+        <label>Ogni quanti mesi?</label>
+        <input type="number" id="acquisti-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="acquisti-anticipo-wrap">
         <label>Anticipo notifica</label>
@@ -3126,6 +3190,10 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
+        <div style="margin-top:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="acquisti-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3198,7 +3266,13 @@ body {
           <option value="quadrimestrale">Quadrimestrale (ogni 4 mesi)</option>
           <option value="semestrale">Semestrale (ogni 6 mesi)</option>
           <option value="annuale">Annuale</option>
+          <option value="biennale">Biennale (ogni 2 anni)</option>
+          <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group freq-mesi-wrap" id="lavoro-freq-mesi-wrap" style="display:none">
+        <label>Ogni quanti mesi?</label>
+        <input type="number" id="lavoro-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="lavoro-anticipo-wrap">
         <label>Anticipo notifica</label>
@@ -3210,6 +3284,10 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
+        <div style="margin-top:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="lavoro-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3410,7 +3488,13 @@ body {
           <option value="quadrimestrale">Quadrimestrale (ogni 4 mesi)</option>
           <option value="semestrale">Semestrale (ogni 6 mesi)</option>
           <option value="annuale">Annuale</option>
+          <option value="biennale">Biennale (ogni 2 anni)</option>
+          <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group freq-mesi-wrap" id="condominio-freq-mesi-wrap" style="display:none">
+        <label>Ogni quanti mesi?</label>
+        <input type="number" id="condominio-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="condominio-anticipo-wrap">
         <label>Anticipo notifica</label>
@@ -3422,6 +3506,10 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
+        <div style="margin-top:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="condominio-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -4652,6 +4740,201 @@ function formatData(ts) {
 // GESTIONE EVENTI — localStorage
 // ============================================================
 
+// ── IndexedDB foto ────────────────────────────────────────────────────────────
+const FOTO_DB_NAME    = 'promemoriamio-foto';
+const FOTO_DB_VERSION = 1;
+const FOTO_STORE      = 'foto';
+
+function _fotoApriDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(FOTO_DB_NAME, FOTO_DB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(FOTO_STORE)) {
+        db.createObjectStore(FOTO_STORE, { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function fotoSalva(key, dataUrl) {
+  const db = await _fotoApriDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FOTO_STORE, 'readwrite');
+    tx.objectStore(FOTO_STORE).put({ key, dataUrl });
+    tx.oncomplete = resolve;
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function fotoLeggi(key) {
+  const db = await _fotoApriDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FOTO_STORE, 'readonly');
+    const req = tx.objectStore(FOTO_STORE).get(key);
+    req.onsuccess = e => resolve(e.target.result ? e.target.result.dataUrl : null);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function fotoElimina(key) {
+  const db = await _fotoApriDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FOTO_STORE, 'readwrite');
+    tx.objectStore(FOTO_STORE).delete(key);
+    tx.oncomplete = resolve;
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function fotoEliminaEvento(evId) {
+  // Elimina tutte le foto associate a un evento (fronte, retro, confezione)
+  await Promise.allSettled([
+    fotoElimina(evId + '-fronte'),
+    fotoElimina(evId + '-retro'),
+    fotoElimina(evId + '-confezione'),
+  ]);
+}
+
+// Comprime un File immagine a max 1200px / qualità 0.78 → dataURL
+function fotoComprimi(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = ev => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const MAX = 1200;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else       { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.78));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Apre lightbox con l'immagine
+function fotoApriViewer(dataUrl, titolo) {
+  let lb = document.getElementById('foto-lightbox');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'foto-lightbox';
+    lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px';
+    lb.onclick = () => lb.remove();
+    document.body.appendChild(lb);
+  }
+  lb.innerHTML = `
+    <div style="color:#fff;font-size:0.85rem;font-weight:600;opacity:0.8">${titolo || ''}</div>
+    <img src="${dataUrl}" style="max-width:100%;max-height:80vh;border-radius:10px;object-fit:contain">
+    <div style="color:#fff;font-size:0.78rem;opacity:0.6">Tocca per chiudere</div>`;
+}
+
+// Carica e mostra miniatura in un elemento <img> con fallback
+async function fotoMostraMiniatura(key, imgEl, placeholder) {
+  try {
+    const url = await fotoLeggi(key);
+    if (url && imgEl) { imgEl.src = url; imgEl.style.display = ''; }
+    else if (placeholder) placeholder.style.display = '';
+  } catch(e) {
+    if (placeholder) placeholder.style.display = '';
+  }
+}
+
+// Gestisce input file foto: comprime e salva, aggiorna UI
+async function fotoGestisciInput(inputEl, evId, slot, previewId, btnRimuoviId) {
+  const file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  try {
+    showToast('Elaborazione foto…');
+    const dataUrl = await fotoComprimi(file);
+    await fotoSalva(evId + '-' + slot, dataUrl);
+    const prev = document.getElementById(previewId);
+    if (prev) { prev.src = dataUrl; prev.style.display = ''; }
+    const btnR = document.getElementById(btnRimuoviId);
+    if (btnR) btnR.style.display = '';
+    showToast('✓ Foto salvata');
+  } catch(err) {
+    showToast('Errore salvataggio foto: ' + err.message);
+  }
+  inputEl.value = '';
+}
+
+async function fotoRimuovi(evId, slot, previewId, btnRimuoviId) {
+  await fotoElimina(evId + '-' + slot);
+  const prev = document.getElementById(previewId);
+  if (prev) { prev.src = ''; prev.style.display = 'none'; }
+  const btnR = document.getElementById(btnRimuoviId);
+  if (btnR) btnR.style.display = 'none';
+  showToast('Foto rimossa');
+}
+
+// Costruisce il blocco HTML del campo foto per i form
+function fotoHtmlCampo(evId, slot, label, mostraRetro) {
+  if (!evId) return ''; // nuovo evento: foto non ancora possibile
+  const prevId   = `foto-prev-${evId}-${slot}`;
+  const inputId  = `foto-inp-${evId}-${slot}`;
+  const btnRId   = `foto-rmv-${evId}-${slot}`;
+  return `<div class="form-group" id="foto-wrap-${evId}-${slot}">
+    <label>${label}</label>
+    <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+      <div style="position:relative;width:90px;height:90px;border:1.5px dashed var(--border);border-radius:10px;overflow:hidden;background:var(--bg);flex-shrink:0;cursor:pointer"
+           onclick="document.getElementById('${inputId}').click()">
+        <img id="${prevId}" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:9px">
+        <div id="foto-ph-${evId}-${slot}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--fg-3);font-size:0.72rem;gap:4px">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="28" height="28"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+          Tocca
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button type="button" onclick="document.getElementById('${inputId}').click()"
+          style="padding:7px 14px;border:1px solid var(--border);border-radius:9px;background:var(--bg-card);color:var(--accent);font-size:0.82rem;cursor:pointer">
+          📷 Scegli foto
+        </button>
+        <button type="button" id="${btnRId}" onclick="fotoRimuovi('${evId}','${slot}','${prevId}','${btnRId}')"
+          style="display:none;padding:7px 14px;border:1px solid #fecaca;border-radius:9px;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer">
+          🗑 Rimuovi
+        </button>
+      </div>
+    </div>
+    <input type="file" id="${inputId}" accept="image/*" capture="environment" style="display:none"
+      onchange="fotoGestisciInput(this,'${evId}','${slot}','${prevId}','${btnRId}')">
+  </div>`;
+}
+
+// Carica le miniature nel form dopo apertura
+async function fotoCaricaAnteprime(evId, slots) {
+  for (const slot of slots) {
+    const prevId = `foto-prev-${evId}-${slot}`;
+    const phId   = `foto-ph-${evId}-${slot}`;
+    const btnRId = `foto-rmv-${evId}-${slot}`;
+    const prevEl = document.getElementById(prevId);
+    const phEl   = document.getElementById(phId);
+    if (!prevEl) continue;
+    try {
+      const url = await fotoLeggi(evId + '-' + slot);
+      if (url) {
+        prevEl.src = url; prevEl.style.display = '';
+        if (phEl) phEl.style.display = 'none';
+        const btnR = document.getElementById(btnRId);
+        if (btnR) btnR.style.display = '';
+      }
+    } catch(e) {}
+  }
+}
+
+// ── Fine modulo foto ───────────────────────────────────────────────────────────
+
 const LS_EVENTI = 'agendame_eventi';
 let eventoInModifica = null; // id evento in modifica, null = nuovo
 let mostraCompletati = false;
@@ -4710,6 +4993,10 @@ function dataEventoEffettiva(ev) {
   if (!d) return null;
   const freq = (ev.extra || {}).freq;
   if (!freq) return d;
+  // Override manuale: usa direttamente senza calcolo automatico
+  const override = (ev.extra || {}).data_prossima_override;
+  if (override) return override;
+  const freqMesi = (ev.extra || {}).freq_mesi;
   const oggi = new Date(); oggi.setHours(0,0,0,0);
   const isDatetime = d.includes('T');
   let cur = isDatetime ? new Date(d) : new Date(d + 'T12:00');
@@ -4717,7 +5004,7 @@ function dataEventoEffettiva(ev) {
   if (curGiorno >= oggi) return d; // già oggi o futura
   let safety = 0;
   while (safety++ < 3660) {
-    const prossima = calcolaDataProssima(d, freq, null);
+    const prossima = calcolaDataProssima(d, freq, null, freqMesi);
     if (!prossima) break;
     d = prossima;
     const g = new Date(isDatetime ? d : d + 'T12:00'); g.setHours(0,0,0,0);
@@ -4976,7 +5263,7 @@ function renderPannelloGiornata() {
         const d = parseDataLocale(ds.split('T')[0]);
         if (!isNaN(d) && d >= inizio && d <= fine) return true;
         // Calcola occorrenza successiva rispetto a oggi
-        const prossima = calcolaDataProssima(extra.data, freq, null);
+        const prossima = calcolaDataProssima(extra.data, freq, null, extra.freq_mesi);
         if (!prossima) return false;
         const dp = parseDataLocale(prossima.split('T')[0]);
         return !isNaN(dp) && dp >= inizio && dp <= fine;
@@ -5290,7 +5577,16 @@ function renderHome() {
       if (ev.categoria === 'farmaci' && Array.isArray(evExtra.orari) && evExtra.orari.length) {
         oraCard = evExtra.orari.join(' · ');
       }
-      html += `<div class="event-card ${g.cls}" data-id="${ev.id}">
+      // Classe sfondo farmaci in base allo stato dosi
+      let _farmaciCls = '';
+      if (ev.categoria === 'farmaci') {
+        const _rr = calcolaRiepilogoPillole(ev.extra || {});
+        if (_rr && !_rr.nonAncoraIniziata) {
+          if (_rr.statoOggi === 'mancanti') _farmaciCls = ' farmaci-mancanti';
+          else if (_rr.statoOggi === 'ok') _farmaciCls = ' farmaci-ok';
+        }
+      }
+      html += `<div class="event-card ${g.cls}${_farmaciCls}" data-id="${ev.id}">
         <div class="event-top">
           <div class="event-dot"></div>
           <div class="event-body">
@@ -5377,6 +5673,25 @@ function renderHome() {
           </div>`;
         })() : ''}
         <div class="event-actions">
+          ${(ev.categoria === 'documenti' || ev.categoria === 'farmaci') ? (() => {
+            const _slot = ev.categoria === 'farmaci' ? 'confezione' : 'fronte';
+            const _key  = ev.id + '-' + _slot;
+            const _btnId = 'foto-btn-' + _key;
+            // Carica in modo asincrono e mostra/nasconde il bottone
+            setTimeout(async () => {
+              try {
+                const url = await fotoLeggi(_key);
+                const btn = document.getElementById(_btnId);
+                if (btn) btn.style.display = url ? '' : 'none';
+              } catch(e) {}
+            }, 0);
+            const _titolo = ev.categoria === 'farmaci' ? 'Foto confezione' : 'Foto documento';
+            return `<button id="${_btnId}" class="ev-edit-btn" style="display:none;color:var(--accent)"
+              onclick="event.stopPropagation();fotoLeggi('${_key}').then(u=>u&&fotoApriViewer(u,'${_titolo}'))"
+              title="${_titolo}">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+            </button>`;
+          })() : ''}
           ${ev.categoria === 'ricorrenze' ? (() => {
             const _tel = (ev.extra || {}).telefono || '';
             const _telSan = _tel.replace(/\s/g,'');
@@ -5444,6 +5759,7 @@ function eliminaEvento(id) {
   const idx = eventi.findIndex(e => e.id === id);
   if (idx === -1) return;
   cancellaNotificheEvento(eventi[idx]);  // cancella notifiche nel SW
+  fotoEliminaEvento(id);               // elimina foto da IndexedDB
   _undoElimina = { ev: eventi[idx], idx };
   eventi.splice(idx, 1);
   salvaEventiLS(eventi);
@@ -5511,6 +5827,11 @@ function segnaFatto(id) {
   const tipoRic = (ev.extra || {}).tipo || '';
   const isCiclica = ev.categoria === 'ricorrenze' && RICORRENZE_ANNUALI.has(tipoRic);
   if (!isCiclica) ev.archiviato = true;
+  // Consuma l'override data prossima (monouso): aggiorna extra.data e rimuove il flag
+  if (ev.extra && ev.extra.data_prossima_override) {
+    ev.extra.data = ev.extra.data_prossima_override;
+    delete ev.extra.data_prossima_override;
+  }
   salvaEventiLS(eventi);
   renderHome();
   showToast('Segnato come fatto ✓');
@@ -5639,6 +5960,22 @@ function caricaFormEvento(ev) {
         if (calc && e.orari[i]) { calc.readOnly = false; calc.value = e.orari[i]; calc.readOnly = true; }
       }
     }
+    // Foto confezione farmaco
+    const _fWrapF = document.getElementById('farmaci-foto-wrap');
+    if (_fWrapF && ev.id) {
+      _fWrapF.innerHTML = fotoHtmlCampo(ev.id, 'confezione', 'Foto confezione / blister (opzionale)');
+      fotoCaricaAnteprime(ev.id, ['confezione']);
+    }
+  } else if (cat === 'documenti') {
+    // Foto documento: inietta campi se abbiamo un evId
+    const _evId = ev.id;
+    const _fWrap = document.getElementById('documenti-foto-wrap');
+    if (_fWrap && _evId) {
+      _fWrap.innerHTML =
+        fotoHtmlCampo(_evId, 'fronte', 'Foto fronte documento (opzionale)') +
+        fotoHtmlCampo(_evId, 'retro',  'Foto retro documento (opzionale)');
+      fotoCaricaAnteprime(_evId, ['fronte', 'retro']);
+    }
   } else if (cat === 'ricorrenze') {
     const selTipo = document.getElementById('ricorrenze-tipo'); if (selTipo) selTipo.value = e.tipo || '';
     set('ricorrenze-nome', e.nome);
@@ -5665,6 +6002,14 @@ function caricaFormEvento(ev) {
   if (selFreq) { selFreq.value = e.freq || ''; toggleAnticipo(cat); }
   const selAnticipo = document.getElementById(cat + '-anticipo');
   if (selAnticipo) selAnticipo.value = e.anticipo || '';
+  // Ripristina N mesi per frequenza personalizzata
+  if (e.freq === 'personalizzata' && e.freq_mesi) {
+    const inpMesi = document.getElementById(cat + '-freq-mesi');
+    if (inpMesi) inpMesi.value = e.freq_mesi;
+  }
+  // Ripristina override data prossima scadenza
+  const inpOverride = document.getElementById(cat + '-data-prossima-override');
+  if (inpOverride) inpOverride.value = e.data_prossima_override || '';
 }
 
 function raccogliCampiEvento(cat) {
@@ -5750,11 +6095,20 @@ function raccogliCampiEvento(cat) {
     extra  = { tipo: tipo(), importo: val('condominio-importo') };
   }
 
+  const _freq = freq();
+  const _freqMesi = _freq === 'personalizzata'
+    ? parseInt(val(cat + '-freq-mesi')) || null
+    : null;
+  const _overrideRaw = _freq ? val(cat + '-data-prossima-override') : '';
+  const _override = _overrideRaw || null;
+
   return {
     titolo,
     data:     data(),
     note:     note(),
-    freq:     freq(),
+    freq:     _freq,
+    ...(_freqMesi ? { freq_mesi: _freqMesi } : {}),
+    ...(_override ? { data_prossima_override: _override } : {}),
     anticipo: anticipo(),
     ...extra,
   };
@@ -5873,6 +6227,13 @@ function resetForm(cat) {
   // Nascondi anticipo-wrap al reset
   const aw = document.getElementById(cat + '-anticipo-wrap');
   if (aw) aw.classList.remove('visible');
+  // Pulisci campi frequenza aggiuntivi
+  const mesiWrap = document.getElementById(cat + '-freq-mesi-wrap');
+  if (mesiWrap) mesiWrap.style.display = 'none';
+  const inpMesi = document.getElementById(cat + '-freq-mesi');
+  if (inpMesi) inpMesi.value = '';
+  const inpOverride = document.getElementById(cat + '-data-prossima-override');
+  if (inpOverride) inpOverride.value = '';
   (ids[cat] || []).forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; if (el.tagName === 'SELECT') el.selectedIndex = 0; }
@@ -6767,6 +7128,9 @@ function aggiornaFreqRicorrenza() {
 function toggleAnticipo(cat) {
   const sel = document.getElementById(cat + '-freq');
   const wrap = document.getElementById(cat + '-anticipo-wrap');
+  const mesiWrap = document.getElementById(cat + '-freq-mesi-wrap');
+  const isPersonalizzata = sel && sel.value === 'personalizzata';
+  if (mesiWrap) mesiWrap.style.display = isPersonalizzata ? '' : 'none';
   if (!wrap) return;
   if (sel && sel.value) wrap.classList.add('visible');
   else wrap.classList.remove('visible');
@@ -6785,7 +7149,7 @@ function _localISODT(d) {
 }
 
 // ── Calcola data prossima in base a frequenza ────────────────────────────────
-function calcolaDataProssima(dataStr, freq, anticipoGiorni) {
+function calcolaDataProssima(dataStr, freq, anticipoGiorni, freqMesi) {
   const isDatetime = dataStr && dataStr.includes('T');
   const base = isDatetime ? new Date(dataStr) : new Date(dataStr + 'T12:00');
   const d = new Date(base);
@@ -6812,6 +7176,8 @@ function calcolaDataProssima(dataStr, freq, anticipoGiorni) {
     quadrimestrale:  () => addMesi(4),
     semestrale:      () => addMesi(6),
     annuale:         () => d.setFullYear(d.getFullYear() + 1),
+    biennale:        () => d.setFullYear(d.getFullYear() + 2),
+    personalizzata:  () => { const n = parseInt(freqMesi) || 1; addMesi(n); },
   };
   if (!freqMap[freq]) return null;
   freqMap[freq]();
@@ -6827,10 +7193,13 @@ function creaProssima(id) {
   if (!ev) return;
   const e = ev.extra || {};
   if (!e.freq) return;
-  const nuovaData = calcolaDataProssima(e.data, e.freq, e.anticipo);
+  // Se c'era un override, calcola la prossima a partire da esso; altrimenti da data base
+  const baseCalcolo = e.data_prossima_override || e.data;
+  const nuovaData = calcolaDataProssima(baseCalcolo, e.freq, e.anticipo, e.freq_mesi);
   if (!nuovaData) { showToast('Data non calcolabile'); return; }
-  // Prepara evento "template" con nuova data
-  const template = { ...ev, id: null, extra: { ...e, data: nuovaData } };
+  // Prepara evento "template" con nuova data — l'override è monouso, non si copia
+  const { data_prossima_override: _drop, ...eClean } = e;
+  const template = { ...ev, id: null, extra: { ...eClean, data: nuovaData } };
   const fid = ev.categoria;
   // Usa un flag per passare i dati a initNotif senza race condition sul setTimeout
   // goTo (ramo !eventoInModifica) chiama resetForm (che cancella notifStati) poi setTimeout(initNotif,0)
@@ -6918,4 +7287,38 @@ function creaProssima(id) {
   </div>
 </div>
 
+
+<script>
+// Hint microfono iPhone — visibile solo su iOS/Safari
+(function() {
+  const _isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!_isIOS) return;
+  const _hintHtml = '🎤 Su iPhone: se il microfono della tastiera non risponde, vai in <strong>Impostazioni → Safari → Microfono</strong> e consenti l\'accesso a questo sito.';
+  function _addHints() {
+    const noteIds = [
+      'visite-note','farmaci-note','ricorrenze-note','documenti-note',
+      'auto-note','generico-note','acquisti-note','lavoro-note','condominio-note'
+    ];
+    noteIds.forEach(id => {
+      const ta = document.getElementById(id);
+      if (!ta) return;
+      const existing = ta.parentNode.querySelector('.mic-hint');
+      if (existing) { existing.style.display = ''; return; }
+      const hint = document.createElement('div');
+      hint.className = 'mic-hint';
+      hint.innerHTML = _hintHtml;
+      hint.style.display = '';
+      ta.after(hint);
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _addHints);
+  } else {
+    _addHints();
+  }
+  // Ri-applica ogni volta che si apre il form (le sezioni vengono mostrate/nascoste)
+  document.addEventListener('click', () => setTimeout(_addHints, 300));
+})();
+</script>
 </body></html>
