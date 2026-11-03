@@ -5799,6 +5799,7 @@ function renderHome() {
             </div>
             ${_prossimaDoseHtml}
             ${_statoHtml}
+            ${_diff > 0 ? `<button class="fpp-allinea" onclick="event.stopPropagation();allineaPillole('${ev.id}')">⚙ Allinea conteggio (attese: ${_r.pillole_attese}, spuntate: ${_r.pillole_spuntate})</button>` : ''}
           </div>`;
         })() : ''}
         <div class="event-actions">
