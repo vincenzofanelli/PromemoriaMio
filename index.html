@@ -41,7 +41,11 @@
 }
 /* Hint microfono iPhone */
 .mic-hint{display:none;margin-top:5px;font-size:0.73rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:5px 9px;line-height:1.4}
-/* Scadenza mensile — selettore mese */
+/* Scadenza mensile — toggle + selettore mese */
+.scad-mensile-toggle-wrap{display:none;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;cursor:pointer}
+.scad-mensile-toggle-wrap.visible{display:flex}
+.scad-mensile-toggle-wrap input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;cursor:pointer}
+.scad-mensile-toggle-wrap label{font-size:0.9rem;color:var(--fg);cursor:pointer;user-select:none;line-height:1.3}
 .scad-mensile-month-wrap{display:none}
 .scad-mensile-month-wrap.visible{display:block}
 </style></head><body>
@@ -2326,6 +2330,10 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-toggle-wrap" id="visite-scad-mensile-toggle-wrap">
+        <input type="checkbox" id="visite-scad-mensile-chk" onchange="toggleScadMensile('visite')">
+        <label for="visite-scad-mensile-chk">Evento valido per tutto il mese</label>
+      </div>
       <div class="form-group scad-mensile-month-wrap" id="visite-scad-mensile-wrap">
         <label>Mese di scadenza</label>
         <input type="month" id="visite-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
@@ -2485,6 +2493,10 @@ body {
           <option value="biennale">Biennale (ogni 2 anni)</option>
           <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group scad-mensile-toggle-wrap" id="farmaci-scad-mensile-toggle-wrap">
+        <input type="checkbox" id="farmaci-scad-mensile-chk" onchange="toggleScadMensile('farmaci')">
+        <label for="farmaci-scad-mensile-chk">Evento valido per tutto il mese</label>
       </div>
       <div class="form-group scad-mensile-month-wrap" id="farmaci-scad-mensile-wrap">
         <label>Mese di scadenza</label>
@@ -2844,6 +2856,10 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-toggle-wrap" id="ricorrenze-scad-mensile-toggle-wrap">
+        <input type="checkbox" id="ricorrenze-scad-mensile-chk" onchange="toggleScadMensile('ricorrenze')">
+        <label for="ricorrenze-scad-mensile-chk">Evento valido per tutto il mese</label>
+      </div>
       <div class="form-group scad-mensile-month-wrap" id="ricorrenze-scad-mensile-wrap">
         <label>Mese di scadenza</label>
         <input type="month" id="ricorrenze-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
@@ -2935,6 +2951,10 @@ body {
           <option value="biennale">Biennale (ogni 2 anni)</option>
           <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group scad-mensile-toggle-wrap" id="documenti-scad-mensile-toggle-wrap">
+        <input type="checkbox" id="documenti-scad-mensile-chk" onchange="toggleScadMensile('documenti')">
+        <label for="documenti-scad-mensile-chk">Evento valido per tutto il mese</label>
       </div>
       <div class="form-group scad-mensile-month-wrap" id="documenti-scad-mensile-wrap">
         <label>Mese di scadenza</label>
@@ -3031,6 +3051,10 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-toggle-wrap" id="auto-scad-mensile-toggle-wrap">
+        <input type="checkbox" id="auto-scad-mensile-chk" onchange="toggleScadMensile('auto')">
+        <label for="auto-scad-mensile-chk">Evento valido per tutto il mese</label>
+      </div>
       <div class="form-group scad-mensile-month-wrap" id="auto-scad-mensile-wrap">
         <label>Mese di scadenza</label>
         <input type="month" id="auto-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
@@ -3118,6 +3142,10 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-toggle-wrap" id="generico-scad-mensile-toggle-wrap">
+        <input type="checkbox" id="generico-scad-mensile-chk" onchange="toggleScadMensile('generico')">
+        <label for="generico-scad-mensile-chk">Evento valido per tutto il mese</label>
+      </div>
       <div class="form-group scad-mensile-month-wrap" id="generico-scad-mensile-wrap">
         <label>Mese di scadenza</label>
         <input type="month" id="generico-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
@@ -3200,6 +3228,10 @@ body {
           <option value="biennale">Biennale (ogni 2 anni)</option>
           <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group scad-mensile-toggle-wrap" id="acquisti-scad-mensile-toggle-wrap">
+        <input type="checkbox" id="acquisti-scad-mensile-chk" onchange="toggleScadMensile('acquisti')">
+        <label for="acquisti-scad-mensile-chk">Evento valido per tutto il mese</label>
       </div>
       <div class="form-group scad-mensile-month-wrap" id="acquisti-scad-mensile-wrap">
         <label>Mese di scadenza</label>
@@ -3298,6 +3330,10 @@ body {
           <option value="biennale">Biennale (ogni 2 anni)</option>
           <option value="personalizzata">Personalizzata…</option>
         </select>
+      </div>
+      <div class="form-group scad-mensile-toggle-wrap" id="lavoro-scad-mensile-toggle-wrap">
+        <input type="checkbox" id="lavoro-scad-mensile-chk" onchange="toggleScadMensile('lavoro')">
+        <label for="lavoro-scad-mensile-chk">Evento valido per tutto il mese</label>
       </div>
       <div class="form-group scad-mensile-month-wrap" id="lavoro-scad-mensile-wrap">
         <label>Mese di scadenza</label>
@@ -3525,6 +3561,10 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-toggle-wrap" id="condominio-scad-mensile-toggle-wrap">
+        <input type="checkbox" id="condominio-scad-mensile-chk" onchange="toggleScadMensile('condominio')">
+        <label for="condominio-scad-mensile-chk">Evento valido per tutto il mese</label>
+      </div>
       <div class="form-group scad-mensile-month-wrap" id="condominio-scad-mensile-wrap">
         <label>Mese di scadenza</label>
         <input type="month" id="condominio-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
@@ -3703,7 +3743,9 @@ function goTo(name) {
       const ev = eventi.find(e => e.id === eventoInModifica);
       if (ev) {
         // Precarica notifStati con i dati salvati, così initNotif non li sovrascrive
-        if (ev.notifiche && Array.isArray(ev.notifiche) && ev.notifiche.length > 0) {
+        if (ev.notifiche && Array.isArray(ev.notifiche)) {
+          // Array vuoto = utente ha cancellato tutte le notifiche → rispettare la scelta
+          // undefined/null = evento vecchio senza dati → usa defaults
           notifStati[fid] = ev.notifiche.map(n => ({...n}));
         } else {
           delete notifStati[fid]; // nessuna notifica salvata → usa defaults
@@ -5938,7 +5980,7 @@ function apriEvento(id) {
   if (current === target) {
     // Già sulla schermata giusta: ricarica form e notifiche
     const fid = ev.categoria;
-    if (ev.notifiche && Array.isArray(ev.notifiche) && ev.notifiche.length > 0) {
+    if (ev.notifiche && Array.isArray(ev.notifiche)) {
       notifStati[fid] = ev.notifiche.map(n => ({...n}));
     } else {
       delete notifStati[fid];
@@ -6106,11 +6148,18 @@ function caricaFormEvento(ev) {
   // Ripristina override data prossima scadenza
   const inpOverride = document.getElementById(cat + '-data-prossima-override');
   if (inpOverride) inpOverride.value = e.data_prossima_override || '';
-  // Ripristina scadenza mensile (freq === 'mensile-intero')
+  // Ripristina toggle scadenza mensile
+  const _chkMensile = document.getElementById(cat + '-scad-mensile-chk');
+  if (_chkMensile) {
+    _chkMensile.checked = !!e.scadenza_mensile;
+    // Aggiorna visibilità toggle-wrap e month-wrap
+    const toggleWrap = document.getElementById(cat + '-scad-mensile-toggle-wrap');
+    if (toggleWrap && e.freq) toggleWrap.classList.add('visible');
+    toggleScadMensile(cat);
+  }
   if (e.scadenza_mensile && e.data) {
     const inpMese = document.getElementById(cat + '-scad-mese');
     if (inpMese) inpMese.value = e.data.substring(0, 7);
-    // toggleAnticipo è già stato chiamato sopra con freq=mensile-intero
   }
 }
 
@@ -6203,8 +6252,9 @@ function raccogliCampiEvento(cat) {
     : null;
   const _overrideRaw = _freq ? val(cat + '-data-prossima-override') : '';
   const _override = _overrideRaw || null;
-  // Scadenza mensile (ora gestita come voce di frequenza)
-  const _scadMensile = _freq === 'mensile-intero';
+  // Scadenza mensile (toggle modificatore, indipendente dalla frequenza)
+  const _chkMensile = document.getElementById(cat + '-scad-mensile-chk');
+  const _scadMensile = _chkMensile ? _chkMensile.checked : false;
   const _scadMeseVal = _scadMensile ? val(cat + '-scad-mese') : '';
   // Se scadenza mensile è attiva, la data dell'evento = 1° del mese scelto
   const _dataEffettiva = _scadMensile && _scadMeseVal
@@ -6348,6 +6398,12 @@ function resetForm(cat) {
   // Reset scadenza mensile
   const inpMeseR = document.getElementById(cat + '-scad-mese');
   if (inpMeseR) inpMeseR.value = '';
+  const chkMensile = document.getElementById(cat + '-scad-mensile-chk');
+  if (chkMensile) chkMensile.checked = false;
+  const toggleWrap = document.getElementById(cat + '-scad-mensile-toggle-wrap');
+  if (toggleWrap) toggleWrap.classList.remove('visible');
+  const scadMensileWrap = document.getElementById(cat + '-scad-mensile-wrap');
+  if (scadMensileWrap) scadMensileWrap.classList.remove('visible');
   (ids[cat] || []).forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; if (el.tagName === 'SELECT') el.selectedIndex = 0; }
@@ -7265,24 +7321,39 @@ function toggleAnticipo(cat) {
   const sel = document.getElementById(cat + '-freq');
   const wrap = document.getElementById(cat + '-anticipo-wrap');
   const mesiWrap = document.getElementById(cat + '-freq-mesi-wrap');
-  const scadMensileWrap = document.getElementById(cat + '-scad-mensile-wrap');
+  const toggleWrap = document.getElementById(cat + '-scad-mensile-toggle-wrap');
   const val = sel ? sel.value : '';
   const isPersonalizzata = val === 'personalizzata';
-  const isMensileIntero = val === 'mensile-intero';
   if (mesiWrap) mesiWrap.style.display = isPersonalizzata ? '' : 'none';
-  if (scadMensileWrap) {
-    scadMensileWrap.classList.toggle('visible', isMensileIntero);
-    if (isMensileIntero) {
-      const inp = document.getElementById(cat + '-scad-mese');
-      if (inp && !inp.value) {
-        const now = new Date();
-        inp.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-      }
+  // Il toggle "Evento valido per tutto il mese" è visibile solo se c'è una frequenza
+  if (toggleWrap) {
+    if (val) toggleWrap.classList.add('visible');
+    else {
+      toggleWrap.classList.remove('visible');
+      // Se si toglie la frequenza, azzera anche il toggle e nascondi il mese
+      const chk = document.getElementById(cat + '-scad-mensile-chk');
+      if (chk) chk.checked = false;
+      const scadMensileWrap = document.getElementById(cat + '-scad-mensile-wrap');
+      if (scadMensileWrap) scadMensileWrap.classList.remove('visible');
     }
   }
   if (!wrap) return;
   if (val) wrap.classList.add('visible');
   else wrap.classList.remove('visible');
+}
+
+function toggleScadMensile(cat) {
+  const chk = document.getElementById(cat + '-scad-mensile-chk');
+  const scadMensileWrap = document.getElementById(cat + '-scad-mensile-wrap');
+  if (!chk || !scadMensileWrap) return;
+  scadMensileWrap.classList.toggle('visible', chk.checked);
+  if (chk.checked) {
+    const inp = document.getElementById(cat + '-scad-mese');
+    if (inp && !inp.value) {
+      const now = new Date();
+      inp.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    }
+  }
 }
 
 // ── Helper: data locale senza offset UTC ────────────────────────────────────
@@ -7326,7 +7397,6 @@ function calcolaDataProssima(dataStr, freq, anticipoGiorni, freqMesi) {
     semestrale:      () => addMesi(6),
     annuale:         () => d.setFullYear(d.getFullYear() + 1),
     biennale:        () => d.setFullYear(d.getFullYear() + 2),
-    'mensile-intero': () => addMesi(1),
     personalizzata:  () => { const n = parseInt(freqMesi) || 1; addMesi(n); },
   };
   if (!freqMap[freq]) return null;
