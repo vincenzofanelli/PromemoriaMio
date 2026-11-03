@@ -41,6 +41,12 @@
 }
 /* Hint microfono iPhone */
 .mic-hint{display:none;margin-top:5px;font-size:0.73rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:5px 9px;line-height:1.4}
+/* Toggle scadenza mensile */
+.scad-mensile-toggle{display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;user-select:none;font-size:0.85rem;color:var(--fg-2)}
+.scad-mensile-toggle input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
+.scad-mensile-toggle strong{color:var(--fg)}
+.scad-mensile-month-wrap{display:none;margin-top:8px}
+.scad-mensile-month-wrap.visible{display:block}
 </style></head><body>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2341,6 +2347,14 @@ body {
           <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
           <input type="date" id="visite-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
         </div>
+        <label class="scad-mensile-toggle">
+          <input type="checkbox" id="visite-scadenza-mensile" onchange="toggleScadMensile('visite')">
+          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
+        </label>
+        <div class="scad-mensile-month-wrap" id="visite-scad-mensile-wrap">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
+          <input type="month" id="visite-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -2384,8 +2398,6 @@ body {
         <label>Nome farmaco <span style="color:var(--col-scaduto)">*</span></label>
         <input type="text" id="farmaco-nome" placeholder="es. Amoxicillina 500mg" required autocomplete="off">
       </div>
-
-      <div id="farmaci-foto-wrap"></div>
 
       <div class="form-group">
         <label>Numero assunzioni</label>
@@ -2498,6 +2510,14 @@ body {
         <div style="margin-top:10px">
           <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
           <input type="date" id="farmaci-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
+        <label class="scad-mensile-toggle">
+          <input type="checkbox" id="farmaci-scadenza-mensile" onchange="toggleScadMensile('farmaci')">
+          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
+        </label>
+        <div class="scad-mensile-month-wrap" id="farmaci-scad-mensile-wrap">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
+          <input type="month" id="farmaci-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
         </div>
       </div>
       <div class="form-group">
@@ -2853,6 +2873,14 @@ body {
           <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
           <input type="date" id="ricorrenze-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
         </div>
+        <label class="scad-mensile-toggle">
+          <input type="checkbox" id="ricorrenze-scadenza-mensile" onchange="toggleScadMensile('ricorrenze')">
+          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
+        </label>
+        <div class="scad-mensile-month-wrap" id="ricorrenze-scad-mensile-wrap">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
+          <input type="month" id="ricorrenze-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -2940,6 +2968,14 @@ body {
         <div style="margin-top:10px">
           <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
           <input type="date" id="documenti-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
+        <label class="scad-mensile-toggle">
+          <input type="checkbox" id="documenti-scadenza-mensile" onchange="toggleScadMensile('documenti')">
+          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
+        </label>
+        <div class="scad-mensile-month-wrap" id="documenti-scad-mensile-wrap">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
+          <input type="month" id="documenti-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
         </div>
       </div>
       <div class="form-group">
@@ -3032,6 +3068,14 @@ body {
           <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
           <input type="date" id="auto-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
         </div>
+        <label class="scad-mensile-toggle">
+          <input type="checkbox" id="auto-scadenza-mensile" onchange="toggleScadMensile('auto')">
+          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
+        </label>
+        <div class="scad-mensile-month-wrap" id="auto-scad-mensile-wrap">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
+          <input type="month" id="auto-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3115,6 +3159,14 @@ body {
           <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
           <input type="date" id="generico-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
         </div>
+        <label class="scad-mensile-toggle">
+          <input type="checkbox" id="generico-scadenza-mensile" onchange="toggleScadMensile('generico')">
+          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
+        </label>
+        <div class="scad-mensile-month-wrap" id="generico-scad-mensile-wrap">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
+          <input type="month" id="generico-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3193,6 +3245,14 @@ body {
         <div style="margin-top:10px">
           <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
           <input type="date" id="acquisti-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
+        <label class="scad-mensile-toggle">
+          <input type="checkbox" id="acquisti-scadenza-mensile" onchange="toggleScadMensile('acquisti')">
+          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
+        </label>
+        <div class="scad-mensile-month-wrap" id="acquisti-scad-mensile-wrap">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
+          <input type="month" id="acquisti-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
         </div>
       </div>
       <div class="form-group">
@@ -3287,6 +3347,14 @@ body {
         <div style="margin-top:10px">
           <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
           <input type="date" id="lavoro-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
+        <label class="scad-mensile-toggle">
+          <input type="checkbox" id="lavoro-scadenza-mensile" onchange="toggleScadMensile('lavoro')">
+          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
+        </label>
+        <div class="scad-mensile-month-wrap" id="lavoro-scad-mensile-wrap">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
+          <input type="month" id="lavoro-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
         </div>
       </div>
       <div class="form-group">
@@ -3509,6 +3577,14 @@ body {
         <div style="margin-top:10px">
           <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
           <input type="date" id="condominio-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
+        <label class="scad-mensile-toggle">
+          <input type="checkbox" id="condominio-scadenza-mensile" onchange="toggleScadMensile('condominio')">
+          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
+        </label>
+        <div class="scad-mensile-month-wrap" id="condominio-scad-mensile-wrap">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
+          <input type="month" id="condominio-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
         </div>
       </div>
       <div class="form-group">
@@ -4937,6 +5013,7 @@ async function fotoCaricaAnteprime(evId, slots) {
 
 const LS_EVENTI = 'agendame_eventi';
 let eventoInModifica = null; // id evento in modifica, null = nuovo
+let _tempEvId = null;        // id provvisorio per foto su form nuovo
 let mostraCompletati = false;
 
 let _eventiMigratiOk = false;
@@ -4989,14 +5066,37 @@ function dataEvento(ev) {
 // Per eventi ricorrenti, restituisce la prossima occorrenza >= oggi
 // Per eventi singoli restituisce la data originale
 function dataEventoEffettiva(ev) {
+  const extra = ev.extra || {};
+  // Modalità scadenza mensile: la data è espressa come YYYY-MM e vale per tutto il mese
+  if (extra.scadenza_mensile && extra.data) {
+    // extra.data è YYYY-MM-DD; ne usiamo solo anno-mese
+    const ym = extra.data.substring(0, 7); // YYYY-MM
+    if (!extra.freq) return ym + '-01'; // singolo: restituisce primo del mese
+    // Ricorrente: trova il mese corrente o futuro
+    const oggi = new Date(); oggi.setHours(0,0,0,0);
+    let [y, m] = ym.split('-').map(Number);
+    let safety = 0;
+    while (safety++ < 3660) {
+      const primoMese = new Date(y, m - 1, 1);
+      const primoSucc = new Date(y, m, 1);
+      if (primoMese <= oggi && oggi < primoSucc) return y + '-' + String(m).padStart(2,'0') + '-01';
+      if (primoMese > oggi) return y + '-' + String(m).padStart(2,'0') + '-01';
+      // Avanza di una frequenza
+      const baseStr = y + '-' + String(m).padStart(2,'0') + '-01';
+      const prossima = calcolaDataProssima(baseStr, extra.freq, null, extra.freq_mesi);
+      if (!prossima) break;
+      y = parseInt(prossima.substring(0,4)); m = parseInt(prossima.substring(5,7));
+    }
+    return y + '-' + String(m).padStart(2,'0') + '-01';
+  }
   let d = dataEvento(ev);
   if (!d) return null;
-  const freq = (ev.extra || {}).freq;
+  const freq = extra.freq;
   if (!freq) return d;
   // Override manuale: usa direttamente senza calcolo automatico
-  const override = (ev.extra || {}).data_prossima_override;
+  const override = extra.data_prossima_override;
   if (override) return override;
-  const freqMesi = (ev.extra || {}).freq_mesi;
+  const freqMesi = extra.freq_mesi;
   const oggi = new Date(); oggi.setHours(0,0,0,0);
   const isDatetime = d.includes('T');
   let cur = isDatetime ? new Date(d) : new Date(d + 'T12:00');
@@ -5015,6 +5115,22 @@ function dataEventoEffettiva(ev) {
 
 // Classifica temporale dell'evento
 function classificaEvento(ev) {
+  const extra = ev.extra || {};
+  // Modalità scadenza mensile: scaduto = dal 1° del mese successivo
+  if (extra.scadenza_mensile) {
+    const d = dataEventoEffettiva(ev);
+    if (!d) return 'futuro';
+    const oggi = new Date(); oggi.setHours(0,0,0,0);
+    const y = parseInt(d.substring(0,4)), m = parseInt(d.substring(5,7));
+    const primoMese = new Date(y, m - 1, 1);
+    const primoSucc = new Date(y, m, 1);
+    if (oggi >= primoSucc) return 'sospeso';
+    if (oggi >= primoMese) return 'oggi'; // appare tutto il mese come "oggi"
+    // Futuro: calcola distanza
+    const sett = new Date(oggi); sett.setDate(sett.getDate()+7);
+    if (primoMese <= sett) return 'settimana';
+    return 'futuro';
+  }
   const d = dataEventoEffettiva(ev);
   if (!d) return 'futuro';
   const ora = new Date();
@@ -5032,7 +5148,7 @@ function classificaEvento(ev) {
   if (dataGiorno.getTime() === oggi.getTime()) return 'oggi';
   if (dataGiorno.getTime() === domani.getTime()) return 'domani';
   // Un evento ricorrente giornaliero non può finire in "settimana" o "futuro"
-  if ((ev.extra || {}).freq === 'giornaliera') return 'oggi';
+  if (extra.freq === 'giornaliera') return 'oggi';
   if (dataGiorno <= sett) return 'settimana';
   return 'futuro';
 }
@@ -5044,6 +5160,19 @@ const CAT_LABELS = {
 };
 
 function fmtDataEvento(ev) {
+  const extra = ev.extra || {};
+  // Scadenza mensile: mostra solo mese/anno
+  if (extra.scadenza_mensile) {
+    const d = dataEventoEffettiva(ev);
+    if (!d) return '';
+    const mesiNomi = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+    const y = parseInt(d.substring(0,4)), m = parseInt(d.substring(5,7));
+    const oggi = new Date(); oggi.setHours(0,0,0,0);
+    const primoMese = new Date(y, m - 1, 1);
+    const primoSucc = new Date(y, m, 1);
+    if (oggi >= primoMese && oggi < primoSucc) return mesiNomi[m-1] + ' ' + y + ' (mese corrente)';
+    return mesiNomi[m-1] + ' ' + y;
+  }
   const d = dataEventoEffettiva(ev);
   if (!d) return '';
   const dt = new Date(d.includes('T') ? d : d + 'T12:00');
@@ -5886,6 +6015,11 @@ function markFilled(btnId) {
 function caricaFormEvento(ev) {
   const e = ev.extra || {};
   const cat = ev.categoria;
+  // Pulisce foto orfane del form provvisorio precedente (se si entra in modifica da un form nuovo)
+  if (_tempEvId) {
+    fotoEliminaEvento(_tempEvId).catch(() => {});
+    _tempEvId = null;
+  }
   // reset errori
   document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
   document.querySelectorAll('.field-error-msg').forEach(el => el.remove());
@@ -6010,6 +6144,16 @@ function caricaFormEvento(ev) {
   // Ripristina override data prossima scadenza
   const inpOverride = document.getElementById(cat + '-data-prossima-override');
   if (inpOverride) inpOverride.value = e.data_prossima_override || '';
+  // Ripristina scadenza mensile
+  const chkMensile = document.getElementById(cat + '-scadenza-mensile');
+  if (chkMensile) {
+    chkMensile.checked = !!e.scadenza_mensile;
+    toggleScadMensile(cat);
+    if (e.scadenza_mensile && e.data) {
+      const inpMese = document.getElementById(cat + '-scad-mese');
+      if (inpMese) inpMese.value = e.data.substring(0, 7);
+    }
+  }
 }
 
 function raccogliCampiEvento(cat) {
@@ -6101,14 +6245,23 @@ function raccogliCampiEvento(cat) {
     : null;
   const _overrideRaw = _freq ? val(cat + '-data-prossima-override') : '';
   const _override = _overrideRaw || null;
+  // Scadenza mensile
+  const _chkMensile = document.getElementById(cat + '-scadenza-mensile');
+  const _scadMensile = _chkMensile ? _chkMensile.checked : false;
+  const _scadMeseVal = _scadMensile ? val(cat + '-scad-mese') : '';
+  // Se scadenza mensile è attiva, la data dell'evento = 1° del mese scelto
+  const _dataEffettiva = _scadMensile && _scadMeseVal
+    ? (_scadMeseVal + '-01')
+    : data();
 
   return {
     titolo,
-    data:     data(),
+    data:     _dataEffettiva,
     note:     note(),
     freq:     _freq,
     ...(_freqMesi ? { freq_mesi: _freqMesi } : {}),
     ...(_override ? { data_prossima_override: _override } : {}),
+    ...(_scadMensile ? { scadenza_mensile: true } : {}),
     anticipo: anticipo(),
     ...extra,
   };
@@ -6183,13 +6336,14 @@ function salvaEvento(cat) {
     }
   } else {
     const nuovoEv = {
-      id: uid(),
+      id: _tempEvId || uid(), // usa id provvisorio se disponibile (foto già salvate con quella chiave)
       categoria: cat,
       stato: 'aperto',
       creatoIl: Date.now(),
       extra,
       notifiche: notifStati[cat] ? [...notifStati[cat]] : [],
     };
+    _tempEvId = null; // consumato: non verrà eliminato da resetForm
     calcolaEsalvaTimestamp(nuovoEv);         // calcola e salva timestamp in ogni notifica
     eventi.unshift(nuovoEv);
     showToast('Impegno salvato ✓');
@@ -6234,6 +6388,11 @@ function resetForm(cat) {
   if (inpMesi) inpMesi.value = '';
   const inpOverride = document.getElementById(cat + '-data-prossima-override');
   if (inpOverride) inpOverride.value = '';
+  // Reset scadenza mensile
+  const chkMensileR = document.getElementById(cat + '-scadenza-mensile');
+  if (chkMensileR) { chkMensileR.checked = false; toggleScadMensile(cat); }
+  const inpMeseR = document.getElementById(cat + '-scad-mese');
+  if (inpMeseR) inpMeseR.value = '';
   (ids[cat] || []).forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; if (el.tagName === 'SELECT') el.selectedIndex = 0; }
@@ -6265,6 +6424,28 @@ function resetForm(cat) {
     if (primaDoseLbl) primaDoseLbl.textContent = '08:00';
     const nDosi = document.getElementById('custom-n-dosi');
     if (nDosi) nDosi.value = '3';
+  }
+  // Pulisce foto orfane del form precedente (se era un nuovo mai salvato)
+  if (_tempEvId) {
+    fotoEliminaEvento(_tempEvId).catch(() => {});
+    _tempEvId = null;
+  }
+  // Genera id provvisorio e popola subito i campi foto per documenti e farmaci
+  if (cat === 'documenti' || cat === 'farmaci') {
+    _tempEvId = uid();
+    if (cat === 'documenti') {
+      const _w = document.getElementById('documenti-foto-wrap');
+      if (_w) {
+        _w.innerHTML =
+          fotoHtmlCampo(_tempEvId, 'fronte', 'Foto fronte documento (opzionale)') +
+          fotoHtmlCampo(_tempEvId, 'retro',  'Foto retro documento (opzionale)');
+      }
+    } else {
+      const _w = document.getElementById('farmaci-foto-wrap');
+      if (_w) {
+        _w.innerHTML = fotoHtmlCampo(_tempEvId, 'confezione', 'Foto confezione / blister (opzionale)');
+      }
+    }
   }
 }
 
@@ -7136,6 +7317,21 @@ function toggleAnticipo(cat) {
   else wrap.classList.remove('visible');
 }
 
+function toggleScadMensile(cat) {
+  const chk = document.getElementById(cat + '-scadenza-mensile');
+  const wrap = document.getElementById(cat + '-scad-mensile-wrap');
+  if (!chk || !wrap) return;
+  const on = chk.checked;
+  wrap.classList.toggle('visible', on);
+  if (on) {
+    const inp = document.getElementById(cat + '-scad-mese');
+    if (inp && !inp.value) {
+      const now = new Date();
+      inp.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    }
+  }
+}
+
 // ── Helper: data locale senza offset UTC ────────────────────────────────────
 function _localISO(d) {
   return d.getFullYear() + '-' +
@@ -7195,7 +7391,14 @@ function creaProssima(id) {
   if (!e.freq) return;
   // Se c'era un override, calcola la prossima a partire da esso; altrimenti da data base
   const baseCalcolo = e.data_prossima_override || e.data;
-  const nuovaData = calcolaDataProssima(baseCalcolo, e.freq, e.anticipo, e.freq_mesi);
+  let nuovaData;
+  if (e.scadenza_mensile) {
+    // Scadenza mensile: avanza di una frequenza sul mese corrente
+    const d = dataEventoEffettiva(ev); // già il mese corrente/futuro come YYYY-MM-01
+    nuovaData = calcolaDataProssima(d, e.freq, e.anticipo, e.freq_mesi);
+  } else {
+    nuovaData = calcolaDataProssima(baseCalcolo, e.freq, e.anticipo, e.freq_mesi);
+  }
   if (!nuovaData) { showToast('Data non calcolabile'); return; }
   // Prepara evento "template" con nuova data — l'override è monouso, non si copia
   const { data_prossima_override: _drop, ...eClean } = e;
