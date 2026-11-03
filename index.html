@@ -41,11 +41,8 @@
 }
 /* Hint microfono iPhone */
 .mic-hint{display:none;margin-top:5px;font-size:0.73rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:5px 9px;line-height:1.4}
-/* Toggle scadenza mensile */
-.scad-mensile-toggle{display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;user-select:none;font-size:0.85rem;color:var(--fg-2)}
-.scad-mensile-toggle input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
-.scad-mensile-toggle strong{color:var(--fg)}
-.scad-mensile-month-wrap{display:none;margin-top:8px}
+/* Scadenza mensile — selettore mese */
+.scad-mensile-month-wrap{display:none}
 .scad-mensile-month-wrap.visible{display:block}
 </style></head><body>
 <meta name="mobile-web-app-capable" content="yes">
@@ -2329,11 +2326,19 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-month-wrap" id="visite-scad-mensile-wrap">
+        <label>Mese di scadenza</label>
+        <input type="month" id="visite-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      </div>
       <div class="form-group freq-mesi-wrap" id="visite-freq-mesi-wrap" style="display:none">
         <label>Ogni quanti mesi?</label>
         <input type="number" id="visite-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="visite-anticipo-wrap">
+        <div style="margin-bottom:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="visite-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
         <label>Anticipo notifica</label>
         <select id="visite-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
@@ -2343,18 +2348,6 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
-        <div style="margin-top:10px">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
-          <input type="date" id="visite-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
-        <label class="scad-mensile-toggle">
-          <input type="checkbox" id="visite-scadenza-mensile" onchange="toggleScadMensile('visite')">
-          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
-        </label>
-        <div class="scad-mensile-month-wrap" id="visite-scad-mensile-wrap">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
-          <input type="month" id="visite-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -2493,11 +2486,19 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-month-wrap" id="farmaci-scad-mensile-wrap">
+        <label>Mese di scadenza</label>
+        <input type="month" id="farmaci-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      </div>
       <div class="form-group freq-mesi-wrap" id="farmaci-freq-mesi-wrap" style="display:none">
         <label>Ogni quanti mesi?</label>
         <input type="number" id="farmaci-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="farmaci-anticipo-wrap">
+        <div style="margin-bottom:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="farmaci-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
         <label>Anticipo notifica</label>
         <select id="farmaci-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
@@ -2507,18 +2508,6 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
-        <div style="margin-top:10px">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
-          <input type="date" id="farmaci-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
-        <label class="scad-mensile-toggle">
-          <input type="checkbox" id="farmaci-scadenza-mensile" onchange="toggleScadMensile('farmaci')">
-          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
-        </label>
-        <div class="scad-mensile-month-wrap" id="farmaci-scad-mensile-wrap">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
-          <input type="month" id="farmaci-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -2855,11 +2844,19 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-month-wrap" id="ricorrenze-scad-mensile-wrap">
+        <label>Mese di scadenza</label>
+        <input type="month" id="ricorrenze-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      </div>
       <div class="form-group freq-mesi-wrap" id="ricorrenze-freq-mesi-wrap" style="display:none">
         <label>Ogni quanti mesi?</label>
         <input type="number" id="ricorrenze-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="ricorrenze-anticipo-wrap">
+        <div style="margin-bottom:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="ricorrenze-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
         <label>Anticipo notifica</label>
         <select id="ricorrenze-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
@@ -2869,18 +2866,6 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
-        <div style="margin-top:10px">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
-          <input type="date" id="ricorrenze-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
-        <label class="scad-mensile-toggle">
-          <input type="checkbox" id="ricorrenze-scadenza-mensile" onchange="toggleScadMensile('ricorrenze')">
-          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
-        </label>
-        <div class="scad-mensile-month-wrap" id="ricorrenze-scad-mensile-wrap">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
-          <input type="month" id="ricorrenze-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -2951,11 +2936,19 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-month-wrap" id="documenti-scad-mensile-wrap">
+        <label>Mese di scadenza</label>
+        <input type="month" id="documenti-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      </div>
       <div class="form-group freq-mesi-wrap" id="documenti-freq-mesi-wrap" style="display:none">
         <label>Ogni quanti mesi?</label>
         <input type="number" id="documenti-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="documenti-anticipo-wrap">
+        <div style="margin-bottom:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="documenti-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
         <label>Anticipo notifica</label>
         <select id="documenti-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
@@ -2965,18 +2958,6 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
-        <div style="margin-top:10px">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
-          <input type="date" id="documenti-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
-        <label class="scad-mensile-toggle">
-          <input type="checkbox" id="documenti-scadenza-mensile" onchange="toggleScadMensile('documenti')">
-          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
-        </label>
-        <div class="scad-mensile-month-wrap" id="documenti-scad-mensile-wrap">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
-          <input type="month" id="documenti-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3050,11 +3031,19 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-month-wrap" id="auto-scad-mensile-wrap">
+        <label>Mese di scadenza</label>
+        <input type="month" id="auto-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      </div>
       <div class="form-group freq-mesi-wrap" id="auto-freq-mesi-wrap" style="display:none">
         <label>Ogni quanti mesi?</label>
         <input type="number" id="auto-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="auto-anticipo-wrap">
+        <div style="margin-bottom:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="auto-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
         <label>Anticipo notifica</label>
         <select id="auto-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
@@ -3064,18 +3053,6 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
-        <div style="margin-top:10px">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
-          <input type="date" id="auto-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
-        <label class="scad-mensile-toggle">
-          <input type="checkbox" id="auto-scadenza-mensile" onchange="toggleScadMensile('auto')">
-          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
-        </label>
-        <div class="scad-mensile-month-wrap" id="auto-scad-mensile-wrap">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
-          <input type="month" id="auto-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3141,11 +3118,19 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-month-wrap" id="generico-scad-mensile-wrap">
+        <label>Mese di scadenza</label>
+        <input type="month" id="generico-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      </div>
       <div class="form-group freq-mesi-wrap" id="generico-freq-mesi-wrap" style="display:none">
         <label>Ogni quanti mesi?</label>
         <input type="number" id="generico-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="generico-anticipo-wrap">
+        <div style="margin-bottom:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="generico-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
         <label>Anticipo notifica</label>
         <select id="generico-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
@@ -3155,18 +3140,6 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
-        <div style="margin-top:10px">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
-          <input type="date" id="generico-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
-        <label class="scad-mensile-toggle">
-          <input type="checkbox" id="generico-scadenza-mensile" onchange="toggleScadMensile('generico')">
-          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
-        </label>
-        <div class="scad-mensile-month-wrap" id="generico-scad-mensile-wrap">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
-          <input type="month" id="generico-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3228,11 +3201,19 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-month-wrap" id="acquisti-scad-mensile-wrap">
+        <label>Mese di scadenza</label>
+        <input type="month" id="acquisti-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      </div>
       <div class="form-group freq-mesi-wrap" id="acquisti-freq-mesi-wrap" style="display:none">
         <label>Ogni quanti mesi?</label>
         <input type="number" id="acquisti-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="acquisti-anticipo-wrap">
+        <div style="margin-bottom:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="acquisti-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
         <label>Anticipo notifica</label>
         <select id="acquisti-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
@@ -3242,18 +3223,6 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
-        <div style="margin-top:10px">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
-          <input type="date" id="acquisti-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
-        <label class="scad-mensile-toggle">
-          <input type="checkbox" id="acquisti-scadenza-mensile" onchange="toggleScadMensile('acquisti')">
-          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
-        </label>
-        <div class="scad-mensile-month-wrap" id="acquisti-scad-mensile-wrap">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
-          <input type="month" id="acquisti-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3330,11 +3299,19 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-month-wrap" id="lavoro-scad-mensile-wrap">
+        <label>Mese di scadenza</label>
+        <input type="month" id="lavoro-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      </div>
       <div class="form-group freq-mesi-wrap" id="lavoro-freq-mesi-wrap" style="display:none">
         <label>Ogni quanti mesi?</label>
         <input type="number" id="lavoro-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="lavoro-anticipo-wrap">
+        <div style="margin-bottom:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="lavoro-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
         <label>Anticipo notifica</label>
         <select id="lavoro-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
@@ -3344,18 +3321,6 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
-        <div style="margin-top:10px">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
-          <input type="date" id="lavoro-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
-        <label class="scad-mensile-toggle">
-          <input type="checkbox" id="lavoro-scadenza-mensile" onchange="toggleScadMensile('lavoro')">
-          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
-        </label>
-        <div class="scad-mensile-month-wrap" id="lavoro-scad-mensile-wrap">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
-          <input type="month" id="lavoro-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -3560,11 +3525,19 @@ body {
           <option value="personalizzata">Personalizzata…</option>
         </select>
       </div>
+      <div class="form-group scad-mensile-month-wrap" id="condominio-scad-mensile-wrap">
+        <label>Mese di scadenza</label>
+        <input type="month" id="condominio-scad-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      </div>
       <div class="form-group freq-mesi-wrap" id="condominio-freq-mesi-wrap" style="display:none">
         <label>Ogni quanti mesi?</label>
         <input type="number" id="condominio-freq-mesi" min="1" max="600" placeholder="es. 48 per 4 anni, 24 per 2 anni" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
       <div class="form-group freq-anticipo-wrap" id="condominio-anticipo-wrap">
+        <div style="margin-bottom:10px">
+          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
+          <input type="date" id="condominio-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
+        </div>
         <label>Anticipo notifica</label>
         <select id="condominio-anticipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;appearance:none;-webkit-appearance:none">
           <option value="">Nessun anticipo</option>
@@ -3574,18 +3547,6 @@ body {
           <option value="60">2 mesi prima</option>
           <option value="90">3 mesi prima</option>
         </select>
-        <div style="margin-top:10px">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Prossima scadenza personalizzata <span style="font-weight:400">(opzionale — sovrascrive il calcolo automatico)</span></label>
-          <input type="date" id="condominio-data-prossima-override" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
-        <label class="scad-mensile-toggle">
-          <input type="checkbox" id="condominio-scadenza-mensile" onchange="toggleScadMensile('condominio')">
-          <span><strong>Scadenza mensile</strong> — l'evento vale per tutto il mese (es. collaudo auto)</span>
-        </label>
-        <div class="scad-mensile-month-wrap" id="condominio-scad-mensile-wrap">
-          <label style="font-size:0.82rem;color:var(--fg-2)">Mese di scadenza</label>
-          <input type="month" id="condominio-scad-mese" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box;margin-top:4px">
-        </div>
       </div>
       <div class="form-group">
         <label>Notifiche</label>
@@ -6145,15 +6106,11 @@ function caricaFormEvento(ev) {
   // Ripristina override data prossima scadenza
   const inpOverride = document.getElementById(cat + '-data-prossima-override');
   if (inpOverride) inpOverride.value = e.data_prossima_override || '';
-  // Ripristina scadenza mensile
-  const chkMensile = document.getElementById(cat + '-scadenza-mensile');
-  if (chkMensile) {
-    chkMensile.checked = !!e.scadenza_mensile;
-    toggleScadMensile(cat);
-    if (e.scadenza_mensile && e.data) {
-      const inpMese = document.getElementById(cat + '-scad-mese');
-      if (inpMese) inpMese.value = e.data.substring(0, 7);
-    }
+  // Ripristina scadenza mensile (freq === 'mensile-intero')
+  if (e.scadenza_mensile && e.data) {
+    const inpMese = document.getElementById(cat + '-scad-mese');
+    if (inpMese) inpMese.value = e.data.substring(0, 7);
+    // toggleAnticipo è già stato chiamato sopra con freq=mensile-intero
   }
 }
 
@@ -6246,9 +6203,8 @@ function raccogliCampiEvento(cat) {
     : null;
   const _overrideRaw = _freq ? val(cat + '-data-prossima-override') : '';
   const _override = _overrideRaw || null;
-  // Scadenza mensile
-  const _chkMensile = document.getElementById(cat + '-scadenza-mensile');
-  const _scadMensile = _chkMensile ? _chkMensile.checked : false;
+  // Scadenza mensile (ora gestita come voce di frequenza)
+  const _scadMensile = _freq === 'mensile-intero';
   const _scadMeseVal = _scadMensile ? val(cat + '-scad-mese') : '';
   // Se scadenza mensile è attiva, la data dell'evento = 1° del mese scelto
   const _dataEffettiva = _scadMensile && _scadMeseVal
@@ -6390,8 +6346,6 @@ function resetForm(cat) {
   const inpOverride = document.getElementById(cat + '-data-prossima-override');
   if (inpOverride) inpOverride.value = '';
   // Reset scadenza mensile
-  const chkMensileR = document.getElementById(cat + '-scadenza-mensile');
-  if (chkMensileR) { chkMensileR.checked = false; toggleScadMensile(cat); }
   const inpMeseR = document.getElementById(cat + '-scad-mese');
   if (inpMeseR) inpMeseR.value = '';
   (ids[cat] || []).forEach(id => {
@@ -7311,26 +7265,24 @@ function toggleAnticipo(cat) {
   const sel = document.getElementById(cat + '-freq');
   const wrap = document.getElementById(cat + '-anticipo-wrap');
   const mesiWrap = document.getElementById(cat + '-freq-mesi-wrap');
-  const isPersonalizzata = sel && sel.value === 'personalizzata';
+  const scadMensileWrap = document.getElementById(cat + '-scad-mensile-wrap');
+  const val = sel ? sel.value : '';
+  const isPersonalizzata = val === 'personalizzata';
+  const isMensileIntero = val === 'mensile-intero';
   if (mesiWrap) mesiWrap.style.display = isPersonalizzata ? '' : 'none';
-  if (!wrap) return;
-  if (sel && sel.value) wrap.classList.add('visible');
-  else wrap.classList.remove('visible');
-}
-
-function toggleScadMensile(cat) {
-  const chk = document.getElementById(cat + '-scadenza-mensile');
-  const wrap = document.getElementById(cat + '-scad-mensile-wrap');
-  if (!chk || !wrap) return;
-  const on = chk.checked;
-  wrap.classList.toggle('visible', on);
-  if (on) {
-    const inp = document.getElementById(cat + '-scad-mese');
-    if (inp && !inp.value) {
-      const now = new Date();
-      inp.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  if (scadMensileWrap) {
+    scadMensileWrap.classList.toggle('visible', isMensileIntero);
+    if (isMensileIntero) {
+      const inp = document.getElementById(cat + '-scad-mese');
+      if (inp && !inp.value) {
+        const now = new Date();
+        inp.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      }
     }
   }
+  if (!wrap) return;
+  if (val) wrap.classList.add('visible');
+  else wrap.classList.remove('visible');
 }
 
 // ── Helper: data locale senza offset UTC ────────────────────────────────────
@@ -7374,6 +7326,7 @@ function calcolaDataProssima(dataStr, freq, anticipoGiorni, freqMesi) {
     semestrale:      () => addMesi(6),
     annuale:         () => d.setFullYear(d.getFullYear() + 1),
     biennale:        () => d.setFullYear(d.getFullYear() + 2),
+    'mensile-intero': () => addMesi(1),
     personalizzata:  () => { const n = parseInt(freqMesi) || 1; addMesi(n); },
   };
   if (!freqMap[freq]) return null;
