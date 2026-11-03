@@ -5745,7 +5745,7 @@ function renderHome() {
             const _mancanti = _r.dosi_oggi_attese - _r.dosi_oggi_spuntate;
             _statoHtml = `<div class="fpp-stato warn">⚠ Oggi: ${_r.dosi_oggi_spuntate}/${_r.dosi_oggi_attese} dosi spuntate${_mancanti > 0 ? ' — mancano ' + _mancanti : ''}</div>`;
           }
-          const _daAssumere = Math.max(0, _r.pillole_attese - _r.pillole_spuntate);
+          const _daAssumere = _r.statoOggi === 'mancanti' ? Math.max(0, _r.dosi_oggi_attese - _r.dosi_oggi_spuntate) : 0;
           const _cellId = 'fpp-cell-assunte-' + ev.id;
           // Prossima dose non ancora passata oggi
           let _prossimaDoseHtml = '';
