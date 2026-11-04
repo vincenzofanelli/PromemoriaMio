@@ -657,13 +657,16 @@ body {
   letter-spacing: 0.2px;
 }
 
-/* riga inferiore: bottoni azioni allineati a destra */
+/* riga inferiore: bottoni azioni — altri a sinistra, cestino all'estrema destra */
 .event-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
   margin-top: 8px;
+}
+.event-actions .ev-del-btn {
+  margin-left: auto;
 }
 
 /* stati colore */
@@ -3832,9 +3835,13 @@ function calcolaRiepilogoPillole(extra) {
   else if (dosi_oggi_spuntate >= dosi_oggi_attese) statoOggi = 'ok';
   else statoOggi = 'mancanti';
 
-  // Scatola basata su pillole ATTESE
+  // Scatola corrente basata su pillole ATTESE (indica quale scatola si sta usando)
   const scatola_corrente = Math.floor(pillole_attese / pilloleXScatola) + 1;
   const rimaste_attese = pilloleXScatola - (pillole_attese % pilloleXScatola);
+  // Pillole fisicamente rimanenti nella scatola = basate su spuntate (quello che hai davvero preso)
+  // Nota: se spuntate è multiplo esatto di pilloleXScatola, stai aprendo una nuova scatola → rimaste = pilloleXScatola
+  const _spuntateResto = pillole_spuntate % pilloleXScatola;
+  const rimaste_scatola = _spuntateResto === 0 ? pilloleXScatola : pilloleXScatola - _spuntateResto;
 
   // Totale scatole se durata definita
   const durata = extra.durata;
@@ -3846,6 +3853,7 @@ function calcolaRiepilogoPillole(extra) {
     scatola_corrente,
     totale_scatole,
     rimaste_attese,
+    rimaste_scatola,
     dosi_oggi_attese,
     dosi_oggi_spuntate,
     dosi_oggi_totali: dosi_al_giorno,
@@ -5791,7 +5799,7 @@ function renderHome() {
                 <div class="fpp-big-lbl">Da assumere oggi</div>
               </div>
               <div class="fpp-big-cell fpp-big-cell--accent">
-                <div class="fpp-big-num">${_r.rimaste_attese}</div>
+                <div class="fpp-big-num">${_r.rimaste_scatola}</div>
                 <div class="fpp-big-lbl">In scatola</div>
               </div>
             </div>
