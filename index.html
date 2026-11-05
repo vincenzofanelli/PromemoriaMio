@@ -74,7 +74,7 @@ if ('serviceWorker' in navigator) {
             });
           }
         });
-        setInterval(() => reg.update(), 30 * 60 * 1000);
+        setInterval(() => reg.update(), 6 * 60 * 60 * 1000);
       })
       .catch(e => console.warn('SW non registrato:', e));
 
@@ -5245,7 +5245,7 @@ function aggiornaBackupBanner() {
 function esportaBackup() {
   const payload = {};
   const chiavi = [
-    'agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo'
+    'agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'
   ];
   chiavi.forEach(k => {
     try {
@@ -5272,7 +5272,7 @@ function esportaBackup() {
 async function condividiBackup() {
   // Costruisce il payload identico a esportaBackup()
   const payload = {};
-  const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo'];
+  const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'];
   chiavi.forEach(k => {
     try {
       const v = localStorage.getItem(k);
@@ -5326,7 +5326,7 @@ function importaBackup(input) {
       alert('File non valido: JSON non leggibile.');
       return;
     }
-    const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo'];
+    const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'];
     const trovate = chiavi.filter(k => k in payload);
     if (trovate.length === 0) {
       alert('File non riconosciuto: nessuna chiave valida trovata.');
@@ -6956,11 +6956,16 @@ history.replaceState({ screen: 'home' }, '');
   // scheduleAllNotifications viene chiamata dopo che il SW è pronto.
   goTo('home');
 
-  // Chiedi permesso notifiche se non ancora deciso, poi schedula.
-  // Se il permesso è già granted, schedula subito (gestisce reload post-import).
+  // Richiedi storage persistente — protegge IndexedDB dalla pulizia automatica del browser
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist()
+      .then(p => console.log('[Storage] Persistenza:', p ? 'concessa ✓' : 'NON concessa'))
+      .catch(() => console.warn('[Storage] persist() non supportato'));
+  }
+
+  // Notifiche disabilitate di proposito — commentate per scelta condivisa
+  /*
   if ('Notification' in window) {
-    // Notifiche push disabilitate: il codice è pronto per un futuro sistema con app chiusa
-    /*
     if (Notification.permission === 'default') {
       Notification.requestPermission().then(() => scheduleAllNotifications());
     } else if (Notification.permission === 'granted') {
@@ -6970,8 +6975,8 @@ history.replaceState({ screen: 'home' }, '');
         navigator.serviceWorker.ready.then(() => scheduleAllNotifications());
       }
     }
-    */
   }
+  */
 })();
 
 // ============================================================
