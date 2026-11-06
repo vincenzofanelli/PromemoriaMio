@@ -7496,28 +7496,111 @@ async function selezionaContattoRicorrenze() {
     return;
   }
   try {
-    // Richiediamo solo 'tel': il picker nativo mostra una sola spunta "Numeri telefonici",
-    // evitando il doppio risultato che si ottiene quando si richiedono sia 'name' che 'tel'
-    // (il sistema trova la corrispondenza sia nel nome che nel numero, mostrandola due volte).
+    // Solo 'tel': picker nativo mostra una sola spunta, niente doppio risultato.
     const result = await navigator.contacts.select(['tel'], { multiple: false });
     if (!result || result.length === 0) return;
     const contact = result[0];
 
-    // Raccogli tutti i numeri disponibili (tel è un array di stringhe)
-    const telArr = (contact.tel || []).filter(t => t && t.trim());
+    // Raccogli tutti i numeri, rimuovendo duplicati (stesso numero con/senza spazi)
+    const normalizza = t => t.replace(/\s+/g, '');
+    const visti = new Set();
+    const telArr = (contact.tel || [])
+      .map(t => (t || '').trim())
+      .filter(t => {
+        if (!t) return false;
+        const k = normalizza(t);
+        if (visti.has(k)) return false;
+        visti.add(k);
+        return true;
+      });
+
     if (telArr.length === 0) {
       showToast('Nessun numero trovato per questo contatto');
       return;
     }
 
-    // Se c'è un solo numero lo usa direttamente; se ce ne sono più mostra un toast e usa il primo
-    let tel = telArr[0].trim();
-    const inp = document.getElementById('ricorrenze-telefono');
-    if (inp) { inp.value = tel; inp.dispatchEvent(new Event('input')); }
-    showToast('✓ Contatto selezionato' + (telArr.length > 1 ? ' (primo di ' + telArr.length + ')' : ''));
+    // Un solo numero → inserisci direttamente
+    if (telArr.length === 1) {
+      _inserisciTelefonoRicorrenze(telArr[0]);
+      return;
+    }
+
+    // Più numeri distinti → mostra picker interno per scegliere
+    _mostraPickerNumeri(telArr);
   } catch (err) {
     if (err.name !== 'AbortError') showToast('Errore selezione contatti: ' + err.message);
   }
+}
+
+function _inserisciTelefonoRicorrenze(tel) {
+  const inp = document.getElementById('ricorrenze-telefono');
+  if (inp) { inp.value = tel; inp.dispatchEvent(new Event('input')); }
+  showToast('✓ Numero inserito');
+}
+
+function _mostraPickerNumeri(numeri) {
+  // Rimuovi eventuale picker precedente
+  const old = document.getElementById('tel-picker-sheet');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'tel-picker-sheet';
+  overlay.style.cssText = [
+    'position:fixed;inset:0;z-index:9999',
+    'background:rgba(0,0,0,0.45)',
+    'display:flex;align-items:flex-end;justify-content:center',
+  ].join(';');
+
+  const sheet = document.createElement('div');
+  sheet.style.cssText = [
+    'background:var(--bg-card)',
+    'border-radius:20px 20px 0 0',
+    'padding:20px 0 max(20px,env(safe-area-inset-bottom)) 0',
+    'width:100%;max-width:480px',
+    'box-shadow:0 -4px 24px rgba(0,0,0,.18)',
+  ].join(';');
+
+  const titolo = document.createElement('div');
+  titolo.textContent = 'Scegli il numero';
+  titolo.style.cssText = 'font-size:1rem;font-weight:700;color:var(--fg);padding:0 20px 14px;border-bottom:1px solid var(--border)';
+  sheet.appendChild(titolo);
+
+  numeri.forEach(tel => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = tel;
+    btn.style.cssText = [
+      'display:block;width:100%;text-align:left',
+      'padding:16px 20px',
+      'font-size:1.05rem;font-family:inherit;font-weight:500;color:var(--accent)',
+      'background:none;border:none;border-bottom:1px solid var(--border)',
+      'cursor:pointer',
+    ].join(';');
+    btn.onclick = () => {
+      overlay.remove();
+      _inserisciTelefonoRicorrenze(tel);
+    };
+    sheet.appendChild(btn);
+  });
+
+  // Pulsante Annulla
+  const annulla = document.createElement('button');
+  annulla.type = 'button';
+  annulla.textContent = 'Annulla';
+  annulla.style.cssText = [
+    'display:block;width:100%;text-align:center',
+    'padding:16px 20px',
+    'font-size:1rem;font-family:inherit;font-weight:600;color:var(--fg-2)',
+    'background:none;border:none',
+    'cursor:pointer',
+  ].join(';');
+  annulla.onclick = () => overlay.remove();
+  sheet.appendChild(annulla);
+
+  overlay.appendChild(sheet);
+  // Tocco sullo sfondo → chiudi
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 function aggiornaFreqRicorrenza() {
