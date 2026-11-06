@@ -1793,6 +1793,50 @@ body {
 }
 .picker-confirm:active { opacity: 0.8; }
 
+/* matita — inserimento manuale data */
+.picker-manual-btn {
+  background: none; border: none;
+  color: var(--fg-3); cursor: pointer;
+  padding: 6px 8px; border-radius: 8px;
+  display: flex; align-items: center;
+  transition: color 0.12s, background 0.12s;
+  font-size: 1.1rem;
+}
+.picker-manual-btn:active { background: var(--accent-bg); color: var(--accent); }
+.picker-manual-btn.active { color: var(--accent); }
+
+/* pannello input manuale */
+.picker-manual-section {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 20px 8px;
+}
+.picker-manual-section.visible { display: flex; }
+.picker-manual-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.picker-manual-inp {
+  width: 64px; text-align: center;
+  font-size: 1.5rem; font-weight: 700;
+  border: 2px solid var(--border);
+  border-radius: 10px; padding: 8px 4px;
+  background: var(--bg-card); color: var(--fg);
+  font-family: inherit;
+  -moz-appearance: textfield;
+}
+.picker-manual-inp:focus { border-color: var(--accent); outline: none; }
+.picker-manual-inp::-webkit-outer-spin-button,
+.picker-manual-inp::-webkit-inner-spin-button { -webkit-appearance: none; }
+.picker-manual-inp.wide { width: 88px; }
+.picker-manual-sep {
+  font-size: 1.5rem; font-weight: 700; color: var(--fg-2);
+}
+.picker-manual-hint {
+  font-size: 0.8rem; color: var(--fg-3); text-align: center;
+}
+
 /* ---- CALENDARIO ---- */
 .cal-nav {
   display: flex; align-items: center;
@@ -6579,6 +6623,10 @@ window.addEventListener('load', () => {
     document.getElementById('picker-cal-section').style.display = '';
     document.getElementById('picker-time-section').style.display = (mode !== 'datetime') ? 'none' : '';
     document.getElementById('ym-picker').style.display = 'none';
+    // mostra matita, resetta pannello manuale
+    const _manBtn = document.getElementById('picker-manual-btn');
+    if (_manBtn) _manBtn.style.display = '';
+    _setManualMode(false);
 
     renderCalendar(_calYear, _calMonth);
     if (mode === 'datetime') initTimeWheels(_selH, _selM);
@@ -6603,6 +6651,10 @@ window.addEventListener('load', () => {
     document.getElementById('picker-cal-section').style.display = 'none';
     document.getElementById('picker-time-section').style.display = '';
     document.getElementById('ym-picker').style.display = 'none';
+    // nasconde matita in modalità orario
+    const _manBtnT = document.getElementById('picker-manual-btn');
+    if (_manBtnT) _manBtnT.style.display = 'none';
+    _setManualMode(false);
 
     initTimeWheels(_selH, _selM);
     showOverlay();
@@ -6636,7 +6688,71 @@ window.addEventListener('load', () => {
   };
 
   window.closePicker = function() {
+    // Chiudi anche l'eventuale pannello manuale
+    _setManualMode(false);
     hideOverlay();
+  };
+
+  // ---- INSERIMENTO MANUALE (matita) ----
+  let _manualMode = false;
+
+  function _setManualMode(on) {
+    _manualMode = on;
+    const btn = document.getElementById('picker-manual-btn');
+    const manSec = document.getElementById('picker-manual-section');
+    const calSec = document.getElementById('picker-cal-section');
+    if (btn) btn.classList.toggle('active', on);
+    if (manSec) manSec.classList.toggle('visible', on);
+    if (calSec) calSec.style.display = on ? 'none' : '';
+    // mostra riga orario se datetime
+    const timeRow = document.getElementById('pm-time-row');
+    if (timeRow) timeRow.style.display = (on && _mode === 'datetime') ? '' : 'none';
+    if (on) {
+      // pre-popola con la data già selezionata
+      if (_selDate) {
+        const p = _selDate.split('-');
+        const gg = document.getElementById('pm-gg');
+        const mm = document.getElementById('pm-mm');
+        const aaaa = document.getElementById('pm-aaaa');
+        if (gg) gg.value = parseInt(p[2], 10);
+        if (mm) mm.value = parseInt(p[1], 10);
+        if (aaaa) aaaa.value = p[0];
+      } else {
+        ['pm-gg','pm-mm','pm-aaaa','pm-hh','pm-min'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+      }
+      if (_mode === 'datetime') {
+        const hh = document.getElementById('pm-hh');
+        const mn = document.getElementById('pm-min');
+        if (hh) hh.value = _selH;
+        if (mn) mn.value = _selM;
+      }
+      // focus sul primo campo
+      setTimeout(() => { const el = document.getElementById('pm-gg'); if (el) el.focus(); }, 80);
+    }
+  }
+
+  window.togglePickerManual = function() {
+    _setManualMode(!_manualMode);
+  };
+
+  window.clampManualInp = function(el, min, max) {
+    const v = parseInt(el.value, 10);
+    if (!isNaN(v) && v > max) el.value = max;
+    if (!isNaN(v) && v < 0) el.value = '';
+  };
+
+  window.manualInpKey = function(e, nextId) {
+    if (e.key === 'Enter') {
+      if (nextId) {
+        const el = document.getElementById(nextId);
+        if (el) { el.focus(); el.select(); }
+      } else {
+        window.confirmPicker();
+      }
+    }
   };
 
   window.confirmPicker = function() {
@@ -6654,7 +6770,25 @@ window.addEventListener('load', () => {
       return;
     }
 
-    // date or datetime
+    // date or datetime — se pannello manuale attivo, leggi da lì
+    if (_manualMode) {
+      const gg   = parseInt(document.getElementById('pm-gg')?.value, 10);
+      const mm   = parseInt(document.getElementById('pm-mm')?.value, 10);
+      const aaaa = parseInt(document.getElementById('pm-aaaa')?.value, 10);
+      if (!gg || !mm || !aaaa || aaaa < 1900 || aaaa > 2100 || mm < 1 || mm > 12 || gg < 1 || gg > 31) {
+        showToast('Data non valida');
+        return;
+      }
+      const dTest = new Date(aaaa, mm - 1, gg);
+      if (dTest.getMonth() !== mm - 1) { showToast('Giorno non valido per questo mese'); return; }
+      _selDate = aaaa + '-' + pad2(mm) + '-' + pad2(gg);
+      if (_mode === 'datetime') {
+        _selH = parseInt(document.getElementById('pm-hh')?.value, 10) || 0;
+        _selM = parseInt(document.getElementById('pm-min')?.value, 10) || 0;
+      }
+      _setManualMode(false);
+    }
+
     if (!_selDate) { hideOverlay(); return; }
     let iso = _selDate;
     if (_mode === 'datetime') iso += 'T' + pad2(_selH) + ':' + pad2(_selM);
@@ -7469,7 +7603,32 @@ function creaProssima(id) {
     <div class="picker-header">
       <button class="picker-cancel" onclick="closePicker()">Annulla</button>
       <span id="picker-title" class="picker-title">Seleziona data</span>
+      <button id="picker-manual-btn" class="picker-manual-btn" onclick="togglePickerManual()" title="Inserisci data manualmente" style="display:none">
+        ✏️
+      </button>
       <button class="picker-confirm" onclick="confirmPicker()">OK</button>
+    </div>
+
+    <!-- INPUT MANUALE -->
+    <div id="picker-manual-section" class="picker-manual-section">
+      <div class="picker-manual-row">
+        <input class="picker-manual-inp" id="pm-gg" type="number" min="1" max="31" placeholder="GG"
+          oninput="clampManualInp(this,1,31)" onkeydown="manualInpKey(event,'pm-mm')">
+        <span class="picker-manual-sep">/</span>
+        <input class="picker-manual-inp" id="pm-mm" type="number" min="1" max="12" placeholder="MM"
+          oninput="clampManualInp(this,1,12)" onkeydown="manualInpKey(event,'pm-aaaa')">
+        <span class="picker-manual-sep">/</span>
+        <input class="picker-manual-inp wide" id="pm-aaaa" type="number" min="1900" max="2100" placeholder="AAAA"
+          oninput="clampManualInp(this,1900,2100)" onkeydown="manualInpKey(event,null)">
+      </div>
+      <div id="pm-time-row" class="picker-manual-row" style="display:none">
+        <input class="picker-manual-inp" id="pm-hh" type="number" min="0" max="23" placeholder="HH"
+          oninput="clampManualInp(this,0,23)" onkeydown="manualInpKey(event,'pm-min')">
+        <span class="picker-manual-sep">:</span>
+        <input class="picker-manual-inp" id="pm-min" type="number" min="0" max="59" placeholder="MM"
+          oninput="clampManualInp(this,0,59)" onkeydown="manualInpKey(event,null)">
+      </div>
+      <div class="picker-manual-hint">Inserisci la data e premi OK</div>
     </div>
 
     <!-- CALENDAR -->
