@@ -250,7 +250,7 @@ function calcolaEsalvaTimestamp(ev) {
   const dataEvt = parseDataLocale(dataStr);
   if (isNaN(dataEvt.getTime())) return;
   (ev.notifiche || []).forEach(n => {
-    n.timestamp = calcolaTimestampNotifica(n.desc, dataEvt, n.time) || null;
+    n.timestamp = calcolaTimestampNotifica(n.desc, dataEvt, n.time, n.giorni_prima) || null;
   });
 }
 
@@ -272,11 +272,25 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-function calcolaTimestampNotifica(desc, dataEvt, time) {
+function calcolaTimestampNotifica(desc, dataEvt, time, giorni_prima) {
   // Copia della data evento
   const d = new Date(dataEvt);
-  const descL = desc.toLowerCase();
+  const descL = (desc || '').toLowerCase();
 
+  // Se giorni_prima è definito (numero) — notifiche custom con selettore anticipo
+  if (typeof giorni_prima === 'number') {
+    if (giorni_prima > 0) d.setDate(d.getDate() - giorni_prima);
+    // Imposta orario
+    if (time) {
+      const [hh, mm] = time.split(':').map(Number);
+      d.setHours(hh, mm, 0, 0);
+    } else {
+      d.setHours(9, 0, 0, 0);
+    }
+    return d.getTime();
+  }
+
+  // Fallback: interpreta la desc (notifiche di default)
   // Caso speciale: "1 ora prima" — sottrai 1 ora dall'orario esatto dell'evento
   if (descL.includes('1 ora prima') || descL.includes("un'ora prima")) {
     d.setHours(d.getHours() - 1, d.getMinutes(), 0, 0);
@@ -1570,11 +1584,19 @@ body {
 }
 .notif-item {
   display: grid;
-  grid-template-columns: 36px 1fr auto auto;
+  grid-template-columns: 36px 1fr auto;
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
+}
+/* Riga sotto desc con anticipo+orario per notifiche custom */
+.notif-item-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  grid-column: 2 / -1;
+  flex-wrap: wrap;
 }
 .notif-item:last-child { border-bottom: none; }
 .notif-item.off { opacity: 0.45; }
@@ -2042,6 +2064,23 @@ body {
 /* Frequenza / anticipo */
 .freq-anticipo-wrap { display: none; }
 .freq-anticipo-wrap.visible { display: block; }
+
+/* Select anticipo notifica custom */
+.notif-anticipo-sel {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 6px;
+  font-size: 0.78rem;
+  color: var(--fg-2);
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  max-width: 130px;
+}
+.notif-anticipo-sel:focus { outline: none; border-color: var(--accent); }
 
 
 </style>
@@ -4703,8 +4742,10 @@ function abilitaDragDropAppunti(container) {
 // SISTEMA NOTIFICHE INTERATTIVE
 // ============================================================
 
-// Struttura notifica: { id, desc, time, on }
+// Struttura notifica: { id, desc, time, on, giorni_prima? }
 // "time" per farmaci è 'auto' = agli orari di assunzione
+// "giorni_prima" (number, opzionale): 0=stesso giorno, 1=giorno prima, 7=settimana prima ecc.
+// Usato SOLO nelle notifiche custom aggiunte dall'utente; le notifiche di default usano la desc.
 
 const notifStati = {}; // formId -> [notifica, ...]
 
@@ -4808,25 +4849,7 @@ function renderNotifBlock(formId) {
       desc.oninput = (e) => { n.desc = e.target.value; };
     }
 
-    item.appendChild(tog);
-    item.appendChild(desc);
-
-    // time trigger button (se ha orario) oppure cella vuota
-    if (n.time !== null) {
-      const ti = document.createElement('button');
-      ti.type = 'button';
-      ti.className = 'notif-time-btn';
-      ti.dataset.notifTimebtn = n.id;
-      ti.innerHTML = '<span>' + (n.time || '09:00') + '</span>';
-      ti.onclick = () => openNotifTimePicker(n.id, formId);
-      item.appendChild(ti);
-    } else {
-      // nessun orario (es. farmaci) — occupa la colonna con span vuoto
-      const ph = document.createElement('span');
-      item.appendChild(ph);
-    }
-
-    // delete
+    // delete (sempre nella 3ª colonna del grid)
     const del = document.createElement('button');
     del.className = 'notif-del';
     del.title = 'Rimuovi';
@@ -4835,7 +4858,52 @@ function renderNotifBlock(formId) {
       notifStati[formId] = notifStati[formId].filter(x => x.id !== n.id);
       renderNotifBlock(formId);
     };
+
+    item.appendChild(tog);
+    item.appendChild(desc);
     item.appendChild(del);
+
+    // Sub-row: anticipo + orario (solo se ha orario; le notifiche farmaci hanno time=null)
+    if (n.time !== null) {
+      const sub = document.createElement('div');
+      sub.className = 'notif-item-sub';
+
+      // Select giorni prima (solo per notifiche custom con giorni_prima definito)
+      if (typeof n.giorni_prima === 'number') {
+        const sel = document.createElement('select');
+        sel.className = 'notif-anticipo-sel';
+        sel.title = 'Anticipo';
+        const opzioni = [
+          [0,   'Stesso giorno'],
+          [1,   'Il giorno prima'],
+          [2,   '2 giorni prima'],
+          [3,   '3 giorni prima'],
+          [7,   '1 settimana prima'],
+          [14,  '2 settimane prima'],
+          [30,  '1 mese prima'],
+        ];
+        opzioni.forEach(([val, label]) => {
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = label;
+          if (n.giorni_prima === val) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        sel.onchange = (e) => { n.giorni_prima = parseInt(e.target.value, 10); };
+        sub.appendChild(sel);
+      }
+
+      // Pulsante orario
+      const ti = document.createElement('button');
+      ti.type = 'button';
+      ti.className = 'notif-time-btn';
+      ti.dataset.notifTimebtn = n.id;
+      ti.innerHTML = '<span>' + (n.time || '09:00') + '</span>';
+      ti.onclick = () => openNotifTimePicker(n.id, formId);
+      sub.appendChild(ti);
+
+      item.appendChild(sub);
+    }
 
     el.appendChild(item);
   });
@@ -4851,7 +4919,7 @@ function renderNotifBlock(formId) {
 function aggiungiNotifica(formId) {
   if (!notifStati[formId]) notifStati[formId] = [];
   const id = formId + '_' + Date.now();
-  notifStati[formId].push({ id, desc: 'Nuova notifica', time: '09:00', on: true });
+  notifStati[formId].push({ id, desc: 'Nuova notifica', time: '09:00', on: true, giorni_prima: 0 });
   renderNotifBlock(formId);
   // mette focus sul campo desc dell'ultimo item aggiunto
   // (non facile su mobile, lasciamo l'utente toccare)
