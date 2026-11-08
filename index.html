@@ -802,6 +802,22 @@ body {
 .ev-cat { border-left-width: 4px; }
 
 /* === CALENDARIO MENSILE (vista agenda) === */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 4px 10px 16px;
+  margin: 20px -16px 0;
+}
+.cal-header-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
 .cal-nav-btn {
   background: none; border: none; cursor: pointer;
   font-size: 1.6rem; line-height: 1; padding: 4px 10px;
@@ -6324,6 +6340,15 @@ function _aggiornaCalendario() {
   grid.innerHTML = _renderCalGrid(tutti);
 }
 
+// Event delegation per click celle calendario
+function _calGridClick(e) {
+  const cell = e.target.closest('.cal-cell[data-date]');
+  if (!cell) return;
+  const dataStr = cell.dataset.date;
+  const ids = cell.dataset.ids ? cell.dataset.ids.split(',') : [];
+  if (ids.length) _apriGiornoCalendario(dataStr, ids);
+}
+
 // ── Bottom sheet eventi del giorno ────────────────────────────────────────────
 function _apriGiornoCalendario(dataStr, eventiIds) {
   const old = document.getElementById('cal-day-sheet');
@@ -6433,10 +6458,10 @@ function _renderCalGrid(items) {
     if (eventiGiorno.length > MAX_PILL) {
       pillsHtml += `<div class="cal-pill-more">+${eventiGiorno.length - MAX_PILL}</div>`;
     }
-    // Click sulla cella → bottom sheet con tutti gli eventi del giorno
-    const idsAttr = eventiGiorno.length
-      ? `onclick="_apriGiornoCalendario('${dataStr}',${JSON.stringify(eventiGiorno.map(e=>e.id))})"` : '';
-    html += `<div class="cal-cell${isOggi ? ' cal-cell--oggi' : ''}${eventiGiorno.length ? ' cal-cell--hasev' : ''}" ${idsAttr}>
+    // Click gestito via event delegation su cal-grid (data-date + data-ids)
+    const dataAttrs = eventiGiorno.length
+      ? `data-date="${dataStr}" data-ids="${eventiGiorno.map(e=>e.id).join(',')}"` : '';
+    html += `<div class="cal-cell${isOggi ? ' cal-cell--oggi' : ''}${eventiGiorno.length ? ' cal-cell--hasev' : ''}" ${dataAttrs}>
       <span class="cal-num${isOggi ? ' cal-num--oggi' : ''}">${g}</span>${pillsHtml}</div>`;
   }
   return html;
@@ -6448,8 +6473,8 @@ function renderAgenda(items) {
   const MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
                 'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
-  const headerNav = `<div class="section-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:8px">
-    <span>Prossimi</span>
+  const headerNav = `<div class="cal-header">
+    <span class="cal-header-title">Prossimi</span>
     <div style="display:flex;align-items:center;gap:0">
       <button onclick="_calPrev()" class="cal-nav-btn">&#8249;</button>
       <span id="agenda-cal-label" class="cal-nav-label">${MESI[_calMese]} ${_calAnno}</span>
@@ -6458,7 +6483,7 @@ function renderAgenda(items) {
   </div>`;
 
   const gridHtml = _renderCalGrid(items);
-  return `${headerNav}<div class="cal-grid" id="agenda-cal-grid">${gridHtml}</div>`;
+  return `${headerNav}<div class="cal-grid" id="agenda-cal-grid" onclick="_calGridClick(event)">${gridHtml}</div>`;
 }
 
 // escHTML rimosso — usare escHtml (unico punto di verità)
