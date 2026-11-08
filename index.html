@@ -801,93 +801,82 @@ body {
 /* === CARD CON COLORE CATEGORIA (prossimi + agenda) === */
 .ev-cat { border-left-width: 4px; }
 
-/* === VISTA AGENDA === */
-.agenda-day-header {
-  font-size: 0.75rem;
+/* === CALENDARIO MENSILE (vista agenda) === */
+.cal-nav-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 1.5rem; line-height: 1; padding: 2px 8px;
+  color: var(--fg-2); font-family: inherit;
+}
+.cal-nav-label {
+  font-size: 0.85rem; font-weight: 700; color: var(--fg);
+  min-width: 110px; text-align: center;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 4px 10px 16px;
+}
+.cal-dow {
+  background: var(--bg);
+  text-align: center;
+  font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--fg-2);
-  padding: 14px 16px 4px;
+  padding: 6px 0 4px;
+}
+.cal-cell {
+  background: var(--bg-card);
+  min-height: 72px;
+  padding: 4px 3px 3px;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.agenda-day-header .agenda-day-num {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--fg);
-  line-height: 1;
-}
-.agenda-day-header.today .agenda-day-num {
-  background: var(--accent);
-  color: #fff;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-}
-.agenda-month-sep {
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #fff;
-  background: var(--fg-2);
-  padding: 3px 10px;
-  border-radius: 20px;
-  margin: 14px 16px 2px;
-  display: inline-block;
-}
-.agenda-event-row {
-  display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
-  padding: 8px 16px 8px 20px;
-  cursor: pointer;
-  border-radius: 10px;
-  margin: 2px 8px;
-  transition: background 0.1s;
+  gap: 2px;
+  cursor: default;
   position: relative;
 }
-.agenda-event-row:active { background: var(--bg); }
-.agenda-cat-bar {
-  width: 4px;
-  border-radius: 2px;
-  flex-shrink: 0;
-  align-self: stretch;
-  min-height: 32px;
-}
-.agenda-event-body {
-  flex: 1;
-  min-width: 0;
-}
-.agenda-event-title {
-  font-size: 0.95rem;
+.cal-cell--empty { background: var(--bg); cursor: default; }
+.cal-cell--hasev { cursor: pointer; }
+.cal-cell--oggi  { background: color-mix(in srgb, var(--accent) 6%, var(--bg-card)); }
+.cal-num {
+  font-size: 0.78rem;
   font-weight: 600;
-  color: var(--fg);
+  color: var(--fg-2);
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 50%;
+  min-width: 20px;
+  text-align: center;
+}
+.cal-num--oggi {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+}
+.cal-pill {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+  cursor: pointer;
+  line-height: 1.4;
 }
-.agenda-event-meta {
-  font-size: 0.78rem;
-  color: var(--fg-2);
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.agenda-cat-pill {
-  font-size: 0.7rem;
+.cal-pill-more {
+  font-size: 0.6rem;
   font-weight: 700;
-  padding: 1px 7px;
-  border-radius: 20px;
-  white-space: nowrap;
+  color: var(--fg-2);
+  padding: 0 3px;
 }
 
 /* === BOTTOM NAV === */
@@ -5531,16 +5520,17 @@ const CAT_LABELS = {
 
 // Colori per categoria — usati nelle card "Prossimi" e nella vista Agenda
 // { bg, border, text, dot }
+// Colori saturi (sfondo pieno, testo bianco) — usati in agenda/calendario e card Prossimi
 const CAT_COLORS = {
-  visite:     { bg:'#EFF6FF', border:'#BFDBFE', text:'#1D4ED8', dot:'#2563EB' },
-  farmaci:    { bg:'#F0FDF4', border:'#BBF7D0', text:'#15803D', dot:'#22C55E' },
-  ricorrenze: { bg:'#F5F3FF', border:'#DDD6FE', text:'#6D28D9', dot:'#7C3AED' },
-  documenti:  { bg:'#FFF7ED', border:'#FED7AA', text:'#C2410C', dot:'#EA580C' },
-  auto:       { bg:'#FEF2F2', border:'#FECACA', text:'#B91C1C', dot:'#EF4444' },
-  acquisti:   { bg:'#FEFCE8', border:'#FDE68A', text:'#92400E', dot:'#F59E0B' },
-  lavoro:     { bg:'#EFF6FF', border:'#93C5FD', text:'#1E40AF', dot:'#1D4ED8' },
-  condominio: { bg:'#FFF7ED', border:'#FDBA74', text:'#9A3412', dot:'#F97316' },
-  generico:   { bg:'#F9FAFB', border:'#E5E7EB', text:'#374151', dot:'#6B7280' },
+  visite:     { bg:'#2563EB', border:'#1D4ED8', text:'#fff', dot:'#2563EB', light:'#DBEAFE' },
+  farmaci:    { bg:'#16A34A', border:'#15803D', text:'#fff', dot:'#16A34A', light:'#DCFCE7' },
+  ricorrenze: { bg:'#7C3AED', border:'#6D28D9', text:'#fff', dot:'#7C3AED', light:'#EDE9FE' },
+  documenti:  { bg:'#EA580C', border:'#C2410C', text:'#fff', dot:'#EA580C', light:'#FFEDD5' },
+  auto:       { bg:'#DC2626', border:'#B91C1C', text:'#fff', dot:'#DC2626', light:'#FEE2E2' },
+  acquisti:   { bg:'#D97706', border:'#B45309', text:'#fff', dot:'#D97706', light:'#FEF3C7' },
+  lavoro:     { bg:'#0284C7', border:'#0369A1', text:'#fff', dot:'#0284C7', light:'#E0F2FE' },
+  condominio: { bg:'#EA580C', border:'#C2410C', text:'#fff', dot:'#F97316', light:'#FFEDD5' },
+  generico:   { bg:'#6B7280', border:'#4B5563', text:'#fff', dot:'#6B7280', light:'#F3F4F6' },
 };
 
 // Preferenza vista home (lista = default, agenda = vista calendario/agenda)
@@ -6122,11 +6112,11 @@ function renderHome() {
           else if (_rr.statoOggi === 'ok') _farmaciCls = ' farmaci-ok';
         }
       }
-      // Colori categoria per gruppo futuro (Prossimi)
+      // Colori categoria per gruppo futuro (Prossimi): sfondo chiaro, bordo saturo
       let _catStyle = '';
       if (g.key === 'futuro' && CAT_COLORS[ev.categoria]) {
         const _c = CAT_COLORS[ev.categoria];
-        _catStyle = ` style="background:${_c.bg};border-left:4px solid ${_c.border}"`;
+        _catStyle = ` style="background:${_c.light};border-left:4px solid ${_c.bg}"`;
       }
       const _dotStyle = (g.key === 'futuro' && CAT_COLORS[ev.categoria])
         ? ` style="background:${CAT_COLORS[ev.categoria].dot}"` : '';
@@ -6295,64 +6285,92 @@ function renderHome() {
   if (scaduto) showToastBackup();
 }
 
-// ── Vista Agenda per gruppo "Prossimi" ────────────────────────────────────────
-function renderAgenda(items) {
-  if (!items || !items.length) return '';
+// ── Stato navigazione calendario ──────────────────────────────────────────────
+let _calMese = new Date().getMonth();
+let _calAnno = new Date().getFullYear();
+
+function _calPrev() {
+  _calMese--; if (_calMese < 0) { _calMese = 11; _calAnno--; }
+  _aggiornaCalendario();
+}
+function _calNext() {
+  _calMese++; if (_calMese > 11) { _calMese = 0; _calAnno++; }
+  _aggiornaCalendario();
+}
+function _aggiornaCalendario() {
+  // Aggiorna solo la griglia e il label mese — senza rifare tutto renderHome
+  const grid = document.getElementById('agenda-cal-grid');
+  const label = document.getElementById('agenda-cal-label');
+  if (!grid || !label) return;
   const MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
                 'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-  const GIORNI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  label.textContent = MESI[_calMese] + ' ' + _calAnno;
+  const eventi = leggiEventi().filter(ev => !ev.archiviato && ev.stato !== 'fatto'
+                                       && classificaEvento(ev) === 'futuro');
+  grid.innerHTML = _renderCalGrid(eventi);
+}
 
-  // Raggruppa per data YYYY-MM-DD
+// Genera solo le celle della griglia (senza il wrapper esterno)
+function _renderCalGrid(items) {
   const perData = {};
   for (const ev of items) {
     const d = dataEventoEffettiva(ev) || '';
     if (!d) continue;
+    const dt = new Date(d + 'T00:00:00');
+    if (dt.getMonth() !== _calMese || dt.getFullYear() !== _calAnno) continue;
     if (!perData[d]) perData[d] = [];
     perData[d].push(ev);
   }
-  const dateOrdinate = Object.keys(perData).sort();
-  if (!dateOrdinate.length) return '';
+  const primoGiorno = new Date(_calAnno, _calMese, 1);
+  const offsetLun = (primoGiorno.getDay() + 6) % 7;
+  const giorniMese = new Date(_calAnno, _calMese + 1, 0).getDate();
+  const oggi = new Date(); oggi.setHours(0,0,0,0);
+  const pad = n => String(n).padStart(2,'0');
+  const GIORNI_H = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 
-  let html = `<div class="section-label">Prossimi</div>`;
-  let mesePrecedente = '';
+  let html = '';
+  for (const g of GIORNI_H) html += `<div class="cal-dow">${g}</div>`;
+  for (let i = 0; i < offsetLun; i++) html += `<div class="cal-cell cal-cell--empty"></div>`;
 
-  for (const dataStr of dateOrdinate) {
-    const dt = new Date(dataStr + 'T00:00:00');
-    const meseCorrente = MESI[dt.getMonth()] + ' ' + dt.getFullYear();
-    if (meseCorrente !== mesePrecedente) {
-      html += `<div class="agenda-month-sep">${meseCorrente}</div>`;
-      mesePrecedente = meseCorrente;
-    }
-    const giorno = GIORNI[dt.getDay()];
-    const num = dt.getDate();
-    html += `<div class="agenda-day-header"><span class="agenda-day-num">${num}</span><span>${giorno}</span></div>`;
-
-    for (const ev of perData[dataStr]) {
+  for (let g = 1; g <= giorniMese; g++) {
+    const dataStr = `${_calAnno}-${pad(_calMese+1)}-${pad(g)}`;
+    const dtCell = new Date(_calAnno, _calMese, g);
+    const isOggi = dtCell.getTime() === oggi.getTime();
+    const eventiGiorno = perData[dataStr] || [];
+    const MAX_PILL = 2;
+    let pillsHtml = '';
+    for (let i = 0; i < Math.min(eventiGiorno.length, MAX_PILL); i++) {
+      const ev = eventiGiorno[i];
       const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
-      const titolo = titoloCarta(ev);
-      const badge = (ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo)
-        ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria);
-      // Ora evento (solo se non farmaci)
-      let oraStr = '';
-      const ex = ev.extra || {};
-      if (ev.categoria === 'farmaci' && Array.isArray(ex.orari) && ex.orari.length) {
-        oraStr = ex.orari.join(' · ');
-      } else if (ev.data && ev.data.includes('T')) {
-        oraStr = ev.data.split('T')[1].substring(0,5);
-      }
-      html += `<div class="agenda-event-row" onclick="apriEvento('${ev.id}')">
-        <div class="agenda-cat-bar" style="background:${c.dot}"></div>
-        <div class="agenda-event-body">
-          <div class="agenda-event-title">${escHtml(titolo)}</div>
-          <div class="agenda-event-meta">
-            ${oraStr ? `<span>${escHtml(oraStr)}</span><span>·</span>` : ''}
-            <span class="agenda-cat-pill" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${escHtml(badge)}</span>
-          </div>
-        </div>
-      </div>`;
+      const label = titoloCarta(ev);
+      pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text}" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="${escHtml(label)}">${escHtml(label)}</div>`;
     }
+    if (eventiGiorno.length > MAX_PILL) {
+      pillsHtml += `<div class="cal-pill-more">+${eventiGiorno.length - MAX_PILL}</div>`;
+    }
+    html += `<div class="cal-cell${isOggi ? ' cal-cell--oggi' : ''}${eventiGiorno.length ? ' cal-cell--hasev' : ''}">
+      <span class="cal-num${isOggi ? ' cal-num--oggi' : ''}">${g}</span>${pillsHtml}</div>`;
   }
   return html;
+}
+
+// ── renderAgenda: wrapper con header nav + griglia ────────────────────────────
+function renderAgenda(items) {
+  if (!items) items = [];
+  const MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+                'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+  const headerNav = `<div class="section-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:8px">
+    <span>Prossimi</span>
+    <div style="display:flex;align-items:center;gap:0">
+      <button onclick="_calPrev()" class="cal-nav-btn">&#8249;</button>
+      <span id="agenda-cal-label" class="cal-nav-label">${MESI[_calMese]} ${_calAnno}</span>
+      <button onclick="_calNext()" class="cal-nav-btn">&#8250;</button>
+    </div>
+  </div>`;
+
+  const gridHtml = _renderCalGrid(items);
+  return `${headerNav}<div class="cal-grid" id="agenda-cal-grid">${gridHtml}</div>`;
 }
 
 // escHTML rimosso — usare escHtml (unico punto di verità)
