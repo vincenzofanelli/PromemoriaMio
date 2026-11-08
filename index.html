@@ -6095,9 +6095,10 @@ function renderHome() {
     });
     if (!items.length) continue;
     trovati = true;
-    // Per il gruppo "futuro": se vista agenda, usa renderAgenda() e salta il loop card
-    if (g.key === 'futuro' && _vistaHome === 'agenda') {
-      html += renderAgenda(items);
+    // Per il gruppo "futuro": se vista agenda, renderAgenda raccoglie tutti gli eventi
+    // (viene chiamata una sola volta alla fine, fuori dal loop gruppi)
+    if (_vistaHome === 'agenda' && g.key === 'futuro') {
+      // segnaposto — il rendering agenda viene aggiunto dopo il loop
       continue;
     }
     html += `<div class="section-label${g.key === 'oggi' ? ' section-label-oggi' : ''}">${g.label}</div>`;
@@ -6274,6 +6275,13 @@ function renderHome() {
     }
   }
 
+  // Vista agenda: aggiungi il calendario mensile con TUTTI gli eventi non archiviati
+  if (_vistaHome === 'agenda') {
+    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato && ev.stato !== 'fatto');
+    html += renderAgenda(tuttiPerCalendario);
+    trovati = true;
+  }
+
   if (!trovati) {
     html += `<div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
       <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -6305,16 +6313,86 @@ function _calNext() {
   _aggiornaCalendario();
 }
 function _aggiornaCalendario() {
-  // Aggiorna solo la griglia e il label mese — senza rifare tutto renderHome
   const grid = document.getElementById('agenda-cal-grid');
   const label = document.getElementById('agenda-cal-label');
   if (!grid || !label) return;
   const MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
                 'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   label.textContent = MESI[_calMese] + ' ' + _calAnno;
-  const eventi = leggiEventi().filter(ev => !ev.archiviato && ev.stato !== 'fatto'
-                                       && classificaEvento(ev) === 'futuro');
-  grid.innerHTML = _renderCalGrid(eventi);
+  // Tutti gli eventi non archiviati (non solo futuro)
+  const tutti = leggiEventi().filter(ev => !ev.archiviato && ev.stato !== 'fatto');
+  grid.innerHTML = _renderCalGrid(tutti);
+}
+
+// ── Bottom sheet eventi del giorno ────────────────────────────────────────────
+function _apriGiornoCalendario(dataStr, eventiIds) {
+  const old = document.getElementById('cal-day-sheet');
+  if (old) old.remove();
+
+  const tutti = leggiEventi();
+  const eventiGiorno = eventiIds.map(id => tutti.find(e => e.id === id)).filter(Boolean);
+  if (!eventiGiorno.length) return;
+
+  // Formato data leggibile
+  const MESI_L = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+                  'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  const GIORNI_L = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const dt = new Date(dataStr + 'T00:00:00');
+  const titoloDt = `${GIORNI_L[dt.getDay()]} ${dt.getDate()} ${MESI_L[dt.getMonth()]}`;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'cal-day-sheet';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.45);display:flex;align-items:flex-end;justify-content:center';
+
+  const sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--bg-card);border-radius:20px 20px 0 0;padding:16px 0 max(20px,env(safe-area-inset-bottom)) 0;width:100%;max-width:480px;box-shadow:0 -4px 24px rgba(0,0,0,.18);max-height:75vh;overflow-y:auto';
+
+  // Handle
+  const handle = document.createElement('div');
+  handle.style.cssText = 'width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 12px';
+  sheet.appendChild(handle);
+
+  // Titolo data
+  const titolo = document.createElement('div');
+  titolo.textContent = titoloDt;
+  titolo.style.cssText = 'font-size:1rem;font-weight:800;color:var(--fg);padding:0 16px 12px;border-bottom:1px solid var(--border)';
+  sheet.appendChild(titolo);
+
+  // Card eventi
+  for (const ev of eventiGiorno) {
+    const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
+    const badge = (ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo)
+      ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria);
+    const dataStr2 = fmtDataEvento(ev);
+    const ex = ev.extra || {};
+    let oraCard = '';
+    if (ev.categoria === 'farmaci' && Array.isArray(ex.orari) && ex.orari.length) {
+      oraCard = ex.orari.join(' · ');
+    }
+
+    const card = document.createElement('div');
+    card.style.cssText = `margin:10px 12px 0;padding:12px 14px;border-radius:12px;background:${c.light};border-left:4px solid ${c.bg};cursor:pointer`;
+    card.innerHTML = `
+      <div style="font-size:0.95rem;font-weight:700;color:var(--fg);margin-bottom:4px">${escHtml(titoloCarta(ev))}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        ${dataStr2 ? `<span style="font-size:0.78rem;color:var(--fg-2)">${escHtml(dataStr2)}</span>` : ''}
+        ${oraCard ? `<span style="font-size:0.78rem;font-weight:700;color:var(--fg-2)">${escHtml(oraCard)}</span>` : ''}
+        <span style="font-size:0.7rem;font-weight:700;padding:1px 8px;border-radius:20px;background:${c.bg};color:${c.text}">${escHtml(badge)}</span>
+      </div>`;
+    card.onclick = () => { overlay.remove(); apriEvento(ev.id); };
+    sheet.appendChild(card);
+  }
+
+  // Bottone chiudi
+  const btnClose = document.createElement('button');
+  btnClose.textContent = 'Chiudi';
+  btnClose.style.cssText = 'display:block;width:calc(100% - 24px);margin:14px 12px 0;padding:12px;font-size:1rem;font-family:inherit;font-weight:600;color:var(--fg-2);background:var(--bg);border:1px solid var(--border);border-radius:12px;cursor:pointer';
+  btnClose.onclick = () => overlay.remove();
+  sheet.appendChild(btnClose);
+
+  overlay.appendChild(sheet);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 // Genera solo le celle della griglia (senza il wrapper esterno)
@@ -6350,12 +6428,15 @@ function _renderCalGrid(items) {
       const ev = eventiGiorno[i];
       const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
       const label = titoloCarta(ev);
-      pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text}" onclick="event.stopPropagation();apriEvento('${ev.id}')" title="${escHtml(label)}">${escHtml(label)}</div>`;
+      pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text}" title="${escHtml(label)}">${escHtml(label)}</div>`;
     }
     if (eventiGiorno.length > MAX_PILL) {
       pillsHtml += `<div class="cal-pill-more">+${eventiGiorno.length - MAX_PILL}</div>`;
     }
-    html += `<div class="cal-cell${isOggi ? ' cal-cell--oggi' : ''}${eventiGiorno.length ? ' cal-cell--hasev' : ''}">
+    // Click sulla cella → bottom sheet con tutti gli eventi del giorno
+    const idsAttr = eventiGiorno.length
+      ? `onclick="_apriGiornoCalendario('${dataStr}',${JSON.stringify(eventiGiorno.map(e=>e.id))})"` : '';
+    html += `<div class="cal-cell${isOggi ? ' cal-cell--oggi' : ''}${eventiGiorno.length ? ' cal-cell--hasev' : ''}" ${idsAttr}>
       <span class="cal-num${isOggi ? ' cal-num--oggi' : ''}">${g}</span>${pillsHtml}</div>`;
   }
   return html;
