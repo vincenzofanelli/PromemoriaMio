@@ -860,7 +860,7 @@ body {
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   box-sizing: border-box;
-  /* NO overflow:hidden — la cella cresce con il contenuto */
+  min-width: 0;
 }
 .cal-cell--empty { background: #fafafa; }
 .cal-cell--hasev { cursor: pointer; }
@@ -886,7 +886,7 @@ body {
   font-size: 0.55rem;
   font-weight: 600;
   padding: 1px 3px;
-  border-radius: 3px;
+  border-radius: 0;
   line-height: 1.25;
   width: 100%;
   box-sizing: border-box;
@@ -894,6 +894,7 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: break-word;
   cursor: pointer;
 }
 .cal-pill-more {
