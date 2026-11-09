@@ -850,17 +850,17 @@ body {
 }
 .cal-cell {
   background: #fff;
-  height: 42px; /* sovrascritta inline dal JS in base al mese */
-  padding: 1px 1px 1px;
+  min-height: 42px;
+  padding: 2px 2px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 1px;
   cursor: default;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  overflow: hidden;
   box-sizing: border-box;
+  /* NO overflow:hidden — la cella cresce con il contenuto */
 }
 .cal-cell--empty { background: #fafafa; }
 .cal-cell--hasev { cursor: pointer; }
@@ -874,6 +874,7 @@ body {
   border-radius: 50%;
   min-width: 16px;
   text-align: center;
+  align-self: center;
   flex-shrink: 0;
 }
 .cal-num--oggi {
@@ -883,17 +884,17 @@ body {
 }
 .cal-pill {
   font-size: 0.55rem;
-  font-weight: 700;
-  padding: 0px 2px;
-  border-radius: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 600;
+  padding: 1px 3px;
+  border-radius: 3px;
+  line-height: 1.25;
   width: 100%;
-  cursor: pointer;
-  line-height: 1.4;
   box-sizing: border-box;
-  display: block;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: pointer;
 }
 .cal-pill-more {
   font-size: 0.55rem;
@@ -6504,13 +6505,12 @@ function _dateEventoInMese(ev) {
 function _renderCalGrid(items) {
   const perData = {};
   for (const ev of items) {
-    // Espandi tutte le occorrenze dell'evento nel mese corrente
-    const date = _dateEventoInMese(ev);
-    for (const d of date) {
+    for (const d of _dateEventoInMese(ev)) {
       if (!perData[d]) perData[d] = [];
       perData[d].push(ev);
     }
   }
+
   const primoGiorno = new Date(_calAnno, _calMese, 1);
   const offsetLun = (primoGiorno.getDay() + 6) % 7;
   const giorniMese = new Date(_calAnno, _calMese + 1, 0).getDate();
@@ -6518,39 +6518,25 @@ function _renderCalGrid(items) {
   const pad = n => String(n).padStart(2,'0');
   const GIORNI_H = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 
-  // Calcola altezza cella in base al giorno più affollato del mese
-  let maxEv = 0;
-  for (let g = 1; g <= giorniMese; g++) {
-    const d = `${_calAnno}-${pad(_calMese+1)}-${pad(g)}`;
-    const n = (perData[d] || []).length;
-    if (n > maxEv) maxEv = n;
-  }
-  // Altezza cella: numero (16px) + gap (1px) + pill per ogni evento (13px) + padding (3px top+bottom)
-  // Le celle vuote (offset iniziale) usano altezza minima fissa per non sprecare spazio
-  const PILL_H = 13; // px per pill (font 0.57rem ~9px + padding 1px*2 + line-height)
-  const cellH = Math.max(42, 16 + 2 + maxEv * PILL_H + 3);
-  const cellStyle     = `style="height:${cellH}px"`;
-  const cellEmptyStyle = `style="height:${cellH}px"`;  // stessa altezza per uniformità di riga
-
   let html = '';
   for (const g of GIORNI_H) html += `<div class="cal-dow">${g}</div>`;
-  for (let i = 0; i < offsetLun; i++) html += `<div class="cal-cell cal-cell--empty" ${cellEmptyStyle}></div>`;
+  for (let i = 0; i < offsetLun; i++) html += `<div class="cal-cell cal-cell--empty"></div>`;
 
   for (let g = 1; g <= giorniMese; g++) {
     const dataStr = `${_calAnno}-${pad(_calMese+1)}-${pad(g)}`;
     const dtCell = new Date(_calAnno, _calMese, g);
     const isOggi = dtCell.getTime() === oggi.getTime();
     const eventiGiorno = perData[dataStr] || [];
+
     let pillsHtml = '';
     for (const ev of eventiGiorno) {
       const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
-      const label = titoloCarta(ev);
-      pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text}" title="${escHtml(label)}">${escHtml(label)}</div>`;
+      pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text}">${escHtml(titoloCarta(ev))}</div>`;
     }
-    // Click gestito via event delegation su cal-grid (data-date + data-ids)
+
     const dataAttrs = eventiGiorno.length
       ? `data-date="${dataStr}" data-ids="${eventiGiorno.map(e=>e.id).join(',')}"` : '';
-    html += `<div class="cal-cell${isOggi ? ' cal-cell--oggi' : ''}${eventiGiorno.length ? ' cal-cell--hasev' : ''}" ${dataAttrs} ${cellStyle}>
+    html += `<div class="cal-cell${isOggi ? ' cal-cell--oggi' : ''}${eventiGiorno.length ? ' cal-cell--hasev' : ''}" ${dataAttrs}>
       <span class="cal-num${isOggi ? ' cal-num--oggi' : ''}">${g}</span>${pillsHtml}</div>`;
   }
   return html;
