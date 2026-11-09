@@ -850,9 +850,9 @@ body {
 }
 .cal-cell {
   background: #fff;
-  /* altezza calcolata: (100dvh - header - navbar - section-label - intestazione-dow) / 6 righe ≈ 58px */
-  height: 58px;
-  padding: 2px 2px 1px;
+  /* min-height: le celle crescono se ci sono molti eventi */
+  min-height: 58px;
+  padding: 2px 2px 3px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -865,7 +865,7 @@ body {
 }
 .cal-cell--empty { background: #fafafa; }
 .cal-cell--hasev { cursor: pointer; }
-.cal-cell--oggi  { background: #EFF6FF; }
+.cal-cell--oggi  { background: #FFF5F5; }
 .cal-num {
   font-size: 0.72rem;
   font-weight: 600;
@@ -878,7 +878,7 @@ body {
   flex-shrink: 0;
 }
 .cal-num--oggi {
-  background: var(--accent);
+  background: #DC2626;
   color: #fff;
   font-weight: 800;
 }
@@ -6527,16 +6527,11 @@ function _renderCalGrid(items) {
     const dtCell = new Date(_calAnno, _calMese, g);
     const isOggi = dtCell.getTime() === oggi.getTime();
     const eventiGiorno = perData[dataStr] || [];
-    const MAX_PILL = 2;
     let pillsHtml = '';
-    for (let i = 0; i < Math.min(eventiGiorno.length, MAX_PILL); i++) {
-      const ev = eventiGiorno[i];
+    for (const ev of eventiGiorno) {
       const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
       const label = titoloCarta(ev);
       pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text}" title="${escHtml(label)}">${escHtml(label)}</div>`;
-    }
-    if (eventiGiorno.length > MAX_PILL) {
-      pillsHtml += `<div class="cal-pill-more">+${eventiGiorno.length - MAX_PILL}</div>`;
     }
     // Click gestito via event delegation su cal-grid (data-date + data-ids)
     const dataAttrs = eventiGiorno.length
