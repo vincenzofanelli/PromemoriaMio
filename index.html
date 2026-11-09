@@ -6420,16 +6420,96 @@ function _apriGiornoCalendario(dataStr, eventiIds) {
   document.body.appendChild(overlay);
 }
 
+// Restituisce tutte le date YYYY-MM-DD in cui un evento cade nel mese _calMese/_calAnno
+function _dateEventoInMese(ev) {
+  const extra = ev.extra || {};
+  const pad = n => String(n).padStart(2,'0');
+  const inizioMese = new Date(_calAnno, _calMese, 1);
+  const fineMese   = new Date(_calAnno, _calMese + 1, 0); // ultimo giorno
+  fineMese.setHours(23,59,59,999);
+
+  // Scadenza mensile: compare una volta nel mese come primo giorno
+  if (extra.scadenza_mensile) {
+    const d = dataEventoEffettiva(ev);
+    if (!d) return [];
+    const dt = new Date(d.substring(0,7) + '-01T00:00:00');
+    if (dt.getMonth() === _calMese && dt.getFullYear() === _calAnno) {
+      // Mostrala l'ultimo giorno del mese (o primo? usiamo l'ultimo per coerenza)
+      return [`${_calAnno}-${pad(_calMese+1)}-${pad(fineMese.getDate())}`];
+    }
+    return [];
+  }
+
+  const dataBase = extra.data;
+  if (!dataBase) return [];
+  const freq = extra.freq;
+  const isDatetime = dataBase.includes('T');
+  const dataBaseGiorno = isDatetime ? dataBase.substring(0,10) : dataBase;
+
+  // Evento singolo (nessuna frequenza)
+  if (!freq) {
+    const dt = new Date(dataBaseGiorno + 'T00:00:00');
+    if (dt.getMonth() === _calMese && dt.getFullYear() === _calAnno) {
+      return [dataBaseGiorno];
+    }
+    return [];
+  }
+
+  // Override manuale: trattalo come singolo
+  if (extra.data_prossima_override) {
+    const d = extra.data_prossima_override.substring(0,10);
+    const dt = new Date(d + 'T00:00:00');
+    if (dt.getMonth() === _calMese && dt.getFullYear() === _calAnno) return [d];
+    return [];
+  }
+
+  // Evento ricorrente: itera partendo dalla data base, raccoglie tutte le date nel mese
+  const risultati = [];
+  let cur = dataBase;
+  let safety = 0;
+
+  // Salta indietro se la data base è nel futuro rispetto all'inizio del mese
+  // (niente da fare: iteriamo in avanti dalla base)
+  // Prima porta cur al range utile (senza superare fineMese)
+  const dtCurInizio = new Date(dataBaseGiorno + 'T00:00:00');
+
+  // Se la base è già oltre la fine del mese: nessuna occorrenza
+  if (dtCurInizio > fineMese) return [];
+
+  // Se freq è giornaliera, la data base potrebbe essere mesi fa:
+  // avanza rapidamente fino al mese target
+  if (freq === 'giornaliera') {
+    const diff = Math.floor((inizioMese - dtCurInizio) / 86400000);
+    if (diff > 0) {
+      const dtTmp = new Date(dtCurInizio);
+      dtTmp.setDate(dtTmp.getDate() + diff);
+      cur = `${dtTmp.getFullYear()}-${pad(dtTmp.getMonth()+1)}-${pad(dtTmp.getDate())}`;
+    }
+  }
+
+  while (safety++ < 400) {
+    const dtCur = new Date(cur.substring(0,10) + 'T00:00:00');
+    if (dtCur > fineMese) break;
+    if (dtCur >= inizioMese) {
+      risultati.push(cur.substring(0,10));
+    }
+    const prossima = calcolaDataProssima(cur, freq, null, extra.freq_mesi);
+    if (!prossima) break;
+    cur = prossima;
+  }
+  return risultati;
+}
+
 // Genera solo le celle della griglia (senza il wrapper esterno)
 function _renderCalGrid(items) {
   const perData = {};
   for (const ev of items) {
-    const d = dataEventoEffettiva(ev) || '';
-    if (!d) continue;
-    const dt = new Date(d + 'T00:00:00');
-    if (dt.getMonth() !== _calMese || dt.getFullYear() !== _calAnno) continue;
-    if (!perData[d]) perData[d] = [];
-    perData[d].push(ev);
+    // Espandi tutte le occorrenze dell'evento nel mese corrente
+    const date = _dateEventoInMese(ev);
+    for (const d of date) {
+      if (!perData[d]) perData[d] = [];
+      perData[d].push(ev);
+    }
   }
   const primoGiorno = new Date(_calAnno, _calMese, 1);
   const offsetLun = (primoGiorno.getDay() + 6) % 7;
