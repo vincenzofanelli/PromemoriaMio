@@ -850,8 +850,8 @@ body {
 }
 .cal-cell {
   background: #fff;
-  height: 58px;
-  padding: 2px 2px 1px;
+  height: 42px; /* sovrascritta inline dal JS in base al mese */
+  padding: 1px 1px 1px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -866,13 +866,13 @@ body {
 .cal-cell--hasev { cursor: pointer; }
 .cal-cell--oggi  { background: #FFF5F5; }
 .cal-num {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--fg-2);
   line-height: 1;
-  padding: 2px 3px;
+  padding: 1px 2px;
   border-radius: 50%;
-  min-width: 18px;
+  min-width: 16px;
   text-align: center;
   flex-shrink: 0;
 }
@@ -882,9 +882,9 @@ body {
   font-weight: 800;
 }
 .cal-pill {
-  font-size: 0.57rem;
+  font-size: 0.55rem;
   font-weight: 700;
-  padding: 1px 3px;
+  padding: 0px 2px;
   border-radius: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -6525,16 +6525,16 @@ function _renderCalGrid(items) {
     const n = (perData[d] || []).length;
     if (n > maxEv) maxEv = n;
   }
-  // num = 18px + maxEv * 14px + 4px padding; min 52px
-  const cellH = Math.max(52, 18 + maxEv * 14 + 4);
-
-  // Inietta altezza dinamica nel CSS della cella tramite style su grid
-  // (sovrascrive il height:58px del CSS statico)
-  const cellStyle = `style="height:${cellH}px"`;
+  // Altezza cella: numero (16px) + gap (1px) + pill per ogni evento (13px) + padding (3px top+bottom)
+  // Le celle vuote (offset iniziale) usano altezza minima fissa per non sprecare spazio
+  const PILL_H = 13; // px per pill (font 0.57rem ~9px + padding 1px*2 + line-height)
+  const cellH = Math.max(42, 16 + 2 + maxEv * PILL_H + 3);
+  const cellStyle     = `style="height:${cellH}px"`;
+  const cellEmptyStyle = `style="height:${cellH}px"`;  // stessa altezza per uniformità di riga
 
   let html = '';
   for (const g of GIORNI_H) html += `<div class="cal-dow">${g}</div>`;
-  for (let i = 0; i < offsetLun; i++) html += `<div class="cal-cell cal-cell--empty" ${cellStyle}></div>`;
+  for (let i = 0; i < offsetLun; i++) html += `<div class="cal-cell cal-cell--empty" ${cellEmptyStyle}></div>`;
 
   for (let g = 1; g <= giorniMese; g++) {
     const dataStr = `${_calAnno}-${pad(_calMese+1)}-${pad(g)}`;
