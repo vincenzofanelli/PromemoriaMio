@@ -6518,31 +6518,39 @@ function _renderCalGrid(items) {
   const pad = n => String(n).padStart(2,'0');
   const GIORNI_H = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 
+  // Calcola altezza cella in base al giorno più affollato del mese
+  let maxEv = 0;
+  for (let g = 1; g <= giorniMese; g++) {
+    const d = `${_calAnno}-${pad(_calMese+1)}-${pad(g)}`;
+    const n = (perData[d] || []).length;
+    if (n > maxEv) maxEv = n;
+  }
+  // num = 18px + maxEv * 14px + 4px padding; min 52px
+  const cellH = Math.max(52, 18 + maxEv * 14 + 4);
+
+  // Inietta altezza dinamica nel CSS della cella tramite style su grid
+  // (sovrascrive il height:58px del CSS statico)
+  const cellStyle = `style="height:${cellH}px"`;
+
   let html = '';
   for (const g of GIORNI_H) html += `<div class="cal-dow">${g}</div>`;
-  for (let i = 0; i < offsetLun; i++) html += `<div class="cal-cell cal-cell--empty"></div>`;
+  for (let i = 0; i < offsetLun; i++) html += `<div class="cal-cell cal-cell--empty" ${cellStyle}></div>`;
 
   for (let g = 1; g <= giorniMese; g++) {
     const dataStr = `${_calAnno}-${pad(_calMese+1)}-${pad(g)}`;
     const dtCell = new Date(_calAnno, _calMese, g);
     const isOggi = dtCell.getTime() === oggi.getTime();
     const eventiGiorno = perData[dataStr] || [];
-    const MAX_PILL = 3;
     let pillsHtml = '';
-    const shown = eventiGiorno.slice(0, MAX_PILL);
-    const extra = eventiGiorno.length - MAX_PILL;
-    for (const ev of shown) {
+    for (const ev of eventiGiorno) {
       const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
       const label = titoloCarta(ev);
       pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text}" title="${escHtml(label)}">${escHtml(label)}</div>`;
     }
-    if (extra > 0) {
-      pillsHtml += `<div class="cal-pill-more">+${extra} altri</div>`;
-    }
     // Click gestito via event delegation su cal-grid (data-date + data-ids)
     const dataAttrs = eventiGiorno.length
       ? `data-date="${dataStr}" data-ids="${eventiGiorno.map(e=>e.id).join(',')}"` : '';
-    html += `<div class="cal-cell${isOggi ? ' cal-cell--oggi' : ''}${eventiGiorno.length ? ' cal-cell--hasev' : ''}" ${dataAttrs}>
+    html += `<div class="cal-cell${isOggi ? ' cal-cell--oggi' : ''}${eventiGiorno.length ? ' cal-cell--hasev' : ''}" ${dataAttrs} ${cellStyle}>
       <span class="cal-num${isOggi ? ' cal-num--oggi' : ''}">${g}</span>${pillsHtml}</div>`;
   }
   return html;
