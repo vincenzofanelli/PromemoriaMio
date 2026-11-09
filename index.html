@@ -899,7 +899,7 @@ body {
   font-size: 0.55rem;
   font-weight: 700;
   color: var(--fg-2);
-  padding: 0 2px;
+  padding: 1px 2px;
 }
 
 /* === BOTTOM NAV === */
@@ -6527,11 +6527,17 @@ function _renderCalGrid(items) {
     const dtCell = new Date(_calAnno, _calMese, g);
     const isOggi = dtCell.getTime() === oggi.getTime();
     const eventiGiorno = perData[dataStr] || [];
+    const MAX_PILL = 3;
     let pillsHtml = '';
-    for (const ev of eventiGiorno) {
+    const shown = eventiGiorno.slice(0, MAX_PILL);
+    const extra = eventiGiorno.length - MAX_PILL;
+    for (const ev of shown) {
       const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
       const label = titoloCarta(ev);
       pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text}" title="${escHtml(label)}">${escHtml(label)}</div>`;
+    }
+    if (extra > 0) {
+      pillsHtml += `<div class="cal-pill-more">+${extra} altri</div>`;
     }
     // Click gestito via event delegation su cal-grid (data-date + data-ids)
     const dataAttrs = eventiGiorno.length
