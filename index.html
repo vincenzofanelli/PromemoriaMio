@@ -6549,7 +6549,13 @@ function _renderCalGrid(items) {
     let pillsHtml = '';
     for (const ev of eventiGiorno) {
       const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
-      const fatto = ev.stato === 'fatto';
+      let fatto = ev.stato === 'fatto' || ev.archiviato;
+      if (ev.categoria === 'farmaci') {
+        const x = ev.extra || {};
+        const nOrari = Array.isArray(x.orari) ? x.orari.length : 1;
+        const entry = Array.isArray(x.assunzioni) ? x.assunzioni.find(a => a.data === dataStr) : null;
+        fatto = entry ? entry.dosi >= nOrari : false;
+      }
       pillsHtml += `<div class="cal-pill${fatto ? ' cal-pill--fatto' : ''}" style="background:${c.bg};color:${c.text}">${escHtml(titoloCarta(ev))}</div>`;
     }
 
