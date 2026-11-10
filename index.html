@@ -6099,7 +6099,7 @@ function renderHome() {
 
   // Vista agenda: calendario mensile in cima, poi lista completa sotto
   if (_vistaHome === 'agenda') {
-    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato);
+    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato || ev.fattaIl);
     html += renderAgenda(tuttiPerCalendario);
   }
 
@@ -6346,7 +6346,7 @@ function _aggiornaCalendario() {
                 'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   label.textContent = MESI[_calMese] + ' ' + _calAnno;
   // Tutti gli eventi non archiviati (non solo futuro)
-  const tutti = leggiEventi().filter(ev => !ev.archiviato);
+  const tutti = leggiEventi().filter(ev => !ev.archiviato || ev.fattaIl);
   grid.innerHTML = _renderCalGrid(tutti);
 }
 
@@ -6437,6 +6437,15 @@ function _dateEventoInMese(ev) {
   const inizioMese = new Date(_calAnno, _calMese, 1);
   const fineMese   = new Date(_calAnno, _calMese + 1, 0); // ultimo giorno
   fineMese.setHours(23,59,59,999);
+
+  // Evento archiviato con data completamento: mostralo nel giorno in cui è stato fatto
+  if (ev.archiviato && ev.fattaIl) {
+    const dtFatto = new Date(ev.fattaIl);
+    if (dtFatto.getMonth() === _calMese && dtFatto.getFullYear() === _calAnno) {
+      return [`${_calAnno}-${pad(_calMese+1)}-${pad(dtFatto.getDate())}`];
+    }
+    return [];
+  }
 
   // Scadenza mensile: compare una volta nel mese come primo giorno
   if (extra.scadenza_mensile) {
