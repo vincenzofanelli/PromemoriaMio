@@ -897,6 +897,10 @@ body {
   overflow-wrap: break-word;
   cursor: pointer;
 }
+.cal-pill--fatto {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
 .cal-pill-more {
   font-size: 0.55rem;
   font-weight: 700;
@@ -5604,7 +5608,12 @@ function fmtDataEvento(ev) {
 }
 
 function titoloCarta(ev) {
-  return (ev.extra || {}).titolo || '—';
+  const x = ev.extra || {};
+  // Compleanni/onomastici: "Mario Compleanno" invece di "Compleanno di Mario"
+  if (ev.categoria === 'ricorrenze' && x.tipo && x.nome) {
+    return x.nome + ' ' + x.tipo;
+  }
+  return x.titolo || '—';
 }
 
 // ── Backup banner ─────────────────────────────────────────────────────────────
@@ -6088,6 +6097,12 @@ function renderHome() {
   let html = renderPannelloGiornata();
   html += renderAvvisiProssimi();
 
+  // Vista agenda: calendario mensile in cima, poi lista completa sotto
+  if (_vistaHome === 'agenda') {
+    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato);
+    html += renderAgenda(tuttiPerCalendario);
+  }
+
   const gruppi = [
     { key:'sospeso',      label:'In sospeso',   cls:'ev-scaduto' },
     { key:'sospeso-oggi', label:'Scaduto oggi',  cls:'ev-scaduto-oggi' },
@@ -6293,13 +6308,6 @@ function renderHome() {
     }
   }
 
-  // Vista agenda: aggiungi il calendario mensile con TUTTI gli eventi non archiviati
-  if (_vistaHome === 'agenda') {
-    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato && ev.stato !== 'fatto');
-    html += renderAgenda(tuttiPerCalendario);
-    trovati = true;
-  }
-
   if (!trovati) {
     html += `<div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
       <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -6338,7 +6346,7 @@ function _aggiornaCalendario() {
                 'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   label.textContent = MESI[_calMese] + ' ' + _calAnno;
   // Tutti gli eventi non archiviati (non solo futuro)
-  const tutti = leggiEventi().filter(ev => !ev.archiviato && ev.stato !== 'fatto');
+  const tutti = leggiEventi().filter(ev => !ev.archiviato);
   grid.innerHTML = _renderCalGrid(tutti);
 }
 
@@ -6532,7 +6540,8 @@ function _renderCalGrid(items) {
     let pillsHtml = '';
     for (const ev of eventiGiorno) {
       const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
-      pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text}">${escHtml(titoloCarta(ev))}</div>`;
+      const fatto = ev.stato === 'fatto';
+      pillsHtml += `<div class="cal-pill${fatto ? ' cal-pill--fatto' : ''}" style="background:${c.bg};color:${c.text}">${escHtml(titoloCarta(ev))}</div>`;
     }
 
     const dataAttrs = eventiGiorno.length
