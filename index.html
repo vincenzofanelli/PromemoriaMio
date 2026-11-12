@@ -3186,7 +3186,7 @@ body {
     <div class="form-wrap">
       <div class="form-group">
         <label>Tipo documento <span style="color:var(--col-scaduto)">*</span></label>
-        <select id="documenti-tipo">
+        <select id="documenti-tipo" onchange="toggleAltroTesto('documenti')">
           <option value="">Seleziona…</option>
           <option>Carta d'identità</option>
           <option>Passaporto</option>
@@ -3195,6 +3195,10 @@ body {
           <option>Permesso di soggiorno</option>
           <option>Altro</option>
         </select>
+      </div>
+      <div class="form-group" id="documenti-altro-wrap" style="display:none">
+        <label>Specifica tipo documento</label>
+        <input type="text" id="documenti-altro" placeholder="es. Carta verde, Tesserino…" autocomplete="off">
       </div>
       <div class="form-group">
         <label>Data scadenza</label>
@@ -3282,7 +3286,7 @@ body {
     <div class="form-wrap">
       <div class="form-group">
         <label>Tipo scadenza <span style="color:var(--col-scaduto)">*</span></label>
-        <select id="auto-tipo">
+        <select id="auto-tipo" onchange="toggleAltroTesto('auto')">
           <option value="">Seleziona…</option>
           <option>Revisione (collaudo)</option>
           <option>Bollo auto</option>
@@ -3291,6 +3295,10 @@ body {
           <option>Cambio gomme</option>
           <option>Altro</option>
         </select>
+      </div>
+      <div class="form-group" id="auto-altro-wrap" style="display:none">
+        <label>Specifica tipo scadenza</label>
+        <input type="text" id="auto-altro" placeholder="es. Revisione straordinaria…" autocomplete="off">
       </div>
       <div class="form-group">
         <label>Data scadenza</label>
@@ -6823,9 +6831,25 @@ function caricaFormEvento(ev) {
     set('ricorrenze-telefono', e.telefono || '');
     aggiornaFreqRicorrenza();
   } else if (cat === 'documenti') {
-    set('documenti-tipo', e.tipo);
+    const selDoc = document.getElementById('documenti-tipo');
+    const opzDoc = selDoc ? Array.from(selDoc.options).map(o => o.value) : [];
+    if (e.tipo && !opzDoc.includes(e.tipo)) {
+      set('documenti-tipo', 'Altro');
+      set('documenti-altro', e.tipo);
+    } else {
+      set('documenti-tipo', e.tipo);
+    }
+    toggleAltroTesto('documenti');
   } else if (cat === 'auto') {
-    set('auto-tipo', e.tipo);
+    const selAuto = document.getElementById('auto-tipo');
+    const opzAuto = selAuto ? Array.from(selAuto.options).map(o => o.value) : [];
+    if (e.tipo && !opzAuto.includes(e.tipo)) {
+      set('auto-tipo', 'Altro');
+      set('auto-altro', e.tipo);
+    } else {
+      set('auto-tipo', e.tipo);
+    }
+    toggleAltroTesto('auto');
     set('auto-veicolo', e.veicolo || '');
   } else if (cat === 'generico') {
     set('generico-titolo', e.titolo); set('generico-luogo', e.luogo);
@@ -6930,12 +6954,14 @@ function raccogliCampiEvento(cat) {
     titolo = (_tipo && _nome) ? _tipo + ' di ' + _nome : _nome || _tipo || 'Ricorrenza';
     extra  = { tipo: _tipo, nome: _nome, ..._tel ? { telefono: _tel } : {} };
   } else if (cat === 'documenti') {
-    titolo = tipo() || 'Documento';
-    extra  = { tipo: tipo() };
+    const _tipoDoc = tipo() === 'Altro' ? (val('documenti-altro') || 'Altro') : (tipo() || 'Documento');
+    titolo = _tipoDoc;
+    extra  = { tipo: _tipoDoc };
   } else if (cat === 'auto') {
     const _veicolo = val('auto-veicolo');
-    titolo = (tipo() || 'Auto') + (_veicolo ? ' — ' + _veicolo : '');
-    extra  = { tipo: tipo(), veicolo: _veicolo };
+    const _tipoAuto = tipo() === 'Altro' ? (val('auto-altro') || 'Altro') : (tipo() || 'Auto');
+    titolo = _tipoAuto + (_veicolo ? ' — ' + _veicolo : '');
+    extra  = { tipo: _tipoAuto, veicolo: _veicolo };
   } else if (cat === 'generico') {
     titolo = val('generico-titolo') || 'Impegno';
     extra  = { luogo: luogo() };
@@ -7116,6 +7142,11 @@ function resetForm(cat) {
     const btn = document.getElementById(id + '-btn');
     if (btn) btn.classList.remove('filled');
   });
+  // Reset campo "Altro" testo libero (documenti, auto)
+  const altroWrap = document.getElementById(cat + '-altro-wrap');
+  if (altroWrap) altroWrap.style.display = 'none';
+  const altroInp = document.getElementById(cat + '-altro');
+  if (altroInp) altroInp.value = '';
   delete notifStati[cat]; // forza reinit defaults al prossimo accesso
   // Reset ricorrenze: ripristina visibilità campo frequenza
   if (cat === 'ricorrenze') {
@@ -8199,6 +8230,17 @@ function aggiornaFreqRicorrenza() {
     freqWrap.style.display = '';
   }
   toggleAnticipo('ricorrenze');
+}
+
+function toggleAltroTesto(cat) {
+  const sel = document.getElementById(cat + '-tipo');
+  const wrap = document.getElementById(cat + '-altro-wrap');
+  if (!sel || !wrap) return;
+  wrap.style.display = sel.value === 'Altro' ? '' : 'none';
+  if (sel.value !== 'Altro') {
+    const inp = document.getElementById(cat + '-altro');
+    if (inp) inp.value = '';
+  }
 }
 
 function toggleAnticipo(cat) {
