@@ -6048,7 +6048,9 @@ function renderAvvisiProssimi() {
     if (!dataExtra) continue;
     const dataEv = parseDataLocale(dataExtra);
     if (isNaN(dataEv.getTime())) continue;
-    const dataFmt = dataEv.getDate() + ' ' + MM[dataEv.getMonth()] + ' ' + dataEv.getFullYear();
+    const GG = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+    const oraFmt = dataExtra.includes('T') ? ' ' + dataExtra.substring(11,16) : '';
+    const dataFmt = GG[dataEv.getDay()] + ' ' + dataEv.getDate() + ' ' + MM[dataEv.getMonth()] + ' ' + dataEv.getFullYear() + oraFmt;
 
     ev.notifiche.forEach((n, ni) => {
       if (!n.on || n.avvisoLetto) return;
@@ -6080,7 +6082,7 @@ function renderAvvisiProssimi() {
         </div>
       </div>
       <div class="event-meta">
-        <span class="event-date">📅 ${escHtml(dataFmt)}</span>
+        <span class="event-date"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:3px"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${escHtml(dataFmt)}</span>
         <span class="event-date" style="color:var(--accent);font-weight:600">⏰ ${escHtml(descLabel)}</span>
       </div>
       <div class="event-actions">
