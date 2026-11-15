@@ -3312,9 +3312,15 @@ body {
         <label>Veicolo (opzionale)</label>
         <input type="text" id="auto-veicolo" placeholder="es. Fiat 500, AB123CD…" autocomplete="off">
       </div>
-      <div class="form-group">
-        <label>Km iniziali (opzionale)</label>
-        <input type="number" id="auto-km-iniziali" placeholder="es. 45000" autocomplete="off" inputmode="numeric" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      <div style="display:flex;gap:10px">
+        <div class="form-group" style="flex:1">
+          <label>Km precedenti</label>
+          <input type="number" id="auto-km-iniziali" placeholder="es. 45000" autocomplete="off" inputmode="numeric" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Km attuali</label>
+          <input type="number" id="auto-km-attuali" placeholder="es. 46200" autocomplete="off" inputmode="numeric" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+        </div>
       </div>
       <div class="form-group">
         <label>Note (opzionale)</label>
@@ -3829,9 +3835,15 @@ body {
         <label>Note (opzionale)</label>
         <textarea id="condominio-note" placeholder="es. Portare fotografia contatore…"></textarea>
       </div>
-      <div class="form-group">
-        <label>Lettura iniziale (opzionale)</label>
-        <input type="number" id="condominio-lettura-iniziale" placeholder="es. 1240" autocomplete="off" inputmode="decimal" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+      <div style="display:flex;gap:10px">
+        <div class="form-group" style="flex:1">
+          <label>Lettura precedente</label>
+          <input type="number" id="condominio-lettura-iniziale" placeholder="es. 1240" autocomplete="off" inputmode="decimal" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Lettura attuale</label>
+          <input type="number" id="condominio-lettura-attuale" placeholder="es. 1287" autocomplete="off" inputmode="decimal" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+        </div>
       </div>
 
       <div class="form-group">
@@ -6192,17 +6204,28 @@ function renderHome() {
           <span class="event-cat-badge">${badge}</span>
         </div>
         ${(() => {
-          // Cronologia letture per condominio e auto
-          if ((ev.categoria !== 'condominio' && ev.categoria !== 'auto') || !Array.isArray(evExtra.letture) || !evExtra.letture.length) return '';
-          const ult = evExtra.letture[evExtra.letture.length - 1];
+          if (ev.categoria !== 'condominio' && ev.categoria !== 'auto') return '';
           const unita = ev.categoria === 'auto' ? 'km' : 'm³';
-          const deltaStr = ult.diff != null ? ` <span style="color:var(--accent);font-weight:700">(+${ult.diff} ${unita})</span>` : '';
-          const MM = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
-          const dtStr = ult.data ? (() => { const d = new Date(ult.data+'T00:00:00'); return d.getDate()+' '+MM[d.getMonth()]; })() : '';
-          const totLabel = evExtra.letture.length > 1 ? ` · ${evExtra.letture.length} rilevazioni` : '';
-          return `<div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:0.82rem;color:var(--fg-2)">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-            Ultima: <strong>${ult.attuale} ${escHtml(unita)}</strong>${deltaStr}${dtStr ? ` <span style="color:var(--fg-3)">(${dtStr})</span>` : ''}${totLabel ? `<span style="color:var(--fg-3)">${escHtml(totLabel)}</span>` : ''}
+          const prec = evExtra.valore_precedente;
+          const att  = evExtra.valore_attuale;
+          const ult  = Array.isArray(evExtra.letture) && evExtra.letture.length ? evExtra.letture[evExtra.letture.length - 1] : null;
+          if (prec == null && att == null && !ult) return '';
+          let righe = '';
+          if (prec != null) righe += `<span style="color:var(--fg-3)">Prec: <strong style="color:var(--fg-2)">${prec}</strong></span>`;
+          if (att  != null) righe += `${righe ? ' &nbsp;·&nbsp; ' : ''}<span style="color:var(--fg-3)">Att: <strong style="color:var(--accent)">${att}</strong></span>`;
+          if (att != null && prec != null) {
+            const diff = att - prec;
+            righe += ` <span style="color:var(--accent);font-weight:700">(${diff >= 0 ? '+' : ''}${diff})</span>`;
+          }
+          if (ult && !att) {
+            const MM = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+            const dtStr = ult.data ? (() => { const d = new Date(ult.data+'T00:00:00'); return d.getDate()+' '+MM[d.getMonth()]; })() : '';
+            const nRil = evExtra.letture.length;
+            righe += `<span style="color:var(--fg-3)">Ultima: <strong>${ult.attuale}</strong>${dtStr ? ' ('+dtStr+')' : ''}${nRil > 1 ? ' · '+nRil+' rilevazioni' : ''}</span>`;
+          }
+          return `<div style="display:flex;align-items:center;gap:4px;margin-top:4px;font-size:0.82rem;flex-wrap:wrap">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--fg-3)"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            ${righe}
           </div>`;
         })()}
         ${ev.categoria === 'farmaci' ? (() => {
@@ -6690,44 +6713,41 @@ function segnaFatto(id) {
   // I farmaci usano farmacoDosaOggi — non vengono mai archiviati da qui
   if (ev.categoria === 'farmaci') { farmacoDosaOggi(id); return; }
 
-  // Condominio e auto ricorrenti con lettura/km: apri popup prima di segnare
   const extra = ev.extra || {};
   const hasLettura = (ev.categoria === 'condominio' || ev.categoria === 'auto') && extra.freq;
-  if (hasLettura) { apriPopupLettura(id); return; }
 
-  _segnaFattoConferma(id);
-}
-
-function _segnaFattoConferma(id, valoreAttuale) {
-  const eventi = leggiEventi();
-  const ev = eventi.find(e => e.id === id);
-  if (!ev) return;
-  const extra = ev.extra || {};
-
-  // Salva lettura nella cronologia se fornita
-  if (valoreAttuale != null && !isNaN(valoreAttuale)) {
-    if (!Array.isArray(extra.letture)) extra.letture = [];
-    const _n = new Date();
-    const _p = n => String(n).padStart(2,'0');
-    const oggi = _n.getFullYear()+'-'+_p(_n.getMonth()+1)+'-'+_p(_n.getDate());
-    const precedente = extra.valore_precedente;
-    extra.letture.push({
-      data: oggi,
-      precedente: precedente != null ? precedente : null,
-      attuale: valoreAttuale,
-      diff: precedente != null ? valoreAttuale - precedente : null
-    });
-    extra.valore_precedente = valoreAttuale;
-    ev.extra = extra;
-    // Avanza la data alla prossima occorrenza senza archiviare
-    const prossima = calcolaDataProssima(extra.data, extra.freq, null, extra.freq_mesi);
-    if (prossima) {
-      extra.data = prossima.substring(0,10);
-      ev.stato = 'attivo';
-      ev.fattaIl = null;
-      salvaEventiLS(eventi);
-      renderHome();
-      showToast('Lettura salvata ✓');
+  if (hasLettura) {
+    const valoreAttuale = extra.valore_attuale;
+    if (valoreAttuale != null && !isNaN(valoreAttuale)) {
+      // Salva in cronologia
+      if (!Array.isArray(extra.letture)) extra.letture = [];
+      const _n = new Date();
+      const _p = n => String(n).padStart(2,'0');
+      const oggi = _n.getFullYear()+'-'+_p(_n.getMonth()+1)+'-'+_p(_n.getDate());
+      const precedente = extra.valore_precedente;
+      extra.letture.push({
+        data: oggi,
+        precedente: precedente != null ? precedente : null,
+        attuale: valoreAttuale,
+        diff: precedente != null ? valoreAttuale - precedente : null
+      });
+      // Ruota: attuale → precedente, pulisce attuale
+      extra.valore_precedente = valoreAttuale;
+      delete extra.valore_attuale;
+      ev.extra = extra;
+      // Avanza la data alla prossima occorrenza senza archiviare
+      const prossima = calcolaDataProssima(extra.data, extra.freq, null, extra.freq_mesi);
+      if (prossima) {
+        extra.data = prossima.substring(0,10);
+        ev.stato = 'attivo';
+        ev.fattaIl = null;
+        salvaEventiLS(eventi);
+        renderHome();
+        showToast('Lettura salvata ✓');
+        return;
+      }
+    } else {
+      showToast('Inserisci la lettura attuale nell\'evento prima di chiudere');
       return;
     }
   }
@@ -6749,58 +6769,6 @@ function _segnaFattoConferma(id, valoreAttuale) {
   showToast('Segnato come fatto ✓');
 }
 
-function apriPopupLettura(id) {
-  const eventi = leggiEventi();
-  const ev = eventi.find(e => e.id === id);
-  if (!ev) return;
-  const extra = ev.extra || {};
-  const unita = ev.categoria === 'auto' ? 'km' : 'm³';
-  const precedente = extra.valore_precedente;
-  const labelPrec = precedente != null ? `Precedente: <strong>${precedente} ${unita}</strong>` : 'Nessuna lettura precedente';
-  const titolo = escHtml(titoloCarta(ev));
-
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-  overlay.innerHTML = `
-    <div style="background:var(--bg-card);border-radius:16px;padding:24px 20px;width:100%;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
-      <div style="font-weight:700;font-size:1.05rem;margin-bottom:4px">${titolo}</div>
-      <div style="font-size:0.85rem;color:var(--fg-2);margin-bottom:16px">${labelPrec}</div>
-      <label style="font-size:0.85rem;color:var(--fg-2);display:block;margin-bottom:6px">Lettura attuale (${unita})</label>
-      <input id="_popup-lettura-val" type="number" inputmode="decimal" placeholder="es. 1287"
-        style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:1.1rem;box-sizing:border-box;margin-bottom:6px">
-      <div id="_popup-lettura-delta" style="font-size:0.85rem;color:var(--accent);font-weight:600;min-height:20px;margin-bottom:14px"></div>
-      <div style="display:flex;gap:10px">
-        <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--fg);font-size:0.95rem;cursor:pointer">Annulla</button>
-        <button id="_popup-lettura-salta" onclick="document.body.querySelector('div[style*=fixed][style*=9999]').remove();_segnaFattoConferma('${id}')" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--fg-2);font-size:0.9rem;cursor:pointer">Salta</button>
-        <button id="_popup-lettura-ok" onclick="_popupLetturaConferma('${id}',${precedente != null ? precedente : 'null'})"
-          style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer">Salva</button>
-      </div>
-    </div>`;
-
-  // Calcolo delta live
-  overlay.querySelector('#_popup-lettura-val').addEventListener('input', function() {
-    const v = parseFloat(this.value);
-    const delta = overlay.querySelector('#_popup-lettura-delta');
-    if (!isNaN(v) && precedente != null) {
-      const diff = v - precedente;
-      delta.textContent = `Δ ${diff >= 0 ? '+' : ''}${diff} ${unita}`;
-    } else {
-      delta.textContent = '';
-    }
-  });
-
-  document.body.appendChild(overlay);
-  setTimeout(() => overlay.querySelector('#_popup-lettura-val').focus(), 100);
-}
-
-function _popupLetturaConferma(id, precedente) {
-  const inp = document.getElementById('_popup-lettura-val');
-  const v = inp ? parseFloat(inp.value) : NaN;
-  const overlay = document.body.querySelector('div[style*="position:fixed"][style*="9999"]');
-  if (overlay) overlay.remove();
-  if (isNaN(v)) { _segnaFattoConferma(id); return; }
-  _segnaFattoConferma(id, v);
-}
 
 function apriEvento(id) {
   const eventi = leggiEventi();
@@ -6971,7 +6939,8 @@ function caricaFormEvento(ev) {
     }
     toggleAltroTesto('auto');
     set('auto-veicolo', e.veicolo || '');
-    set('auto-km-iniziali', e.valore_precedente != null && e.unita === 'km' ? e.valore_precedente : '');
+    set('auto-km-iniziali', e.valore_precedente != null ? e.valore_precedente : '');
+    set('auto-km-attuali',  e.valore_attuale   != null ? e.valore_attuale   : '');
   } else if (cat === 'generico') {
     set('generico-titolo', e.titolo); set('generico-luogo', e.luogo);
   } else if (cat === 'acquisti') {
@@ -6982,6 +6951,7 @@ function caricaFormEvento(ev) {
     const selTipo = document.getElementById('condominio-tipo'); if (selTipo) selTipo.value = e.tipo || '';
     set('condominio-titolo', e.titolo); set('condominio-importo', e.importo);
     set('condominio-lettura-iniziale', e.valore_precedente != null ? e.valore_precedente : '');
+    set('condominio-lettura-attuale',  e.valore_attuale   != null ? e.valore_attuale   : '');
   }
 
   // Frequenza e anticipo (tutti i form)
@@ -7084,8 +7054,10 @@ function raccogliCampiEvento(cat) {
     const _tipoAuto = tipo() === 'Altro' ? (val('auto-altro') || 'Altro') : (tipo() || 'Auto');
     titolo = _tipoAuto + (_veicolo ? ' — ' + _veicolo : '');
     const _kmIniziali = val('auto-km-iniziali');
+    const _kmAttuali  = val('auto-km-attuali');
     extra  = { tipo: _tipoAuto, veicolo: _veicolo, unita: 'km',
-      ..._kmIniziali !== '' ? { valore_precedente: parseFloat(_kmIniziali) } : {} };
+      ..._kmIniziali !== '' ? { valore_precedente: parseFloat(_kmIniziali) } : {},
+      ..._kmAttuali  !== '' ? { valore_attuale:   parseFloat(_kmAttuali)  } : {} };
   } else if (cat === 'generico') {
     titolo = val('generico-titolo') || 'Impegno';
     extra  = { luogo: luogo() };
@@ -7097,8 +7069,10 @@ function raccogliCampiEvento(cat) {
   } else if (cat === 'condominio') {
     titolo = val('condominio-titolo') || tipo() || 'Condominio';
     const _lIniziale = val('condominio-lettura-iniziale');
+    const _lAttuale  = val('condominio-lettura-attuale');
     extra  = { tipo: tipo(), importo: val('condominio-importo'), unita: 'm³',
-      ..._lIniziale !== '' ? { valore_precedente: parseFloat(_lIniziale) } : {} };
+      ..._lIniziale !== '' ? { valore_precedente: parseFloat(_lIniziale) } : {},
+      ..._lAttuale  !== '' ? { valore_attuale:   parseFloat(_lAttuale)  } : {} };
   }
 
   const _freq = freq();
@@ -7224,11 +7198,11 @@ function resetForm(cat) {
     farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo','custom-prima-dose','custom-n-dosi','alterne-ora','farmaci-durata','farmaci-note','farmaci-pillole-scatola','farmaci-pillole-dose'],
     ricorrenze: ['ricorrenze-tipo','ricorrenze-nome','ricorrenze-data','ricorrenze-note','ricorrenze-telefono','ricorrenze-freq','ricorrenze-anticipo'],
     documenti: ['documenti-tipo','documenti-data','documenti-note','documenti-freq','documenti-anticipo'],
-    auto: ['auto-tipo','auto-veicolo','auto-data','auto-note','auto-freq','auto-anticipo','auto-km-iniziali'],
+    auto: ['auto-tipo','auto-veicolo','auto-data','auto-note','auto-freq','auto-anticipo','auto-km-iniziali','auto-km-attuali'],
     generico: ['generico-titolo','generico-data','generico-luogo','generico-note','generico-freq','generico-anticipo'],
     acquisti: ['acquisti-titolo','acquisti-data','acquisti-note','acquisti-freq','acquisti-anticipo'],
     lavoro: ['lavoro-tipo','lavoro-titolo','lavoro-data','lavoro-luogo','lavoro-note','lavoro-freq','lavoro-anticipo'],
-    condominio: ['condominio-tipo','condominio-data','condominio-titolo','condominio-importo','condominio-note','condominio-freq','condominio-anticipo','condominio-lettura-iniziale'],
+    condominio: ['condominio-tipo','condominio-data','condominio-titolo','condominio-importo','condominio-note','condominio-freq','condominio-anticipo','condominio-lettura-iniziale','condominio-lettura-attuale'],
   };
   const defaultLbl = {
     'visite-data': 'Scegli data e ora',
