@@ -3830,10 +3830,6 @@ body {
         <textarea id="condominio-note" placeholder="es. Portare fotografia contatore…"></textarea>
       </div>
       <div class="form-group">
-        <label>Unità misura lettura (opzionale)</label>
-        <input type="text" id="condominio-unita" placeholder="es. m³, kWh, litri…" autocomplete="off" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
-      </div>
-      <div class="form-group">
         <label>Lettura iniziale (opzionale)</label>
         <input type="number" id="condominio-lettura-iniziale" placeholder="es. 1240" autocomplete="off" inputmode="decimal" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
       </div>
@@ -6199,7 +6195,7 @@ function renderHome() {
           // Cronologia letture per condominio e auto
           if ((ev.categoria !== 'condominio' && ev.categoria !== 'auto') || !Array.isArray(evExtra.letture) || !evExtra.letture.length) return '';
           const ult = evExtra.letture[evExtra.letture.length - 1];
-          const unita = evExtra.unita || '';
+          const unita = ev.categoria === 'auto' ? 'km' : 'm³';
           const deltaStr = ult.diff != null ? ` <span style="color:var(--accent);font-weight:700">(+${ult.diff} ${unita})</span>` : '';
           const MM = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
           const dtStr = ult.data ? (() => { const d = new Date(ult.data+'T00:00:00'); return d.getDate()+' '+MM[d.getMonth()]; })() : '';
@@ -6696,7 +6692,7 @@ function segnaFatto(id) {
 
   // Condominio e auto ricorrenti con lettura/km: apri popup prima di segnare
   const extra = ev.extra || {};
-  const hasLettura = (ev.categoria === 'condominio' || ev.categoria === 'auto') && extra.freq && extra.unita;
+  const hasLettura = (ev.categoria === 'condominio' || ev.categoria === 'auto') && extra.freq;
   if (hasLettura) { apriPopupLettura(id); return; }
 
   _segnaFattoConferma(id);
@@ -6758,7 +6754,7 @@ function apriPopupLettura(id) {
   const ev = eventi.find(e => e.id === id);
   if (!ev) return;
   const extra = ev.extra || {};
-  const unita = extra.unita || '';
+  const unita = ev.categoria === 'auto' ? 'km' : 'm³';
   const precedente = extra.valore_precedente;
   const labelPrec = precedente != null ? `Precedente: <strong>${precedente} ${unita}</strong>` : 'Nessuna lettura precedente';
   const titolo = escHtml(titoloCarta(ev));
@@ -6985,7 +6981,6 @@ function caricaFormEvento(ev) {
   } else if (cat === 'condominio') {
     const selTipo = document.getElementById('condominio-tipo'); if (selTipo) selTipo.value = e.tipo || '';
     set('condominio-titolo', e.titolo); set('condominio-importo', e.importo);
-    set('condominio-unita', e.unita || '');
     set('condominio-lettura-iniziale', e.valore_precedente != null ? e.valore_precedente : '');
   }
 
@@ -7089,8 +7084,8 @@ function raccogliCampiEvento(cat) {
     const _tipoAuto = tipo() === 'Altro' ? (val('auto-altro') || 'Altro') : (tipo() || 'Auto');
     titolo = _tipoAuto + (_veicolo ? ' — ' + _veicolo : '');
     const _kmIniziali = val('auto-km-iniziali');
-    extra  = { tipo: _tipoAuto, veicolo: _veicolo,
-      ..._kmIniziali !== '' ? { valore_precedente: parseFloat(_kmIniziali), unita: 'km' } : {} };
+    extra  = { tipo: _tipoAuto, veicolo: _veicolo, unita: 'km',
+      ..._kmIniziali !== '' ? { valore_precedente: parseFloat(_kmIniziali) } : {} };
   } else if (cat === 'generico') {
     titolo = val('generico-titolo') || 'Impegno';
     extra  = { luogo: luogo() };
@@ -7101,10 +7096,8 @@ function raccogliCampiEvento(cat) {
     extra  = { tipo: tipo(), luogo: luogo() };
   } else if (cat === 'condominio') {
     titolo = val('condominio-titolo') || tipo() || 'Condominio';
-    const _unita = val('condominio-unita');
     const _lIniziale = val('condominio-lettura-iniziale');
-    extra  = { tipo: tipo(), importo: val('condominio-importo'),
-      ..._unita ? { unita: _unita } : {},
+    extra  = { tipo: tipo(), importo: val('condominio-importo'), unita: 'm³',
       ..._lIniziale !== '' ? { valore_precedente: parseFloat(_lIniziale) } : {} };
   }
 
@@ -7235,7 +7228,7 @@ function resetForm(cat) {
     generico: ['generico-titolo','generico-data','generico-luogo','generico-note','generico-freq','generico-anticipo'],
     acquisti: ['acquisti-titolo','acquisti-data','acquisti-note','acquisti-freq','acquisti-anticipo'],
     lavoro: ['lavoro-tipo','lavoro-titolo','lavoro-data','lavoro-luogo','lavoro-note','lavoro-freq','lavoro-anticipo'],
-    condominio: ['condominio-tipo','condominio-data','condominio-titolo','condominio-importo','condominio-note','condominio-freq','condominio-anticipo','condominio-unita','condominio-lettura-iniziale'],
+    condominio: ['condominio-tipo','condominio-data','condominio-titolo','condominio-importo','condominio-note','condominio-freq','condominio-anticipo','condominio-lettura-iniziale'],
   };
   const defaultLbl = {
     'visite-data': 'Scegli data e ora',
