@@ -3646,20 +3646,6 @@ body {
 
   <div class="scroll-body" id="liste-scroll">
 
-    <!-- Card fissa: Lista vocale spesa -->
-    <div class="lista-card" onclick="goTo('spesa')" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;cursor:pointer">
-      <div class="lista-card-icon" style="background:#16a34a">
-        <svg fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-        </svg>
-      </div>
-      <div class="lista-card-body">
-        <div class="lista-card-name" style="color:#15803d">Lista vocale spesa</div>
-        <div class="lista-card-meta" id="spesa-subtitle">Tocca per aprire</div>
-      </div>
-      <span class="lista-card-badge" style="background:#bbf7d0;color:#15803d">🎙️</span>
-    </div>
-
     <div id="liste-attive-wrap">
       <!-- liste attive generate da JS -->
     </div>
@@ -3695,58 +3681,6 @@ body {
 
 
 <!-- ============================================================
-     SCHERMATA: LISTA VOCALE SPESA
-     ============================================================ -->
-<div class="screen hidden" id="screen-spesa">
-  <div class="header">
-    <button class="header-back" onclick="goTo('liste')">
-      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-      Liste
-    </button>
-    <h1 style="font-size:1rem">Spesa</h1>
-    <button onclick="spesaNuovaLista()" style="border:none;background:none;color:var(--accent);font-size:0.85rem;font-weight:700;cursor:pointer;padding:6px 4px">Nuova</button>
-  </div>
-
-  <!-- totale + selettore lista -->
-  <div style="padding:10px 16px 0;display:flex;align-items:center;gap:8px">
-    <select id="spesa-select-lista" onchange="spesaSelezionaLista(this.value)"
-      style="flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:0.9rem;font-family:inherit"></select>
-    <button onclick="spesaEliminaLista()" title="Elimina lista"
-      style="border:1.5px solid #fca5a5;background:#fef2f2;color:#dc2626;border-radius:10px;padding:7px 10px;font-size:0.85rem;cursor:pointer">🗑️</button>
-  </div>
-
-  <!-- totale (mostrato solo se almeno una voce ha prezzo) -->
-  <div id="spesa-totale-bar" style="display:none;margin:10px 16px 0;padding:10px 14px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:12px">
-    <div style="font-size:0.75rem;color:#15803d;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Totale da acquistare</div>
-    <div id="spesa-totale-val" style="font-size:1.5rem;font-weight:800;color:#15803d">€ 0,00</div>
-  </div>
-
-  <!-- microfono -->
-  <div style="padding:10px 16px 6px;display:flex;align-items:center;gap:10px">
-    <button id="spesa-mic-btn" onclick="spesaToggleMic()"
-      style="display:flex;align-items:center;gap:7px;padding:9px 16px;border-radius:12px;border:2px solid var(--border);background:var(--bg-card);color:var(--fg);font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s">
-      <svg id="spesa-mic-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:20px;height:20px">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
-      </svg>
-      <span id="spesa-mic-label">Avvia microfono</span>
-    </button>
-    <div id="spesa-mic-status" style="font-size:0.78rem;color:var(--fg-3)"></div>
-  </div>
-  <div id="spesa-interim" style="min-height:20px;padding:0 16px 6px;font-size:0.85rem;color:var(--fg-2);font-style:italic"></div>
-
-  <div class="scroll-body" id="spesa-list" style="padding-top:4px"></div>
-
-  <!-- footer azioni -->
-  <div style="padding:10px 16px 16px;display:flex;gap:10px;border-top:1px solid var(--border);background:var(--bg)">
-    <button onclick="spesaRimuoviSpuntate()"
-      style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg-2);font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit">Rimuovi spuntate</button>
-    <button onclick="spesaAggiungiManuale()"
-      style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit">+ Aggiungi</button>
-  </div>
-</div>
-
-<!-- ============================================================
      SCHERMATA: DETTAGLIO LISTA
      ============================================================ -->
 <div class="screen hidden" id="screen-lista-dettaglio">
@@ -3759,6 +3693,28 @@ body {
     <button id="btn-sort-az" onclick="ordinaAlfabetico()" title="Ordina A→Z"
       style="border:1.5px solid var(--border);background:var(--bg-card);color:var(--fg-2);border-radius:8px;padding:5px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">A→Z</button>
   </div>
+
+  <!-- barra totale (visibile solo se almeno una voce ha prezzo) -->
+  <div id="lista-totale-bar" style="display:none;padding:8px 16px 0">
+    <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:12px;padding:9px 14px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:0.78rem;color:#15803d;font-weight:600">Totale da acquistare</span>
+      <span id="lista-totale-val" style="font-size:1.1rem;font-weight:800;color:#15803d">€ 0,00</span>
+    </div>
+  </div>
+
+  <!-- barra microfono -->
+  <div style="padding:8px 16px 4px;display:flex;align-items:center;gap:10px">
+    <button id="lista-mic-btn" onclick="listaMicToggle()"
+      style="display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:12px;border:2px solid var(--border);background:var(--bg-card);color:var(--fg);font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:18px;height:18px;flex-shrink:0">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
+      </svg>
+      <span id="lista-mic-label">Microfono</span>
+    </button>
+    <div id="lista-mic-status" style="font-size:0.78rem;color:var(--fg-3);flex:1"></div>
+  </div>
+  <div id="lista-interim" style="min-height:16px;padding:0 16px 4px;font-size:0.82rem;color:var(--fg-2);font-style:italic"></div>
 
   <div class="scroll-body" id="lista-dettaglio-scroll">
 
@@ -3814,12 +3770,12 @@ body {
 </div>
 
 <!-- MODAL NUOVA LISTA -->
-<div class="modal-overlay" id="modal-nuova" onclick="chiudiModalNuova()">
-  <div class="modal-sheet" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="modal-nuova" onclick="chiudiModalNuova()" style="align-items:flex-start;padding-top:60px">
+  <div class="modal-sheet" style="border-radius:18px;max-width:400px;margin:0 16px" onclick="event.stopPropagation()">
     <div class="modal-title">Nuova lista</div>
     <div style="margin-bottom:16px">
       <input type="text" id="nuova-lista-nome" placeholder="Nome lista…" autocomplete="off"
-             style="width:100%;background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius-s);padding:12px 14px;font-size:0.95rem;color:var(--fg);font-family:inherit"
+             style="width:100%;background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius-s);padding:12px 14px;font-size:0.95rem;color:var(--fg);font-family:inherit;box-sizing:border-box"
              onkeydown="if(event.key==='Enter') confermaNuovaLista()">
     </div>
     <div class="modal-btns">
@@ -3958,7 +3914,6 @@ const screens = {
   'form-lavoro':        'screen-form-lavoro',
   'form-condominio':    'screen-form-condominio',
   liste:                'screen-liste',
-  spesa:                'screen-spesa',
   'lista-dettaglio':    'screen-lista-dettaglio',
   appunti:              'screen-appunti',
   conti:                'screen-conti',
@@ -4052,13 +4007,9 @@ function goTo(name) {
   }
   if (name === 'liste') {
     renderListe();
-    spesaAggiornaSottotitolo();
   }
-  if (name === 'spesa') {
-    spesaRender();
-  }
-  if (name !== 'spesa') {
-    spesaStopMic();
+  if (name !== 'lista-dettaglio') {
+    listaMicStop();
   }
   if (name === 'appunti') {
     renderAppunti();
@@ -4533,359 +4484,6 @@ function buildListaCard(lista, archiviata) {
   return card;
 }
 
-// ════════════════════════════════════════════════════════════════
-// LISTA VOCALE SPESA
-// ════════════════════════════════════════════════════════════════
-const LS_SPESA = 'promemoriamio_spesa';
-const SPESA_SILENZIO_MS = 2000;
-let _spesaRec = null, _spesaMicAttivo = false, _spesaSilenzioTimer = null;
-let _spesaListeId = null; // id lista spesa corrente
-
-function _leggiDatiSpesa() {
-  try { return JSON.parse(localStorage.getItem(LS_SPESA) || 'null'); } catch(e) { return null; }
-}
-function _salvaDatiSpesa(d) {
-  try { localStorage.setItem(LS_SPESA, JSON.stringify(d)); } catch(e) {}
-}
-function _spesaDatiDefault() {
-  const id = uid();
-  return { liste: [{ id, nome: 'Lista 1', voci: [] }], corrente: id };
-}
-function _spesaDati() {
-  let d = _leggiDatiSpesa();
-  if (!d || !d.liste || d.liste.length === 0) {
-    d = _spesaDatiDefault();
-    _salvaDatiSpesa(d);
-  }
-  if (!d.corrente || !d.liste.find(l => l.id === d.corrente)) {
-    d.corrente = d.liste[0].id;
-    _salvaDatiSpesa(d);
-  }
-  return d;
-}
-function _spesaListaCorrente(d) {
-  return d.liste.find(l => l.id === d.corrente) || d.liste[0];
-}
-
-function spesaRender() {
-  const d = _spesaDati();
-  // popola select
-  const sel = document.getElementById('spesa-select-lista');
-  sel.innerHTML = '';
-  d.liste.forEach(l => {
-    const opt = document.createElement('option');
-    opt.value = l.id;
-    opt.textContent = l.nome;
-    if (l.id === d.corrente) opt.selected = true;
-    sel.appendChild(opt);
-  });
-  spesaRenderVoci();
-}
-
-function spesaRenderVoci() {
-  const d = _spesaDati();
-  const lista = _spesaListaCorrente(d);
-  const container = document.getElementById('spesa-list');
-  if (!container) return;
-  container.innerHTML = '';
-
-  // calcola totale (voci non spuntate con prezzo)
-  let totale = 0;
-  let haPrezzo = false;
-  lista.voci.forEach(v => {
-    if (v.prezzo != null && !isNaN(v.prezzo)) {
-      haPrezzo = true;
-      if (!v.spuntata) totale += v.prezzo * (v.qta || 1);
-    }
-  });
-  const barEl = document.getElementById('spesa-totale-bar');
-  const valEl = document.getElementById('spesa-totale-val');
-  if (barEl && valEl) {
-    barEl.style.display = haPrezzo ? 'block' : 'none';
-    valEl.textContent = '€ ' + totale.toFixed(2).replace('.', ',');
-  }
-
-  if (lista.voci.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:var(--fg-3);font-size:0.88rem;padding:36px 0">Nessuna voce. Usa il microfono o "+ Aggiungi".</div>';
-    return;
-  }
-
-  lista.voci.forEach((v, idx) => {
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);gap:10px;' + (v.spuntata ? 'opacity:.45' : '');
-
-    // checkbox
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.checked = !!v.spuntata;
-    cb.style.cssText = 'width:20px;height:20px;accent-color:var(--accent);flex-shrink:0;cursor:pointer';
-    cb.onchange = () => { v.spuntata = cb.checked; _salvaDatiSpesa(d); spesaRenderVoci(); };
-
-    // testo
-    const txt = document.createElement('div');
-    txt.style.cssText = 'flex:1;font-size:0.95rem;color:var(--fg);' + (v.spuntata ? 'text-decoration:line-through' : '');
-    txt.textContent = v.testo;
-
-    // badge prezzo×qta (cliccabile per modifica)
-    const badge = document.createElement('div');
-    badge.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;cursor:pointer;min-width:60px';
-    if (v.qta && v.qta !== 1) {
-      const qtaEl = document.createElement('div');
-      qtaEl.style.cssText = 'font-size:0.7rem;color:var(--fg-3)';
-      qtaEl.textContent = 'x' + v.qta;
-      badge.appendChild(qtaEl);
-    }
-    if (v.prezzo != null && !isNaN(v.prezzo)) {
-      const prEl = document.createElement('div');
-      prEl.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--accent)';
-      prEl.textContent = '€ ' + (v.prezzo * (v.qta || 1)).toFixed(2).replace('.', ',');
-      badge.appendChild(prEl);
-    } else {
-      const addEl = document.createElement('div');
-      addEl.style.cssText = 'font-size:0.75rem;color:var(--fg-3)';
-      addEl.textContent = '€ —';
-      badge.appendChild(addEl);
-    }
-    badge.onclick = () => spesaModificaPrezzo(d, lista, v, idx);
-
-    // elimina
-    const del = document.createElement('button');
-    del.textContent = '✕';
-    del.style.cssText = 'border:none;background:none;color:var(--fg-3);font-size:1rem;cursor:pointer;padding:4px;flex-shrink:0';
-    del.onclick = () => { lista.voci.splice(idx, 1); _salvaDatiSpesa(d); spesaRenderVoci(); };
-
-    row.append(cb, txt, badge, del);
-    container.appendChild(row);
-  });
-}
-
-function spesaModificaPrezzo(d, lista, voce, idx) {
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-  overlay.innerHTML = `
-    <div style="background:var(--bg-card);border-radius:18px;padding:20px;width:100%;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
-      <div style="font-weight:700;font-size:1rem;margin-bottom:14px;color:var(--fg)">${escHtml(voce.testo)}</div>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <div style="flex:1">
-          <label style="font-size:0.78rem;color:var(--fg-2);display:block;margin-bottom:4px">Prezzo (€)</label>
-          <input id="_sp-prezzo" type="number" inputmode="decimal" step="0.01" min="0" value="${voce.prezzo != null ? voce.prezzo : ''}" placeholder="es. 1,49"
-            style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:0.95rem;box-sizing:border-box">
-        </div>
-        <div style="flex:1">
-          <label style="font-size:0.78rem;color:var(--fg-2);display:block;margin-bottom:4px">Quantità</label>
-          <input id="_sp-qta" type="number" inputmode="numeric" min="1" value="${voce.qta || 1}" placeholder="1"
-            style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:0.95rem;box-sizing:border-box">
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="this.closest('[style*=fixed]').remove()"
-          style="padding:9px 18px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--fg);font-size:0.9rem;cursor:pointer">Annulla</button>
-        <button id="_sp-salva"
-          style="padding:9px 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer">Salva</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.querySelector('#_sp-salva').addEventListener('click', () => {
-    const p = parseFloat(overlay.querySelector('#_sp-prezzo').value);
-    const q = parseInt(overlay.querySelector('#_sp-qta').value) || 1;
-    voce.prezzo = isNaN(p) ? null : p;
-    voce.qta = q < 1 ? 1 : q;
-    _salvaDatiSpesa(d);
-    overlay.remove();
-    spesaRenderVoci();
-  });
-}
-
-function spesaSelezionaLista(id) {
-  const d = _spesaDati();
-  d.corrente = id;
-  _salvaDatiSpesa(d);
-  spesaRenderVoci();
-}
-
-function spesaNuovaLista() {
-  const nome = prompt('Nome nuova lista:');
-  if (!nome || !nome.trim()) return;
-  const d = _spesaDati();
-  const nuova = { id: uid(), nome: nome.trim(), voci: [] };
-  d.liste.push(nuova);
-  d.corrente = nuova.id;
-  _salvaDatiSpesa(d);
-  spesaRender();
-}
-
-function spesaEliminaLista() {
-  const d = _spesaDati();
-  if (d.liste.length <= 1) { showToast('Almeno una lista deve restare'); return; }
-  const lista = _spesaListaCorrente(d);
-  if (!confirm('Elimina "' + lista.nome + '"?')) return;
-  d.liste = d.liste.filter(l => l.id !== d.corrente);
-  d.corrente = d.liste[0].id;
-  _salvaDatiSpesa(d);
-  spesaRender();
-}
-
-function spesaRimuoviSpuntate() {
-  const d = _spesaDati();
-  const lista = _spesaListaCorrente(d);
-  lista.voci = lista.voci.filter(v => !v.spuntata);
-  _salvaDatiSpesa(d);
-  spesaRenderVoci();
-}
-
-function spesaAggiungiVoce(testo) {
-  if (!testo || !testo.trim()) return;
-  const d = _spesaDati();
-  const lista = _spesaListaCorrente(d);
-  lista.voci.push({ testo: testo.trim(), spuntata: false, prezzo: null, qta: 1 });
-  _salvaDatiSpesa(d);
-  spesaRenderVoci();
-}
-
-function spesaAggiungiManuale() {
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-  overlay.innerHTML = `
-    <div style="background:var(--bg-card);border-radius:18px;padding:20px;width:100%;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
-      <div style="font-weight:700;font-size:1rem;margin-bottom:14px;color:var(--fg)">Aggiungi voce</div>
-      <input id="_sm-testo" type="text" placeholder="es. latte scremato" autocomplete="off"
-        style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:0.95rem;box-sizing:border-box;margin-bottom:10px">
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <div style="flex:1">
-          <label style="font-size:0.78rem;color:var(--fg-2);display:block;margin-bottom:4px">Prezzo (€)</label>
-          <input id="_sm-prezzo" type="number" inputmode="decimal" step="0.01" min="0" placeholder="opzionale"
-            style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:0.95rem;box-sizing:border-box">
-        </div>
-        <div style="flex:1">
-          <label style="font-size:0.78rem;color:var(--fg-2);display:block;margin-bottom:4px">Quantità</label>
-          <input id="_sm-qta" type="number" inputmode="numeric" min="1" value="1"
-            style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:0.95rem;box-sizing:border-box">
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="this.closest('[style*=fixed]').remove()"
-          style="padding:9px 18px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--fg);font-size:0.9rem;cursor:pointer">Annulla</button>
-        <button id="_sm-salva"
-          style="padding:9px 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer">Aggiungi</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  const inp = overlay.querySelector('#_sm-testo');
-  setTimeout(() => inp.focus(), 100);
-  const salva = () => {
-    const testo = inp.value.trim();
-    if (!testo) { inp.focus(); return; }
-    const p = parseFloat(overlay.querySelector('#_sm-prezzo').value);
-    const q = parseInt(overlay.querySelector('#_sm-qta').value) || 1;
-    const d = _spesaDati();
-    const lista = _spesaListaCorrente(d);
-    lista.voci.push({ testo, spuntata: false, prezzo: isNaN(p) ? null : p, qta: q < 1 ? 1 : q });
-    _salvaDatiSpesa(d);
-    spesaRenderVoci();
-    overlay.remove();
-  };
-  overlay.querySelector('#_sm-salva').addEventListener('click', salva);
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') salva(); });
-}
-
-function spesaAggiornaSottotitolo() {
-  const el = document.getElementById('spesa-subtitle');
-  if (!el) return;
-  try {
-    const d = _leggiDatiSpesa();
-    if (!d) { el.textContent = 'Tocca per aprire'; return; }
-    const lista = _spesaListaCorrente(d);
-    const aperte = lista.voci.filter(v => !v.spuntata).length;
-    el.textContent = aperte > 0 ? aperte + ' da acquistare – ' + lista.nome : lista.nome + ' · tutto fatto';
-  } catch(e) { el.textContent = 'Tocca per aprire'; }
-}
-
-// ── MICROFONO SPESA ──────────────────────────────────────────────
-function spesaToggleMic() {
-  if (_spesaMicAttivo) spesaStopMic();
-  else spesaStartMic();
-}
-
-function spesaStartMic() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { showToast('Microfono non disponibile su questo browser'); return; }
-  _spesaMicAttivo = true;
-  _spesaAggiornaBtnMic();
-  _spesaAvviaRicognizione();
-}
-
-function spesaStopMic() {
-  _spesaMicAttivo = false;
-  if (_spesaSilenzioTimer) { clearTimeout(_spesaSilenzioTimer); _spesaSilenzioTimer = null; }
-  if (_spesaRec) { try { _spesaRec.stop(); } catch(e) {} _spesaRec = null; }
-  _spesaAggiornaBtnMic();
-  const interim = document.getElementById('spesa-interim');
-  if (interim) interim.textContent = '';
-  const status = document.getElementById('spesa-mic-status');
-  if (status) status.textContent = '';
-}
-
-function _spesaAggiornaBtnMic() {
-  const btn = document.getElementById('spesa-mic-btn');
-  const lbl = document.getElementById('spesa-mic-label');
-  if (!btn || !lbl) return;
-  if (_spesaMicAttivo) {
-    btn.style.background = '#dc2626'; btn.style.borderColor = '#dc2626'; btn.style.color = '#fff';
-    lbl.textContent = 'Ferma microfono';
-  } else {
-    btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = '';
-    lbl.textContent = 'Avvia microfono';
-  }
-}
-
-function _spesaAvviaRicognizione() {
-  if (!_spesaMicAttivo) return;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const rec = new SR();
-  _spesaRec = rec;
-  rec.lang = 'it-IT'; rec.continuous = false; rec.interimResults = true;
-
-  let accumulato = '';
-
-  rec.onresult = e => {
-    let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) accumulato += t;
-      else interim = t;
-    }
-    const interim_el = document.getElementById('spesa-interim');
-    if (interim_el) interim_el.textContent = accumulato + interim;
-    const status_el = document.getElementById('spesa-mic-status');
-    if (status_el) status_el.textContent = '🎙️ In ascolto…';
-
-    if (accumulato) {
-      if (_spesaSilenzioTimer) clearTimeout(_spesaSilenzioTimer);
-      _spesaSilenzioTimer = setTimeout(() => {
-        const testo = accumulato.trim();
-        if (testo) spesaAggiungiVoce(testo);
-        accumulato = '';
-        const iel = document.getElementById('spesa-interim');
-        if (iel) iel.textContent = '';
-      }, SPESA_SILENZIO_MS);
-    }
-  };
-
-  rec.onend = () => {
-    if (_spesaMicAttivo) setTimeout(() => _spesaAvviaRicognizione(), 150);
-  };
-
-  rec.onerror = e => {
-    if (e.error === 'not-allowed') { showToast('Microfono non autorizzato'); spesaStopMic(); return; }
-    if (e.error === 'no-speech') return;
-    const status_el = document.getElementById('spesa-mic-status');
-    if (status_el) status_el.textContent = '';
-  };
-
-  try { rec.start(); } catch(e) {}
-}
-// ════════════════════════════════════════════════════════════════
-// FINE LISTA VOCALE SPESA
-// ════════════════════════════════════════════════════════════════
 
 // ---- nuova lista ----
 function apriNuovaLista() {
@@ -4927,12 +4525,9 @@ function renderDettaglio() {
   document.getElementById('lista-dettaglio-title').textContent = lista.nome;
   document.getElementById('todo-new-input').value = '';
 
-  // Ordina voci aperte: manuale se ordineManuale=true, altrimenti alfabetico
-  let aperte = lista.voci.filter(v => !v.done);
+  // Ordina voci aperte sempre alfabeticamente
+  let aperte = lista.voci.filter(v => !v.done).slice().sort((a, b) => a.testo.localeCompare(b.testo, 'it'));
   const chiuse  = lista.voci.filter(v =>  v.done);
-  if (!lista.ordineManuale) {
-    aperte = aperte.slice().sort((a, b) => a.testo.localeCompare(b.testo, 'it'));
-  }
 
   // Aggiorna aspetto pulsante A→Z
   const btnAZ = document.getElementById('btn-sort-az');
@@ -4969,6 +4564,7 @@ function renderDettaglio() {
       btnArch.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2L19 8"/></svg> Archivia lista';
     }
   }
+  aggiornaTotale();
 }
 
 function buildTodoItem(voce, lista) {
@@ -5015,6 +4611,27 @@ function buildTodoItem(voce, lista) {
   body.appendChild(span);
   body.appendChild(inp);
   body.appendChild(acts);
+
+  // badge prezzo (tocca per impostare/modificare)
+  const priceBadge = document.createElement('div');
+  priceBadge.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:1px;cursor:pointer;min-width:52px;flex-shrink:0';
+  const _aggiornaPrezzoBadge = () => {
+    priceBadge.innerHTML = '';
+    if (voce.qta && voce.qta > 1) {
+      const q = document.createElement('div');
+      q.style.cssText = 'font-size:0.68rem;color:var(--fg-3)';
+      q.textContent = 'x' + voce.qta;
+      priceBadge.appendChild(q);
+    }
+    const p = document.createElement('div');
+    p.style.cssText = voce.prezzo != null ? 'font-size:0.8rem;font-weight:700;color:var(--accent)' : 'font-size:0.75rem;color:var(--fg-3)';
+    p.textContent = voce.prezzo != null ? '€ ' + (voce.prezzo * (voce.qta || 1)).toFixed(2).replace('.',',') : '€';
+    priceBadge.appendChild(p);
+  };
+  _aggiornaPrezzoBadge();
+  priceBadge.onclick = () => {
+    apriPopupPrezzo(lista, voce, () => { _aggiornaPrezzoBadge(); aggiornaTotale(); });
+  };
 
   // delete
   const del = document.createElement('button');
@@ -5067,6 +4684,7 @@ function buildTodoItem(voce, lista) {
 
   div.appendChild(cb);
   div.appendChild(body);
+  div.appendChild(priceBadge);
   div.appendChild(del);
   return div;
 }
@@ -5167,6 +4785,157 @@ function abilitaDragDrop(container) {
     item.addEventListener('drop', e => { e.preventDefault(); item.classList.remove('drag-over'); });
   });
 }
+
+// ════════════════════════════════════════════════════════════════
+// MICROFONO LISTA + PREZZO/QTA + TOTALE
+// ════════════════════════════════════════════════════════════════
+const LISTA_SILENZIO_MS = 2000;
+let _listaMicRec = null, _listaMicAttivo = false, _listaMicTimer = null;
+
+function listaMicToggle() {
+  if (_listaMicAttivo) listaMicStop();
+  else listaMicStart();
+}
+
+function listaMicStart() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Microfono non disponibile su questo browser'); return; }
+  _listaMicAttivo = true;
+  _listaMicAggiornaBtnUI();
+  _listaMicAvvia();
+}
+
+function listaMicStop() {
+  _listaMicAttivo = false;
+  if (_listaMicTimer) { clearTimeout(_listaMicTimer); _listaMicTimer = null; }
+  if (_listaMicRec) { try { _listaMicRec.stop(); } catch(e) {} _listaMicRec = null; }
+  _listaMicAggiornaBtnUI();
+  const el = document.getElementById('lista-interim'); if (el) el.textContent = '';
+  const st = document.getElementById('lista-mic-status'); if (st) st.textContent = '';
+}
+
+function _listaMicAggiornaBtnUI() {
+  const btn = document.getElementById('lista-mic-btn');
+  const lbl = document.getElementById('lista-mic-label');
+  if (!btn || !lbl) return;
+  if (_listaMicAttivo) {
+    btn.style.cssText += ';background:#dc2626;border-color:#dc2626;color:#fff';
+    lbl.textContent = 'Ferma';
+  } else {
+    btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = '';
+    lbl.textContent = 'Microfono';
+  }
+}
+
+function _listaMicAvvia() {
+  if (!_listaMicAttivo) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  _listaMicRec = rec;
+  rec.lang = 'it-IT'; rec.continuous = false; rec.interimResults = true;
+  let accumulato = '';
+
+  rec.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) accumulato += t;
+      else interim = t;
+    }
+    const iel = document.getElementById('lista-interim'); if (iel) iel.textContent = accumulato + interim;
+    const sel = document.getElementById('lista-mic-status'); if (sel) sel.textContent = '🎙️ In ascolto…';
+    if (accumulato) {
+      if (_listaMicTimer) clearTimeout(_listaMicTimer);
+      _listaMicTimer = setTimeout(() => {
+        const testo = accumulato.trim();
+        if (testo) {
+          const liste = leggiListe();
+          const lista = liste.find(l => l.id === listaCorrenteId);
+          if (lista) {
+            lista.voci.push({ id: uid(), testo, done: false, creata: Date.now(), prezzo: null, qta: 1 });
+            lista.ordineManuale = false;
+            salvaListe(liste);
+            renderDettaglio();
+          }
+        }
+        accumulato = '';
+        const iel2 = document.getElementById('lista-interim'); if (iel2) iel2.textContent = '';
+      }, LISTA_SILENZIO_MS);
+    }
+  };
+  rec.onend = () => { if (_listaMicAttivo) setTimeout(() => _listaMicAvvia(), 150); };
+  rec.onerror = e => {
+    if (e.error === 'not-allowed') { showToast('Microfono non autorizzato'); listaMicStop(); return; }
+    if (e.error === 'no-speech') return;
+  };
+  try { rec.start(); } catch(e) {}
+}
+
+function aggiornaTotale() {
+  const liste = leggiListe();
+  const lista = liste.find(l => l.id === listaCorrenteId);
+  if (!lista) return;
+  let tot = 0, haPrezzo = false;
+  lista.voci.forEach(v => {
+    if (v.prezzo != null && !isNaN(v.prezzo)) {
+      haPrezzo = true;
+      if (!v.done) tot += v.prezzo * (v.qta || 1);
+    }
+  });
+  const bar = document.getElementById('lista-totale-bar');
+  const val = document.getElementById('lista-totale-val');
+  if (bar) bar.style.display = haPrezzo ? 'block' : 'none';
+  if (val) val.textContent = '€ ' + tot.toFixed(2).replace('.', ',');
+}
+
+function apriPopupPrezzo(lista, voce, onSalva) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
+  overlay.innerHTML = `
+    <div style="background:var(--bg-card);border-radius:18px;padding:20px;width:calc(100% - 32px);max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+      <div style="font-weight:700;font-size:0.95rem;margin-bottom:14px;color:var(--fg)">${escHtml(voce.testo)}</div>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <div style="flex:1">
+          <label style="font-size:0.78rem;color:var(--fg-2);display:block;margin-bottom:4px">Prezzo (€)</label>
+          <input id="_pp-prezzo" type="number" inputmode="decimal" step="0.01" min="0" value="${voce.prezzo != null ? voce.prezzo : ''}" placeholder="opzionale"
+            style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:0.95rem;box-sizing:border-box">
+        </div>
+        <div style="flex:1">
+          <label style="font-size:0.78rem;color:var(--fg-2);display:block;margin-bottom:4px">Quantità</label>
+          <input id="_pp-qta" type="number" inputmode="numeric" min="1" value="${voce.qta || 1}"
+            style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:0.95rem;box-sizing:border-box">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="this.closest('[style*=fixed]').remove()"
+          style="padding:9px 18px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--fg);font-size:0.9rem;cursor:pointer;font-family:inherit">Annulla</button>
+        <button id="_pp-salva"
+          style="padding:9px 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit">Salva</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  setTimeout(() => overlay.querySelector('#_pp-prezzo').focus(), 80);
+  overlay.querySelector('#_pp-salva').addEventListener('click', () => {
+    const p = parseFloat(overlay.querySelector('#_pp-prezzo').value);
+    const q = parseInt(overlay.querySelector('#_pp-qta').value) || 1;
+    voce.prezzo = isNaN(p) ? null : p;
+    voce.qta = q < 1 ? 1 : q;
+    // salva in localStorage
+    const liste = leggiListe();
+    const l = liste.find(x => x.id === lista.id);
+    if (l) {
+      const v = l.voci.find(x => x.id === voce.id);
+      if (v) { v.prezzo = voce.prezzo; v.qta = voce.qta; }
+      salvaListe(liste);
+    }
+    overlay.remove();
+    if (onSalva) onSalva();
+  });
+}
+// ════════════════════════════════════════════════════════════════
+// FINE MICROFONO LISTA
+// ════════════════════════════════════════════════════════════════
 
 // ---- archivia ----
 function archiviaListaCorrente() {
