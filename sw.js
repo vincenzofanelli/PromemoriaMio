@@ -2,7 +2,7 @@
 // Notifiche schedulate con TimestampTrigger (Chrome Android) + fallback setTimeout
 // 100% locale, nessun server
 
-const CACHE_NAME = 'promemoriamio-1.4.17';
+const CACHE_NAME = 'promemoriamio-v94';
 const ASSETS = ['./index.html', './manifest.json'];
 
 // TimestampTrigger rimosso: mostrava tutte le notifiche nel drawer subito.
@@ -19,12 +19,10 @@ function apriDB() {
     const req = indexedDB.open(IDB_NAME, IDB_VERSION);
     req.onupgradeneeded = e => {
       const db = e.target.result;
-      // Rimuovi solo store obsoleti (non 'notifiche' — migrazioni non distruttive)
+      // Migrazione: elimina store vecchi
       if (db.objectStoreNames.contains('fired')) db.deleteObjectStore('fired');
-      // Crea 'notifiche' solo se non esiste già
-      if (!db.objectStoreNames.contains(IDB_STORE)) {
-        db.createObjectStore(IDB_STORE, { keyPath: 'tag' });
-      }
+      if (db.objectStoreNames.contains('notifiche')) db.deleteObjectStore('notifiche');
+      db.createObjectStore(IDB_STORE, { keyPath: 'tag' });
     };
     req.onsuccess = e => resolve(e.target.result);
     req.onerror   = e => reject(e.target.error);
@@ -33,117 +31,91 @@ function apriDB() {
 
 async function idbSalva(notifica) {
   const db = await apriDB();
-  try {
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).put({ ...notifica, status: 'pending' });
-      tx.oncomplete = resolve;
-      tx.onerror   = () => reject(tx.error);
-    });
-  } finally {
-    db.close();
-  }
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put({ ...notifica, status: 'pending' });
+    tx.oncomplete = resolve;
+    tx.onerror   = e => reject(e.target.error);
+  });
 }
 
 async function idbSegnaFired(tag) {
   const db = await apriDB();
-  try {
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      const req = tx.objectStore(IDB_STORE).get(tag);
-      req.onsuccess = e => {
-        if (e.target.result) {
-          e.target.result.status = 'fired';
-          e.target.result.firedAt = Date.now();
-          tx.objectStore(IDB_STORE).put(e.target.result);
-        }
-        tx.oncomplete = resolve;
-      };
-      req.onerror = () => reject(tx.error);
-    });
-  } finally {
-    db.close();
-  }
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    const req = tx.objectStore(IDB_STORE).get(tag);
+    req.onsuccess = e => {
+      if (e.target.result) {
+        e.target.result.status = 'fired';
+        e.target.result.firedAt = Date.now();
+        tx.objectStore(IDB_STORE).put(e.target.result);
+      }
+      tx.oncomplete = resolve;
+    };
+    req.onerror = e => reject(e.target.error);
+  });
 }
 
 async function idbSegnaCancelled(tag) {
   const db = await apriDB();
-  try {
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      const req = tx.objectStore(IDB_STORE).get(tag);
-      req.onsuccess = e => {
-        if (e.target.result) {
-          e.target.result.status = 'cancelled';
-          tx.objectStore(IDB_STORE).put(e.target.result);
-        }
-        tx.oncomplete = resolve;
-      };
-      req.onerror = () => reject(tx.error);
-    });
-  } finally {
-    db.close();
-  }
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    const req = tx.objectStore(IDB_STORE).get(tag);
+    req.onsuccess = e => {
+      if (e.target.result) {
+        e.target.result.status = 'cancelled';
+        tx.objectStore(IDB_STORE).put(e.target.result);
+      }
+      tx.oncomplete = resolve;
+    };
+    req.onerror = e => reject(e.target.error);
+  });
 }
 
 async function idbLeggiPending() {
   const db = await apriDB();
-  try {
-    return await new Promise((resolve, reject) => {
-      const tx = db.transaction(IDB_STORE, 'readonly');
-      const req = tx.objectStore(IDB_STORE).getAll();
-      req.onsuccess = e => {
-        const now = Date.now();
-        resolve((e.target.result || []).filter(n =>
-          n.status === 'pending' && n.timestamp > now
-        ));
-      };
-      req.onerror = () => reject(tx.error);
-    });
-  } finally {
-    db.close();
-  }
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).getAll();
+    req.onsuccess = e => {
+      const now = Date.now();
+      resolve((e.target.result || []).filter(n =>
+        n.status === 'pending' && n.timestamp > now
+      ));
+    };
+    req.onerror = e => reject(e.target.error);
+  });
 }
 
 async function idbSvuota() {
   const db = await apriDB();
-  try {
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).clear();
-      tx.oncomplete = resolve;
-      tx.onerror   = () => reject(tx.error);
-    });
-  } finally {
-    db.close();
-  }
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).clear();
+    tx.oncomplete = resolve;
+    tx.onerror   = e => reject(e.target.error);
+  });
 }
 
 // Pulizia: rimuove 'fired'/'cancelled' più vecchi di 7 giorni
 async function idbPulizia() {
-  let db;
   try {
-    db = await apriDB();
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      const store = tx.objectStore(IDB_STORE);
-      const req = store.getAll();
-      req.onsuccess = e => {
-        const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-        (e.target.result || []).forEach(n => {
-          if ((n.status === 'fired' && n.firedAt < cutoff) ||
-              (n.status === 'cancelled' && n.timestamp < cutoff)) {
-            store.delete(n.tag);
-          }
-        });
-      };
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-    });
+    const db = await apriDB();
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    const store = tx.objectStore(IDB_STORE);
+    const req = store.getAll();
+    req.onsuccess = e => {
+      const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      (e.target.result || []).forEach(n => {
+        if ((n.status === 'fired' && n.firedAt < cutoff) ||
+            (n.status === 'cancelled' && n.timestamp < cutoff)) {
+          store.delete(n.tag);
+        }
+      });
+    };
+    tx.oncomplete = () => {};
   } catch (err) {
     console.warn('[SW] idbPulizia error:', err);
-  } finally {
-    if (db) db.close();
   }
 }
 
@@ -151,7 +123,7 @@ async function idbPulizia() {
 self.addEventListener('install', e => {
   console.log('[SW] install — HAS_TIMESTAMP_TRIGGER:', HAS_TIMESTAMP_TRIGGER);
   e.waitUntil(
-    caches.open(CACHE_NAME).then(c => c.addAll(ASSETS).catch(err => console.warn('[SW] cache addAll error:', err)))
+    caches.open(CACHE_NAME).then(c => c.addAll(ASSETS).catch(() => {}))
   );
   self.skipWaiting();
 });
@@ -205,17 +177,15 @@ function coerceTimestamp(ts) {
 }
 
 // ── Scheduling ────────────────────────────────────────────────────────────────
-// Salva in IDB, mostra la notifica, poi segna come fired.
-// Così ripristinaTimer trova i record pending al riavvio del SW.
+// Mostra la notifica immediatamente (l'app filtra già per eventi entro 48h).
 async function programmaNotifica({ tag, title, body, timestamp }) {
   const ts = coerceTimestamp(timestamp);
   if (!ts) {
     console.warn('[SW] timestamp non valido per', tag, ':', timestamp);
     return;
   }
-  console.log('[SW] programmaNotifica:', tag);
+  console.log('[SW] programmaNotifica immediata:', tag);
   try {
-    await idbSalva({ tag, title, body, timestamp: ts });
     await self.registration.showNotification(title || 'PromemoriaMio', {
       body: body || 'Hai un impegno in programma',
       tag,
@@ -226,9 +196,8 @@ async function programmaNotifica({ tag, title, body, timestamp }) {
       requireInteraction: false,
       data: { url: './' }
     });
-    await idbSegnaFired(tag);
   } catch (err) {
-    console.warn('[SW] programmaNotifica error:', err);
+    console.warn('[SW] showNotification error:', err);
   }
 }
 
@@ -275,22 +244,19 @@ self.addEventListener('message', e => {
         clearTimeout(id);
         timers.delete(tag);
       }
-      const lista = Array.isArray(msg.notifiche) ? msg.notifiche : [];
-      // Chiude notifiche visibili
+      // Chiude TUTTE le notifiche incluse quelle schedulate con trigger futuro
       self.registration.getNotifications({ includeTriggered: true })
         .then(ns => ns.forEach(n => n.close()))
-        .catch(() => self.registration.getNotifications().then(ns => ns.forEach(n => n.close())))
-        .then(async () => {
-          // Sovrascrivi senza svuotare: segna come cancelled i tag non più presenti,
-          // così non c'è finestra di vulnerability se il SW viene ucciso a metà
-          const nuoviTag = new Set(lista.map(n => n.tag));
-          const vecchi = await idbLeggiPending();
-          for (const v of vecchi) {
-            if (!nuoviTag.has(v.tag)) await idbSegnaCancelled(v.tag);
-          }
-          for (const n of lista) {
-            if (n.tag && n.title && n.timestamp) await programmaNotifica(n);
-          }
+        .catch(() => {
+          // includeTriggered non supportato su alcuni browser — fallback senza
+          return self.registration.getNotifications().then(ns => ns.forEach(n => n.close()));
+        })
+        .then(() => idbSvuota())
+        .then(() => {
+          const lista = Array.isArray(msg.notifiche) ? msg.notifiche : [];
+          lista.forEach(n => {
+            if (n.tag && n.title && n.timestamp) programmaNotifica(n);
+          });
         });
       break;
     }
@@ -302,7 +268,7 @@ self.addEventListener('message', e => {
     case 'CANCEL_NOTIFICA': {
       if (msg.tag) {
         cancellaTimer(msg.tag);
-        idbSegnaCancelled(msg.tag).catch(err => console.warn('[SW] CANCEL_NOTIFICA idb error:', err));
+        idbSegnaCancelled(msg.tag);
         self.registration.getNotifications({ tag: msg.tag, includeTriggered: true })
           .then(ns => ns.forEach(n => n.close()))
           .catch(() => {
@@ -347,11 +313,7 @@ self.addEventListener('notificationclick', e => {
         client.postMessage({ tipo: 'NOTIFICA_IN_ARRIVO' });
         if ('focus' in client) return client.focus();
       } else {
-        if (self.clients.openWindow) {
-          return self.clients.openWindow(targetUrl);
-        } else {
-          console.warn('[SW] openWindow non disponibile su questo browser');
-        }
+        if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
       }
     })
   );
