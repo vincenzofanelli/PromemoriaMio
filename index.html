@@ -2033,12 +2033,12 @@ body {
   font-size: 0.8rem; color: var(--fg-3); text-align: center;
 }
 
-/* ---- CALENDARIO ---- */
-.cal-nav {
+/* ---- CALENDARIO (date picker) ---- */
+.dp-cal-nav {
   display: flex; align-items: center;
   padding: 0 12px 6px; gap: 4px;
 }
-.cal-nav-btn {
+.dp-cal-nav-btn {
   background: none; border: none;
   color: var(--fg-2); cursor: pointer;
   width: 40px; height: 40px;
@@ -2047,8 +2047,8 @@ body {
   transition: background 0.12s;
   flex-shrink: 0;
 }
-.cal-nav-btn:active { background: var(--accent-bg); color: var(--accent); }
-.cal-month-btn {
+.dp-cal-nav-btn:active { background: var(--accent-bg); color: var(--accent); }
+.dp-cal-month-btn {
   flex: 1;
   background: none; border: none;
   font-size: 1rem; font-weight: 700;
@@ -2058,14 +2058,14 @@ body {
   text-align: center;
   transition: background 0.12s;
 }
-.cal-month-btn:active { background: var(--accent-bg); color: var(--accent); }
+.dp-cal-month-btn:active { background: var(--accent-bg); color: var(--accent); }
 
-.cal-weekdays {
+.dp-cal-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   padding: 0 10px 2px;
 }
-.cal-weekdays span {
+.dp-cal-weekdays span {
   text-align: center;
   font-size: 0.72rem; font-weight: 700;
   color: var(--fg-3);
@@ -2073,13 +2073,13 @@ body {
   padding: 4px 0;
 }
 
-.cal-grid {
+.dp-cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   padding: 0 10px 12px;
   gap: 4px 0;
 }
-.cal-cell {
+.dp-cal-cell {
   aspect-ratio: 1;
   display: flex; align-items: center; justify-content: center;
   font-size: 0.98rem; font-weight: 500;
@@ -2091,10 +2091,10 @@ body {
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
 }
-.cal-cell.empty { visibility: hidden; pointer-events: none; }
-.cal-cell:not(.empty):active { background: var(--accent-bg); color: var(--accent); }
-.cal-cell.today { font-weight: 800; color: var(--accent); }
-.cal-cell.selected { background: var(--accent) !important; color: #fff !important; font-weight: 700; }
+.dp-cal-cell.empty { visibility: hidden; pointer-events: none; }
+.dp-cal-cell:not(.empty):active { background: var(--accent-bg); color: var(--accent); }
+.dp-cal-cell.today { font-weight: 800; color: var(--accent); }
+.dp-cal-cell.selected { background: var(--accent) !important; color: #fff !important; font-weight: 700; }
 
 /* ---- ANNO/MESE PICKER (due colonne scroll) ---- */
 .ym-picker {
@@ -7653,13 +7653,13 @@ window.addEventListener('load', () => {
 
     for (let i = 0; i < offset; i++) {
       const empty = document.createElement('div');
-      empty.className = 'cal-cell empty';
+      empty.className = 'dp-cal-cell empty';
       grid.appendChild(empty);
     }
     for (let d = 1; d <= daysInMonth; d++) {
       const ds = isoDate(year, month, d);
       const cell = document.createElement('div');
-      cell.className = 'cal-cell';
+      cell.className = 'dp-cal-cell';
       if (ds === todayStr) cell.classList.add('today');
       if (ds === _selDate) cell.classList.add('selected');
       cell.textContent = d;
@@ -8542,10 +8542,10 @@ function creaProssima(id) {
 
     <!-- CALENDAR -->
     <div id="picker-cal-section">
-      <div class="cal-nav">
-        <button class="cal-nav-btn" onclick="calStep(-1)">&#8249;</button>
-        <button class="cal-month-btn" id="cal-month-label" onclick="toggleYearMonthPicker()"></button>
-        <button class="cal-nav-btn" onclick="calStep(1)">&#8250;</button>
+      <div class="dp-cal-nav">
+        <button class="dp-cal-nav-btn" onclick="calStep(-1)">&#8249;</button>
+        <button class="dp-cal-month-btn" id="cal-month-label" onclick="toggleYearMonthPicker()"></button>
+        <button class="dp-cal-nav-btn" onclick="calStep(1)">&#8250;</button>
       </div>
 
       <!-- Anno/Mese selector a due colonne scroll -->
@@ -8565,10 +8565,10 @@ function creaProssima(id) {
 
       <!-- Griglia giorni (nascosta quando si sceglie anno/mese) -->
       <div id="cal-days-section">
-        <div class="cal-weekdays">
+        <div class="dp-cal-weekdays">
           <span>Lu</span><span>Ma</span><span>Me</span><span>Gi</span><span>Ve</span><span>Sa</span><span>Do</span>
         </div>
-        <div id="cal-grid" class="cal-grid"></div>
+        <div id="cal-grid" class="dp-cal-grid"></div>
       </div>
     </div>
 
