@@ -4639,6 +4639,7 @@ function buildTodoItem(voce, lista) {
   del.title = 'Elimina';
   del.style.flexShrink = '0';
   del.style.marginTop = '2px';
+  del.style.marginLeft = '10px';
   del.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
   del.onclick = () => eliminaTodo(lista.id, voce.id);
 
@@ -6286,7 +6287,7 @@ function renderHome() {
 
   // Vista agenda: il calendario mensile va subito dopo il pannello Oggi/Domani
   if (_vistaHome === 'agenda') {
-    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato && ev.stato !== 'fatto');
+    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato);
     html += renderAgenda(tuttiPerCalendario);
   }
 
@@ -6725,7 +6726,9 @@ function _renderCalGrid(items) {
     let pillsHtml = '';
     for (const ev of eventiGiorno) {
       const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
-      pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text}">${escHtml(titoloCarta(ev))}</div>`;
+      const fatto = ev.stato === 'fatto';
+      const fattoStyle = fatto ? 'opacity:0.5;text-decoration:line-through;' : '';
+      pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text};${fattoStyle}">${escHtml(titoloCarta(ev))}</div>`;
     }
 
     const dataAttrs = eventiGiorno.length
