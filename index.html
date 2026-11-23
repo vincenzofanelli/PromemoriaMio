@@ -8462,10 +8462,10 @@ async function selezionaContattoRicorrenze() {
     const contact = result[0];
 
     // Raccogli tutti i numeri, rimuovendo duplicati (stesso numero con/senza spazi, trattini, punti, parentesi)
-    const normalizza = t => t.replace(/[\s\-\.\(\)]/g, '');
+    const normalizza = t => t.replace(/[\s\-\.\(\)\+]/g, '').replace(/^0039/, '').replace(/^39/, '');
     const visti = new Set();
     const telArr = (contact.tel || [])
-      .map(t => (t || '').trim())
+      .map(t => (typeof t === 'string' ? t : (t && t.value) || '').trim())
       .filter(t => {
         if (!t) return false;
         const k = normalizza(t);
@@ -8475,7 +8475,9 @@ async function selezionaContattoRicorrenze() {
       });
 
     if (telArr.length === 0) {
-      showToast('Nessun numero trovato per questo contatto');
+      // Nessun numero: può succedere se l'utente ha premuto OK senza selezionare
+      // oppure se il contatto non ha numeri
+      showToast('Nessun numero trovato. Seleziona il contatto toccandolo, poi premi OK.');
       return;
     }
 
