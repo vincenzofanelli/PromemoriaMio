@@ -4712,7 +4712,7 @@ function buildTodoItem(voce, lista) {
 
   // badge prezzo (tocca per impostare/modificare)
   const priceBadge = document.createElement('div');
-  priceBadge.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:1px;cursor:pointer;min-width:52px;flex-shrink:0';
+  priceBadge.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:1px;cursor:pointer;min-width:60px;flex-shrink:0;margin-right:6px';
   const _aggiornaPrezzoBadge = () => {
     priceBadge.innerHTML = '';
     if (voce.qta && voce.qta > 1) {
@@ -4722,7 +4722,7 @@ function buildTodoItem(voce, lista) {
       priceBadge.appendChild(q);
     }
     const p = document.createElement('div');
-    p.style.cssText = voce.prezzo != null ? 'font-size:0.8rem;font-weight:700;color:var(--accent)' : 'font-size:0.75rem;color:var(--fg)';
+    p.style.cssText = voce.prezzo != null ? 'font-size:0.82rem;font-weight:700;color:var(--accent)' : 'font-size:0.9rem;font-weight:600;color:var(--fg)';
     p.textContent = voce.prezzo != null ? '€ ' + (voce.prezzo * (voce.qta || 1)).toFixed(2).replace('.',',') : '€';
     priceBadge.appendChild(p);
   };
