@@ -4624,7 +4624,7 @@ function buildTodoItem(voce, lista) {
       priceBadge.appendChild(q);
     }
     const p = document.createElement('div');
-    p.style.cssText = voce.prezzo != null ? 'font-size:0.8rem;font-weight:700;color:var(--accent)' : 'font-size:0.75rem;color:var(--fg-3)';
+    p.style.cssText = voce.prezzo != null ? 'font-size:0.8rem;font-weight:700;color:var(--accent)' : 'font-size:0.75rem;color:var(--fg)';
     p.textContent = voce.prezzo != null ? '€ ' + (voce.prezzo * (voce.qta || 1)).toFixed(2).replace('.',',') : '€';
     priceBadge.appendChild(p);
   };
@@ -6284,6 +6284,12 @@ function renderHome() {
   let html = renderPannelloGiornata();
   html += renderAvvisiProssimi();
 
+  // Vista agenda: il calendario mensile va subito dopo il pannello Oggi/Domani
+  if (_vistaHome === 'agenda') {
+    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato && ev.stato !== 'fatto');
+    html += renderAgenda(tuttiPerCalendario);
+  }
+
   const gruppi = [
     { key:'sospeso',      label:'In sospeso',   cls:'ev-scaduto' },
     { key:'sospeso-oggi', label:'Scaduto oggi',  cls:'ev-scaduto-oggi' },
@@ -6309,12 +6315,8 @@ function renderHome() {
     });
     if (!items.length) continue;
     trovati = true;
-    // Per il gruppo "futuro": se vista agenda, renderAgenda raccoglie tutti gli eventi
-    // (viene chiamata una sola volta alla fine, fuori dal loop gruppi)
-    if (_vistaHome === 'agenda' && g.key === 'futuro') {
-      // segnaposto — il rendering agenda viene aggiunto dopo il loop
-      continue;
-    }
+    // In vista agenda il gruppo "futuro" è già mostrato nel calendario mensile
+    if (_vistaHome === 'agenda' && g.key === 'futuro') continue;
     html += `<div class="section-label${g.key === 'oggi' ? ' section-label-oggi' : ''}">${g.label}</div>`;
     for (const ev of items) {
       const badge = (ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo) ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria);
@@ -6489,12 +6491,7 @@ function renderHome() {
     }
   }
 
-  // Vista agenda: aggiungi il calendario mensile con TUTTI gli eventi non archiviati
-  if (_vistaHome === 'agenda') {
-    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato && ev.stato !== 'fatto');
-    html += renderAgenda(tuttiPerCalendario);
-    trovati = true;
-  }
+  if (_vistaHome === 'agenda') trovati = true;
 
   if (!trovati) {
     html += `<div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
