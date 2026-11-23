@@ -1712,6 +1712,8 @@ body {
   max-width: 430px;
   transform: translateY(40px);
   transition: transform 0.2s;
+  /* sale sopra la tastiera */
+  margin-bottom: var(--keyboard-offset, 0px);
 }
 .modal-overlay.open .modal-sheet { transform: translateY(0); }
 .modal-title { font-size: 1rem; font-weight: 700; color: var(--fg); margin-bottom: 6px; }
@@ -4561,9 +4563,11 @@ function buildListaCard(lista, archiviata) {
 
   const card = document.createElement('div');
   card.className = 'lista-card' + (archiviata ? ' archiviata' : '');
-  card.onclick = () => apriDettaglioLista(lista.id);
 
-  card.innerHTML = `
+  const main = document.createElement('div');
+  main.style.cssText = 'display:flex;align-items:center;flex:1;min-width:0;cursor:pointer';
+  main.onclick = () => apriDettaglioLista(lista.id);
+  main.innerHTML = `
     <div class="lista-card-icon">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
@@ -4575,19 +4579,50 @@ function buildListaCard(lista, archiviata) {
     </div>
     <span class="lista-card-badge ${aperte === 0 ? 'zero' : ''}">${aperte > 0 ? aperte + ' aperte' : '✓ tutto fatto'}</span>
   `;
+
+  const delBtn = document.createElement('button');
+  delBtn.style.cssText = 'flex-shrink:0;margin-left:8px;padding:6px 8px;border:none;background:none;color:var(--fg-3);cursor:pointer;border-radius:8px;line-height:1';
+  delBtn.title = 'Elimina lista';
+  delBtn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>';
+  delBtn.onclick = e => {
+    e.stopPropagation();
+    if (!confirm('Eliminare la lista "' + lista.nome + '"?')) return;
+    const ll = leggiListe().filter(x => x.id !== lista.id);
+    salvaListe(ll);
+    renderListe();
+  };
+
+  card.appendChild(main);
+  card.appendChild(delBtn);
   return card;
 }
 
 // ---- nuova lista ----
+function _modalKeyboardHandler() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const offset = window.innerHeight - vv.height - vv.offsetTop;
+  document.documentElement.style.setProperty('--keyboard-offset', Math.max(0, offset) + 'px');
+}
 function apriNuovaLista() {
   const m = document.getElementById('modal-nuova');
   document.getElementById('nuova-lista-nome').value = '';
+  document.documentElement.style.setProperty('--keyboard-offset', '0px');
   m.classList.add('open');
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', _modalKeyboardHandler);
+    window.visualViewport.addEventListener('scroll', _modalKeyboardHandler);
+  }
   setTimeout(() => document.getElementById('nuova-lista-nome').focus(), 200);
 }
 
 function chiudiModalNuova() {
   document.getElementById('modal-nuova').classList.remove('open');
+  document.documentElement.style.setProperty('--keyboard-offset', '0px');
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', _modalKeyboardHandler);
+    window.visualViewport.removeEventListener('scroll', _modalKeyboardHandler);
+  }
 }
 
 function confermaNuovaLista() {
