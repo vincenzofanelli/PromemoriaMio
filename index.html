@@ -8456,8 +8456,9 @@ async function selezionaContattoRicorrenze() {
     return;
   }
   try {
-    // Solo 'tel': picker nativo mostra una sola spunta, niente doppio risultato.
-    const result = await navigator.contacts.select(['tel'], { multiple: false });
+    // Richiediamo 'name' + 'tel': su Android il tasto Fine si attiva solo
+    // quando almeno un campo del contatto è selezionato (spuntato).
+    const result = await navigator.contacts.select(['name', 'tel'], { multiple: false });
     if (!result || result.length === 0) return;
     const contact = result[0];
 
@@ -8481,14 +8482,9 @@ async function selezionaContattoRicorrenze() {
       return;
     }
 
-    // Un solo numero → inserisci direttamente
-    if (telArr.length === 1) {
-      _inserisciTelefonoRicorrenze(telArr[0]);
-      return;
-    }
-
-    // Più numeri distinti → mostra picker interno per scegliere
-    _mostraPickerNumeri(telArr);
+    // Mostra sempre il picker interno così l'utente conferma esplicitamente
+    const nomeContatto = (contact.name || []).join(' ').trim();
+    _mostraPickerNumeri(telArr, nomeContatto);
   } catch (err) {
     if (err.name !== 'AbortError') showToast('Errore selezione contatti: ' + err.message);
   }
@@ -8500,7 +8496,7 @@ function _inserisciTelefonoRicorrenze(tel) {
   showToast('✓ Numero inserito');
 }
 
-function _mostraPickerNumeri(numeri) {
+function _mostraPickerNumeri(numeri, nomeContatto) {
   // Rimuovi eventuale picker precedente
   const old = document.getElementById('tel-picker-sheet');
   if (old) old.remove();
@@ -8523,8 +8519,9 @@ function _mostraPickerNumeri(numeri) {
   ].join(';');
 
   const titolo = document.createElement('div');
-  titolo.textContent = 'Scegli il numero';
-  titolo.style.cssText = 'font-size:1rem;font-weight:700;color:var(--fg);padding:0 20px 14px;border-bottom:1px solid var(--border)';
+  titolo.style.cssText = 'padding:0 20px 14px;border-bottom:1px solid var(--border)';
+  titolo.innerHTML = '<div style="font-size:1rem;font-weight:700;color:var(--fg)">Scegli il numero</div>'
+    + (nomeContatto ? '<div style="font-size:0.82rem;color:var(--fg-3);margin-top:2px">' + escHtml(nomeContatto) + '</div>' : '');
   sheet.appendChild(titolo);
 
   numeri.forEach(tel => {
