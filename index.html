@@ -855,12 +855,12 @@ body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 1px;
+  gap: 2px;
   cursor: default;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   box-sizing: border-box;
-  /* NO overflow:hidden — la cella cresce con il contenuto */
+  min-width: 0;
 }
 .cal-cell--empty { background: #fafafa; }
 .cal-cell--hasev { cursor: pointer; }
@@ -886,15 +886,20 @@ body {
   font-size: 0.55rem;
   font-weight: 600;
   padding: 1px 3px;
-  border-radius: 3px;
-  line-height: 1.25;
+  border-radius: 0;
+  line-height: 1.1;
   width: 100%;
   box-sizing: border-box;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: break-word;
   cursor: pointer;
+}
+.cal-pill--fatto {
+  opacity: 0.55;
+  text-decoration: line-through;
 }
 .cal-pill-more {
   font-size: 0.55rem;
@@ -2033,12 +2038,12 @@ body {
   font-size: 0.8rem; color: var(--fg-3); text-align: center;
 }
 
-/* ---- CALENDARIO (date picker) ---- */
-.dp-cal-nav {
+/* ---- CALENDARIO ---- */
+.cal-nav {
   display: flex; align-items: center;
   padding: 0 12px 6px; gap: 4px;
 }
-.dp-cal-nav-btn {
+.cal-nav-btn {
   background: none; border: none;
   color: var(--fg-2); cursor: pointer;
   width: 40px; height: 40px;
@@ -2047,8 +2052,8 @@ body {
   transition: background 0.12s;
   flex-shrink: 0;
 }
-.dp-cal-nav-btn:active { background: var(--accent-bg); color: var(--accent); }
-.dp-cal-month-btn {
+.cal-nav-btn:active { background: var(--accent-bg); color: var(--accent); }
+.cal-month-btn {
   flex: 1;
   background: none; border: none;
   font-size: 1rem; font-weight: 700;
@@ -2058,14 +2063,14 @@ body {
   text-align: center;
   transition: background 0.12s;
 }
-.dp-cal-month-btn:active { background: var(--accent-bg); color: var(--accent); }
+.cal-month-btn:active { background: var(--accent-bg); color: var(--accent); }
 
-.dp-cal-weekdays {
+.cal-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   padding: 0 10px 2px;
 }
-.dp-cal-weekdays span {
+.cal-weekdays span {
   text-align: center;
   font-size: 0.72rem; font-weight: 700;
   color: var(--fg-3);
@@ -2073,13 +2078,13 @@ body {
   padding: 4px 0;
 }
 
-.dp-cal-grid {
+#cal-grid.cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   padding: 0 10px 12px;
   gap: 4px 0;
 }
-.dp-cal-cell {
+#cal-grid .cal-cell {
   aspect-ratio: 1;
   display: flex; align-items: center; justify-content: center;
   font-size: 0.98rem; font-weight: 500;
@@ -2091,10 +2096,10 @@ body {
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
 }
-.dp-cal-cell.empty { visibility: hidden; pointer-events: none; }
-.dp-cal-cell:not(.empty):active { background: var(--accent-bg); color: var(--accent); }
-.dp-cal-cell.today { font-weight: 800; color: var(--accent); }
-.dp-cal-cell.selected { background: var(--accent) !important; color: #fff !important; font-weight: 700; }
+#cal-grid .cal-cell.empty { visibility: hidden; pointer-events: none; }
+#cal-grid .cal-cell:not(.empty):active { background: var(--accent-bg); color: var(--accent); }
+#cal-grid .cal-cell.today { font-weight: 800; color: var(--accent); }
+#cal-grid .cal-cell.selected { background: var(--accent) !important; color: #fff !important; font-weight: 700; }
 
 /* ---- ANNO/MESE PICKER (due colonne scroll) ---- */
 .ym-picker {
@@ -3181,7 +3186,7 @@ body {
     <div class="form-wrap">
       <div class="form-group">
         <label>Tipo documento <span style="color:var(--col-scaduto)">*</span></label>
-        <select id="documenti-tipo">
+        <select id="documenti-tipo" onchange="toggleAltroTesto('documenti')">
           <option value="">Seleziona…</option>
           <option>Carta d'identità</option>
           <option>Passaporto</option>
@@ -3190,6 +3195,10 @@ body {
           <option>Permesso di soggiorno</option>
           <option>Altro</option>
         </select>
+      </div>
+      <div class="form-group" id="documenti-altro-wrap" style="display:none">
+        <label>Specifica tipo documento</label>
+        <input type="text" id="documenti-altro" placeholder="es. Carta verde, Tesserino…" autocomplete="off">
       </div>
       <div class="form-group">
         <label>Data scadenza</label>
@@ -3277,7 +3286,7 @@ body {
     <div class="form-wrap">
       <div class="form-group">
         <label>Tipo scadenza <span style="color:var(--col-scaduto)">*</span></label>
-        <select id="auto-tipo">
+        <select id="auto-tipo" onchange="toggleAltroTesto('auto')">
           <option value="">Seleziona…</option>
           <option>Revisione (collaudo)</option>
           <option>Bollo auto</option>
@@ -3286,6 +3295,10 @@ body {
           <option>Cambio gomme</option>
           <option>Altro</option>
         </select>
+      </div>
+      <div class="form-group" id="auto-altro-wrap" style="display:none">
+        <label>Specifica tipo scadenza</label>
+        <input type="text" id="auto-altro" placeholder="es. Revisione straordinaria…" autocomplete="off">
       </div>
       <div class="form-group">
         <label>Data scadenza</label>
@@ -3299,9 +3312,19 @@ body {
         <label>Veicolo (opzionale)</label>
         <input type="text" id="auto-veicolo" placeholder="es. Fiat 500, AB123CD…" autocomplete="off">
       </div>
+      <div style="display:flex;gap:10px">
+        <div class="form-group" style="flex:1">
+          <label>Km precedenti</label>
+          <input type="number" id="auto-km-iniziali" placeholder="es. 45000" autocomplete="off" inputmode="numeric" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Km attuali</label>
+          <input type="number" id="auto-km-attuali" placeholder="es. 46200" autocomplete="off" inputmode="numeric" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+        </div>
+      </div>
       <div class="form-group">
         <label>Note (opzionale)</label>
-        <textarea id="auto-note" placeholder="es. Officina, km attuali…"></textarea>
+        <textarea id="auto-note" placeholder="es. Officina…"></textarea>
       </div>
       <div class="form-group">
         <label>Frequenza</label>
@@ -3646,6 +3669,18 @@ body {
 
   <div class="scroll-body" id="liste-scroll">
 
+    <!-- Voce fissa: Lista vocale spesa -->
+    <div class="lista-card" onclick="goTo('spesa')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--border)">
+      <div style="width:40px;height:40px;border-radius:12px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="22" height="22" fill="none" stroke="#16a34a" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      </div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:0.95rem">Lista vocale spesa</div>
+        <div style="font-size:0.78rem;color:var(--fg-3)" id="spesa-subtitle">Tocca per aprire</div>
+      </div>
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+    </div>
+
     <div id="liste-attive-wrap">
       <!-- liste attive generate da JS -->
     </div>
@@ -3680,6 +3715,51 @@ body {
 </div>
 
 
+<!-- ═══════════════════════════════════════════════
+     SCREEN LISTA VOCALE SPESA
+═══════════════════════════════════════════════ -->
+<div class="screen hidden" id="screen-spesa">
+  <div class="header">
+    <button class="header-back" onclick="goTo('liste')">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="22" height="22"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    </button>
+    <h1>Spesa</h1>
+    <button onclick="spesaNuovaLista()" style="background:none;border:none;color:var(--accent);font-size:0.85rem;font-weight:700;cursor:pointer;padding:6px 4px">Nuova</button>
+  </div>
+
+  <!-- Selettore lista -->
+  <div style="padding:10px 16px 0;display:flex;align-items:center;gap:8px">
+    <select id="spesa-select-lista" onchange="spesaCambiaLista()" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:0.9rem;appearance:none;-webkit-appearance:none">
+    </select>
+    <button onclick="spesaEliminaLista()" title="Elimina lista" style="width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--fg-3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    </button>
+  </div>
+
+  <!-- Pulsante microfono -->
+  <div style="padding:12px 16px 6px;display:flex;align-items:center;gap:10px">
+    <button id="spesa-mic-btn" onclick="spesaToggleMic()" style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:14px;border:none;background:#dcfce7;color:#15803d;font-weight:700;font-size:0.95rem;cursor:pointer">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+      <span id="spesa-mic-label">Avvia ascolto</span>
+    </button>
+    <div id="spesa-mic-status" style="font-size:0.78rem;color:var(--fg-3)"></div>
+  </div>
+
+  <!-- Voce in ascolto live -->
+  <div id="spesa-interim" style="padding:0 16px 6px;font-size:0.85rem;color:var(--fg-3);font-style:italic;min-height:20px"></div>
+
+  <!-- Lista voci -->
+  <div class="scroll-body" id="spesa-list" style="padding-bottom:80px">
+    <!-- generato da JS -->
+  </div>
+
+  <!-- Azioni fondo -->
+  <div style="position:fixed;bottom:0;left:0;right:0;padding:10px 16px 20px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:8px;z-index:10">
+    <button onclick="spesaCancellaSpuntate()" style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--bg-card);color:var(--fg-2);font-size:0.85rem;cursor:pointer">Rimuovi spuntate</button>
+    <button onclick="spesaAggiungiManuale()" style="flex:1;padding:10px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer">+ Aggiungi</button>
+  </div>
+</div>
+
 <!-- ============================================================
      SCHERMATA: DETTAGLIO LISTA
      ============================================================ -->
@@ -3694,27 +3774,23 @@ body {
       style="border:1.5px solid var(--border);background:var(--bg-card);color:var(--fg-2);border-radius:8px;padding:5px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">A→Z</button>
   </div>
 
-  <!-- barra totale (visibile solo se almeno una voce ha prezzo) -->
+  <!-- Totale spesa (visibile solo se almeno una voce ha prezzo) -->
   <div id="lista-totale-bar" style="display:none;padding:8px 16px 0">
-    <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:12px;padding:9px 14px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:0.78rem;color:#15803d;font-weight:600">Totale da acquistare</span>
-      <span id="lista-totale-val" style="font-size:1.1rem;font-weight:800;color:#15803d">€ 0,00</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-radius:12px;background:linear-gradient(90deg,#16a34a,#15803d);color:#fff">
+      <span style="font-size:0.8rem;font-weight:600;opacity:0.9">Totale da acquistare</span>
+      <span id="lista-totale-val" style="font-size:1.1rem;font-weight:800">€ 0,00</span>
     </div>
   </div>
 
-  <!-- barra microfono -->
+  <!-- Pulsante microfono -->
   <div style="padding:8px 16px 4px;display:flex;align-items:center;gap:10px">
-    <button id="lista-mic-btn" onclick="listaMicToggle()"
-      style="display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:12px;border:2px solid var(--border);background:var(--bg-card);color:var(--fg);font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:18px;height:18px;flex-shrink:0">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
-      </svg>
+    <button id="lista-mic-btn" onclick="listaMicToggle()" style="display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:12px;border:none;background:#dcfce7;color:#15803d;font-weight:700;font-size:0.88rem;cursor:pointer">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
       <span id="lista-mic-label">Microfono</span>
     </button>
-    <div id="lista-mic-status" style="font-size:0.78rem;color:var(--fg-3);flex:1"></div>
+    <div id="lista-mic-status" style="font-size:0.78rem;color:var(--fg-3)"></div>
   </div>
-  <div id="lista-interim" style="min-height:16px;padding:0 16px 4px;font-size:0.82rem;color:var(--fg-2);font-style:italic"></div>
+  <div id="lista-interim" style="padding:0 16px 4px;font-size:0.85rem;color:var(--fg-3);font-style:italic;min-height:18px"></div>
 
   <div class="scroll-body" id="lista-dettaglio-scroll">
 
@@ -3770,12 +3846,12 @@ body {
 </div>
 
 <!-- MODAL NUOVA LISTA -->
-<div class="modal-overlay" id="modal-nuova" onclick="chiudiModalNuova()" style="align-items:flex-start;padding-top:60px">
-  <div class="modal-sheet" style="border-radius:18px;max-width:400px;margin:0 16px" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="modal-nuova" onclick="chiudiModalNuova()">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
     <div class="modal-title">Nuova lista</div>
     <div style="margin-bottom:16px">
       <input type="text" id="nuova-lista-nome" placeholder="Nome lista…" autocomplete="off"
-             style="width:100%;background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius-s);padding:12px 14px;font-size:0.95rem;color:var(--fg);font-family:inherit;box-sizing:border-box"
+             style="width:100%;background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius-s);padding:12px 14px;font-size:0.95rem;color:var(--fg);font-family:inherit"
              onkeydown="if(event.key==='Enter') confermaNuovaLista()">
     </div>
     <div class="modal-btns">
@@ -3833,6 +3909,16 @@ body {
       <div class="form-group">
         <label>Note (opzionale)</label>
         <textarea id="condominio-note" placeholder="es. Portare fotografia contatore…"></textarea>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="form-group" style="flex:1">
+          <label>Lettura precedente</label>
+          <input type="number" id="condominio-lettura-iniziale" placeholder="es. 1240" autocomplete="off" inputmode="decimal" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Lettura attuale</label>
+          <input type="number" id="condominio-lettura-attuale" placeholder="es. 1287" autocomplete="off" inputmode="decimal" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--fg);font-size:1rem;box-sizing:border-box">
+        </div>
       </div>
 
       <div class="form-group">
@@ -3915,6 +4001,7 @@ const screens = {
   'form-condominio':    'screen-form-condominio',
   liste:                'screen-liste',
   'lista-dettaglio':    'screen-lista-dettaglio',
+  spesa:                'screen-spesa',
   appunti:              'screen-appunti',
   conti:                'screen-conti',
   'conti-dettaglio':    'screen-conti-dettaglio',
@@ -4007,6 +4094,13 @@ function goTo(name) {
   }
   if (name === 'liste') {
     renderListe();
+    spesaAggiornaSottotitolo();
+  }
+  if (name === 'spesa') {
+    spesaRender();
+  }
+  if (name !== 'spesa') {
+    spesaStopMic();
   }
   if (name !== 'lista-dettaglio') {
     listaMicStop();
@@ -4484,7 +4578,6 @@ function buildListaCard(lista, archiviata) {
   return card;
 }
 
-
 // ---- nuova lista ----
 function apriNuovaLista() {
   const m = document.getElementById('modal-nuova');
@@ -4525,9 +4618,12 @@ function renderDettaglio() {
   document.getElementById('lista-dettaglio-title').textContent = lista.nome;
   document.getElementById('todo-new-input').value = '';
 
-  // Ordina voci aperte sempre alfabeticamente
-  let aperte = lista.voci.filter(v => !v.done).slice().sort((a, b) => a.testo.localeCompare(b.testo, 'it'));
+  // Ordina voci aperte: manuale se ordineManuale=true, altrimenti alfabetico
+  let aperte = lista.voci.filter(v => !v.done);
   const chiuse  = lista.voci.filter(v =>  v.done);
+  if (!lista.ordineManuale) {
+    aperte = aperte.slice().sort((a, b) => a.testo.localeCompare(b.testo, 'it'));
+  }
 
   // Aggiorna aspetto pulsante A→Z
   const btnAZ = document.getElementById('btn-sort-az');
@@ -4554,6 +4650,9 @@ function renderDettaglio() {
   // Attiva drag & drop sulle voci aperte
   abilitaDragDrop(wAperte);
 
+  // Aggiorna totale prezzo
+  aggiornaTotale();
+
   // disabilita "Archivia" se già archiviata
   const btnArch = document.querySelector('.btn-archivia');
   if (btnArch) {
@@ -4564,7 +4663,6 @@ function renderDettaglio() {
       btnArch.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2L19 8"/></svg> Archivia lista';
     }
   }
-  aggiornaTotale();
 }
 
 function buildTodoItem(voce, lista) {
@@ -4625,7 +4723,7 @@ function buildTodoItem(voce, lista) {
     }
     const p = document.createElement('div');
     p.style.cssText = voce.prezzo != null ? 'font-size:0.8rem;font-weight:700;color:var(--accent)' : 'font-size:0.75rem;color:var(--fg)';
-    p.textContent = voce.prezzo != null ? '€ ' + (voce.prezzo * (voce.qta || 1)).toFixed(2).replace('.',',') : '€';
+    p.textContent = voce.prezzo != null ? '€ ' + (voce.prezzo * (voce.qta || 1)).toFixed(2).replace('.',',') : '€';
     priceBadge.appendChild(p);
   };
   _aggiornaPrezzoBadge();
@@ -4786,157 +4884,6 @@ function abilitaDragDrop(container) {
     item.addEventListener('drop', e => { e.preventDefault(); item.classList.remove('drag-over'); });
   });
 }
-
-// ════════════════════════════════════════════════════════════════
-// MICROFONO LISTA + PREZZO/QTA + TOTALE
-// ════════════════════════════════════════════════════════════════
-const LISTA_SILENZIO_MS = 2000;
-let _listaMicRec = null, _listaMicAttivo = false, _listaMicTimer = null;
-
-function listaMicToggle() {
-  if (_listaMicAttivo) listaMicStop();
-  else listaMicStart();
-}
-
-function listaMicStart() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { showToast('Microfono non disponibile su questo browser'); return; }
-  _listaMicAttivo = true;
-  _listaMicAggiornaBtnUI();
-  _listaMicAvvia();
-}
-
-function listaMicStop() {
-  _listaMicAttivo = false;
-  if (_listaMicTimer) { clearTimeout(_listaMicTimer); _listaMicTimer = null; }
-  if (_listaMicRec) { try { _listaMicRec.stop(); } catch(e) {} _listaMicRec = null; }
-  _listaMicAggiornaBtnUI();
-  const el = document.getElementById('lista-interim'); if (el) el.textContent = '';
-  const st = document.getElementById('lista-mic-status'); if (st) st.textContent = '';
-}
-
-function _listaMicAggiornaBtnUI() {
-  const btn = document.getElementById('lista-mic-btn');
-  const lbl = document.getElementById('lista-mic-label');
-  if (!btn || !lbl) return;
-  if (_listaMicAttivo) {
-    btn.style.cssText += ';background:#dc2626;border-color:#dc2626;color:#fff';
-    lbl.textContent = 'Ferma';
-  } else {
-    btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = '';
-    lbl.textContent = 'Microfono';
-  }
-}
-
-function _listaMicAvvia() {
-  if (!_listaMicAttivo) return;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const rec = new SR();
-  _listaMicRec = rec;
-  rec.lang = 'it-IT'; rec.continuous = false; rec.interimResults = true;
-  let accumulato = '';
-
-  rec.onresult = e => {
-    let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) accumulato += t;
-      else interim = t;
-    }
-    const iel = document.getElementById('lista-interim'); if (iel) iel.textContent = accumulato + interim;
-    const sel = document.getElementById('lista-mic-status'); if (sel) sel.textContent = '🎙️ In ascolto…';
-    if (accumulato) {
-      if (_listaMicTimer) clearTimeout(_listaMicTimer);
-      _listaMicTimer = setTimeout(() => {
-        const testo = accumulato.trim();
-        if (testo) {
-          const liste = leggiListe();
-          const lista = liste.find(l => l.id === listaCorrenteId);
-          if (lista) {
-            lista.voci.push({ id: uid(), testo, done: false, creata: Date.now(), prezzo: null, qta: 1 });
-            lista.ordineManuale = false;
-            salvaListe(liste);
-            renderDettaglio();
-          }
-        }
-        accumulato = '';
-        const iel2 = document.getElementById('lista-interim'); if (iel2) iel2.textContent = '';
-      }, LISTA_SILENZIO_MS);
-    }
-  };
-  rec.onend = () => { if (_listaMicAttivo) setTimeout(() => _listaMicAvvia(), 150); };
-  rec.onerror = e => {
-    if (e.error === 'not-allowed') { showToast('Microfono non autorizzato'); listaMicStop(); return; }
-    if (e.error === 'no-speech') return;
-  };
-  try { rec.start(); } catch(e) {}
-}
-
-function aggiornaTotale() {
-  const liste = leggiListe();
-  const lista = liste.find(l => l.id === listaCorrenteId);
-  if (!lista) return;
-  let tot = 0, haPrezzo = false;
-  lista.voci.forEach(v => {
-    if (v.prezzo != null && !isNaN(v.prezzo)) {
-      haPrezzo = true;
-      if (!v.done) tot += v.prezzo * (v.qta || 1);
-    }
-  });
-  const bar = document.getElementById('lista-totale-bar');
-  const val = document.getElementById('lista-totale-val');
-  if (bar) bar.style.display = haPrezzo ? 'block' : 'none';
-  if (val) val.textContent = '€ ' + tot.toFixed(2).replace('.', ',');
-}
-
-function apriPopupPrezzo(lista, voce, onSalva) {
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
-  overlay.innerHTML = `
-    <div style="background:var(--bg-card);border-radius:18px;padding:20px;width:calc(100% - 32px);max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
-      <div style="font-weight:700;font-size:0.95rem;margin-bottom:14px;color:var(--fg)">${escHtml(voce.testo)}</div>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <div style="flex:1">
-          <label style="font-size:0.78rem;color:var(--fg-2);display:block;margin-bottom:4px">Prezzo (€)</label>
-          <input id="_pp-prezzo" type="number" inputmode="decimal" step="0.01" min="0" value="${voce.prezzo != null ? voce.prezzo : ''}" placeholder="opzionale"
-            style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:0.95rem;box-sizing:border-box">
-        </div>
-        <div style="flex:1">
-          <label style="font-size:0.78rem;color:var(--fg-2);display:block;margin-bottom:4px">Quantità</label>
-          <input id="_pp-qta" type="number" inputmode="numeric" min="1" value="${voce.qta || 1}"
-            style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--fg);font-size:0.95rem;box-sizing:border-box">
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button onclick="this.closest('[style*=fixed]').remove()"
-          style="padding:9px 18px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--fg);font-size:0.9rem;cursor:pointer;font-family:inherit">Annulla</button>
-        <button id="_pp-salva"
-          style="padding:9px 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit">Salva</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  setTimeout(() => overlay.querySelector('#_pp-prezzo').focus(), 80);
-  overlay.querySelector('#_pp-salva').addEventListener('click', () => {
-    const p = parseFloat(overlay.querySelector('#_pp-prezzo').value);
-    const q = parseInt(overlay.querySelector('#_pp-qta').value) || 1;
-    voce.prezzo = isNaN(p) ? null : p;
-    voce.qta = q < 1 ? 1 : q;
-    // salva in localStorage
-    const liste = leggiListe();
-    const l = liste.find(x => x.id === lista.id);
-    if (l) {
-      const v = l.voci.find(x => x.id === voce.id);
-      if (v) { v.prezzo = voce.prezzo; v.qta = voce.qta; }
-      salvaListe(liste);
-    }
-    overlay.remove();
-    if (onSalva) onSalva();
-  });
-}
-// ════════════════════════════════════════════════════════════════
-// FINE MICROFONO LISTA
-// ════════════════════════════════════════════════════════════════
 
 // ---- archivia ----
 function archiviaListaCorrente() {
@@ -5393,9 +5340,428 @@ function formatData(ts) {
   return new Date(ts).toLocaleDateString('it-IT', {day:'numeric', month:'short', year:'numeric'});
 }
 
-// ============================================================
+// ════════════════════════════════════════════════════════════
+// LISTA VOCALE SPESA
+// ════════════════════════════════════════════════════════════
+const LS_SPESA = 'promemoriamio_spesa';
+
+function spesaLeggi() {
+  try { return JSON.parse(localStorage.getItem(LS_SPESA)) || { liste: [], corrente: null }; }
+  catch(e) { return { liste: [], corrente: null }; }
+}
+function spesaSalva(data) {
+  try { localStorage.setItem(LS_SPESA, JSON.stringify(data)); } catch(e) {}
+}
+
+function spesaListaCorrente() {
+  const data = spesaLeggi();
+  if (!data.liste.length) return null;
+  const id = data.corrente || data.liste[0].id;
+  return data.liste.find(l => l.id === id) || data.liste[0];
+}
+
+function spesaNuovaLista() {
+  const nome = prompt('Nome della lista (es. Settimana, Lidl…):');
+  if (!nome || !nome.trim()) return;
+  const data = spesaLeggi();
+  const id = 'spesa_' + Date.now();
+  data.liste.push({ id, nome: nome.trim(), voci: [] });
+  data.corrente = id;
+  spesaSalva(data);
+  spesaRender();
+}
+
+function spesaCambiaLista() {
+  const sel = document.getElementById('spesa-select-lista');
+  if (!sel) return;
+  const data = spesaLeggi();
+  data.corrente = sel.value;
+  spesaSalva(data);
+  spesaRenderVoci();
+}
+
+function spesaEliminaLista() {
+  const lista = spesaListaCorrente();
+  if (!lista) return;
+  if (!confirm(`Eliminare la lista "${lista.nome}"?`)) return;
+  const data = spesaLeggi();
+  data.liste = data.liste.filter(l => l.id !== lista.id);
+  data.corrente = data.liste.length ? data.liste[0].id : null;
+  spesaSalva(data);
+  spesaRender();
+}
+
+function spesaRender() {
+  const data = spesaLeggi();
+  // Se non ci sono liste, ne crea una di default
+  if (!data.liste.length) {
+    data.liste.push({ id: 'spesa_' + Date.now(), nome: 'Spesa', voci: [] });
+    data.corrente = data.liste[0].id;
+    spesaSalva(data);
+  }
+  const sel = document.getElementById('spesa-select-lista');
+  if (sel) {
+    sel.innerHTML = data.liste.map(l =>
+      `<option value="${l.id}"${l.id === data.corrente ? ' selected' : ''}>${escHtml(l.nome)}</option>`
+    ).join('');
+  }
+  spesaRenderVoci();
+}
+
+function spesaRenderVoci() {
+  const lista = spesaListaCorrente();
+  const container = document.getElementById('spesa-list');
+  if (!container) return;
+  if (!lista || !lista.voci.length) {
+    container.innerHTML = `<div style="padding:40px 20px;text-align:center;color:var(--fg-3);font-size:0.9rem">Nessuna voce — avvia l'ascolto o tocca + Aggiungi</div>`;
+    return;
+  }
+  container.innerHTML = lista.voci.map((v, i) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);${v.spuntata ? 'opacity:0.45' : ''}">
+      <div onclick="spesaToggleVoce(${i})" style="width:24px;height:24px;border-radius:50%;border:2px solid ${v.spuntata ? 'var(--accent)' : 'var(--border)'};background:${v.spuntata ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">
+        ${v.spuntata ? '<svg width="13" height="13" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' : ''}
+      </div>
+      <div onclick="spesaToggleVoce(${i})" style="flex:1;font-size:0.95rem;cursor:pointer;${v.spuntata ? 'text-decoration:line-through' : ''}">${escHtml(v.testo)}</div>
+      <button onclick="spesaEliminaVoce(${i})" style="background:none;border:none;color:var(--fg-3);cursor:pointer;padding:4px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+function spesaToggleVoce(i) {
+  const data = spesaLeggi();
+  const lista = data.liste.find(l => l.id === data.corrente);
+  if (!lista) return;
+  lista.voci[i].spuntata = !lista.voci[i].spuntata;
+  spesaSalva(data);
+  spesaRenderVoci();
+}
+
+function spesaEliminaVoce(i) {
+  const data = spesaLeggi();
+  const lista = data.liste.find(l => l.id === data.corrente);
+  if (!lista) return;
+  lista.voci.splice(i, 1);
+  spesaSalva(data);
+  spesaRenderVoci();
+}
+
+function spesaCancellaSpuntate() {
+  const data = spesaLeggi();
+  const lista = data.liste.find(l => l.id === data.corrente);
+  if (!lista) return;
+  lista.voci = lista.voci.filter(v => !v.spuntata);
+  spesaSalva(data);
+  spesaRenderVoci();
+}
+
+function spesaAggiungiManuale() {
+  const testo = prompt('Voce da aggiungere:');
+  if (!testo || !testo.trim()) return;
+  spesaAggiungiVoce(testo.trim());
+}
+
+function spesaAggiungiVoce(testo) {
+  if (!testo || !testo.trim()) return;
+  const data = spesaLeggi();
+  const lista = data.liste.find(l => l.id === data.corrente);
+  if (!lista) return;
+  lista.voci.push({ testo: testo.trim(), spuntata: false });
+  spesaSalva(data);
+  spesaRenderVoci();
+}
+
+function spesaAggiornaSottotitolo() {
+  const sub = document.getElementById('spesa-subtitle');
+  if (!sub) return;
+  const data = spesaLeggi();
+  if (!data.liste.length) { sub.textContent = 'Tocca per aprire'; return; }
+  const lista = spesaListaCorrente();
+  if (!lista) return;
+  const tot = lista.voci.length;
+  const spuntate = lista.voci.filter(v => v.spuntata).length;
+  sub.textContent = tot ? `${lista.nome} · ${spuntate}/${tot} spuntate` : `${lista.nome} · vuota`;
+}
+
+// ── Microfono spesa ───────────────────────────────────────────────────────────
+let _spesaRec = null;
+let _spesaMicAttivo = false;
+let _spesaSilenzioTimer = null;
+let _spesaUltimaVoce = '';
+const SPESA_SILENZIO_MS = 2000;
+
+function spesaToggleMic() {
+  if (_spesaMicAttivo) {
+    spesaStopMic();
+  } else {
+    spesaStartMic();
+  }
+}
+
+function spesaStartMic() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Microfono non supportato su questo browser');
+    return;
+  }
+  _spesaMicAttivo = true;
+  spesaAggiornaBtnMic();
+  _spesaAvviaRicognizione();
+}
+
+function _spesaAvviaRicognizione() {
+  if (!_spesaMicAttivo) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  rec.lang = 'it-IT';
+  rec.continuous = false;
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
+  _spesaRec = rec;
+
+  rec.onresult = e => {
+    let interim = '';
+    let finale = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript.trim();
+      if (e.results[i].isFinal) finale += t;
+      else interim += t;
+    }
+    const status = document.getElementById('spesa-interim');
+    if (status) status.textContent = interim || finale;
+
+    if (finale) {
+      _spesaUltimaVoce = finale;
+      // Avvia timer silenzio: se non arrivano altre parole entro 2s, salva la voce
+      if (_spesaSilenzioTimer) clearTimeout(_spesaSilenzioTimer);
+      _spesaSilenzioTimer = setTimeout(() => {
+        if (_spesaUltimaVoce) {
+          spesaAggiungiVoce(_spesaUltimaVoce);
+          _spesaUltimaVoce = '';
+          const status = document.getElementById('spesa-interim');
+          if (status) status.textContent = '';
+        }
+      }, SPESA_SILENZIO_MS);
+    }
+  };
+
+  rec.onend = () => {
+    // Auto-restart se ancora attivo
+    if (_spesaMicAttivo) {
+      setTimeout(() => _spesaAvviaRicognizione(), 150);
+    }
+  };
+
+  rec.onerror = e => {
+    if (e.error === 'not-allowed') {
+      showToast('Accesso al microfono negato');
+      spesaStopMic();
+      return;
+    }
+    // Per altri errori: riprova
+    if (_spesaMicAttivo) setTimeout(() => _spesaAvviaRicognizione(), 300);
+  };
+
+  try { rec.start(); } catch(e) {}
+}
+
+function spesaStopMic() {
+  _spesaMicAttivo = false;
+  if (_spesaRec) { try { _spesaRec.stop(); } catch(e) {} _spesaRec = null; }
+  if (_spesaSilenzioTimer) { clearTimeout(_spesaSilenzioTimer); _spesaSilenzioTimer = null; }
+  // Salva eventuale voce rimasta in sospeso
+  if (_spesaUltimaVoce) {
+    spesaAggiungiVoce(_spesaUltimaVoce);
+    _spesaUltimaVoce = '';
+  }
+  const interim = document.getElementById('spesa-interim');
+  if (interim) interim.textContent = '';
+  spesaAggiornaBtnMic();
+}
+
+function spesaAggiornaBtnMic() {
+  const btn = document.getElementById('spesa-mic-btn');
+  const lbl = document.getElementById('spesa-mic-label');
+  const status = document.getElementById('spesa-mic-status');
+  if (!btn) return;
+  if (_spesaMicAttivo) {
+    btn.style.background = '#fecaca';
+    btn.style.color = '#dc2626';
+    if (lbl) lbl.textContent = 'Stop ascolto';
+    if (status) status.textContent = '🔴 In ascolto…';
+  } else {
+    btn.style.background = '#dcfce7';
+    btn.style.color = '#15803d';
+    if (lbl) lbl.textContent = 'Avvia ascolto';
+    if (status) status.textContent = '';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// MICROFONO LISTA + PREZZO/QTA + TOTALE
+// ════════════════════════════════════════════════════════════
+
+const LISTA_SILENZIO_MS = 2000;
+let _listaMicRec = null, _listaMicAttivo = false, _listaMicTimer = null;
+
+function listaMicToggle() { if (_listaMicAttivo) listaMicStop(); else listaMicStart(); }
+
+function listaMicStart() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Riconoscimento vocale non supportato su questo browser.'); return; }
+  _listaMicAttivo = true;
+  _listaMicAggiornaBtnUI();
+  _listaMicAvvia();
+}
+
+function listaMicStop() {
+  _listaMicAttivo = false;
+  clearTimeout(_listaMicTimer); _listaMicTimer = null;
+  if (_listaMicRec) { try { _listaMicRec.stop(); } catch(e){} _listaMicRec = null; }
+  const interim = document.getElementById('lista-interim');
+  const status  = document.getElementById('lista-mic-status');
+  if (interim) interim.textContent = '';
+  if (status)  status.textContent  = '';
+  _listaMicAggiornaBtnUI();
+}
+
+function _listaMicAggiornaBtnUI() {
+  const btn = document.getElementById('lista-mic-btn');
+  const lbl = document.getElementById('lista-mic-label');
+  if (!btn) return;
+  if (_listaMicAttivo) {
+    btn.style.background = '#fecaca'; btn.style.color = '#dc2626';
+    if (lbl) lbl.textContent = 'Stop ascolto';
+  } else {
+    btn.style.background = '#dcfce7'; btn.style.color = '#15803d';
+    if (lbl) lbl.textContent = 'Microfono';
+  }
+}
+
+function _listaMicAvvia() {
+  if (!_listaMicAttivo) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  _listaMicRec = rec;
+  rec.lang = 'it-IT';
+  rec.continuous = false;
+  rec.interimResults = true;
+  let accumulato = '';
+
+  rec.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) accumulato += e.results[i][0].transcript + ' ';
+      else interim = e.results[i][0].transcript;
+    }
+    const el = document.getElementById('lista-interim');
+    if (el) el.textContent = (accumulato + interim).trim();
+    clearTimeout(_listaMicTimer);
+    if (accumulato.trim()) {
+      _listaMicTimer = setTimeout(() => {
+        const testo = accumulato.trim();
+        accumulato = '';
+        const el2 = document.getElementById('lista-interim');
+        if (el2) el2.textContent = '';
+        const liste = leggiListe();
+        const lista = liste.find(l => l.id === listaCorrenteId);
+        if (lista && testo) {
+          lista.voci.push({ id: uid(), testo, done: false, creata: Date.now(), prezzo: null, qta: 1 });
+          lista.ordineManuale = false;
+          salvaListe(liste);
+          renderDettaglio();
+        }
+      }, LISTA_SILENZIO_MS);
+    }
+  };
+
+  rec.onend = () => {
+    if (_listaMicAttivo) setTimeout(_listaMicAvvia, 150);
+  };
+
+  rec.onerror = e => {
+    if (e.error === 'not-allowed') { listaMicStop(); return; }
+    // 'no-speech' e altri: ignora, onend farà ripartire
+  };
+
+  try { rec.start(); } catch(e) { listaMicStop(); }
+}
+
+function aggiornaTotale() {
+  const liste = leggiListe();
+  const lista = liste.find(l => l.id === listaCorrenteId);
+  if (!lista) return;
+  let tot = 0, haPrezzo = false;
+  lista.voci.forEach(v => {
+    if (v.prezzo != null && !isNaN(v.prezzo)) {
+      haPrezzo = true;
+      if (!v.done) tot += v.prezzo * (v.qta || 1);
+    }
+  });
+  const bar = document.getElementById('lista-totale-bar');
+  const val = document.getElementById('lista-totale-val');
+  if (bar) bar.style.display = haPrezzo ? 'block' : 'none';
+  if (val) val.textContent = '€ ' + tot.toFixed(2).replace('.', ',');
+}
+
+function apriPopupPrezzo(lista, voce, onSalva) {
+  const old = document.getElementById('_pp-overlay');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = '_pp-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);display:flex;align-items:flex-start;justify-content:center;padding-top:60px';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--bg-card);border-radius:18px;padding:20px 20px 16px;width:280px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.25)';
+
+  box.innerHTML = `
+    <div style="font-weight:800;font-size:1rem;margin-bottom:14px;color:var(--fg)">Prezzo e quantità</div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.8rem;font-weight:600;color:var(--fg-2);display:block;margin-bottom:4px">Prezzo unitario (€)</label>
+      <input id="_pp-prezzo" type="number" min="0" step="0.01" placeholder="es. 1,99"
+        style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:1rem;background:var(--bg);color:var(--fg);box-sizing:border-box"
+        value="${voce.prezzo != null ? voce.prezzo : ''}">
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:0.8rem;font-weight:600;color:var(--fg-2);display:block;margin-bottom:4px">Quantità</label>
+      <input id="_pp-qta" type="number" min="1" step="1" placeholder="1"
+        style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:1rem;background:var(--bg);color:var(--fg);box-sizing:border-box"
+        value="${voce.qta && voce.qta > 1 ? voce.qta : ''}">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button id="_pp-cancel" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--fg-2);font-size:0.9rem;cursor:pointer">Annulla</button>
+      <button id="_pp-save" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer">Salva</button>
+    </div>`;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  const inpPrezzo = document.getElementById('_pp-prezzo');
+  const inpQta   = document.getElementById('_pp-qta');
+  setTimeout(() => inpPrezzo.focus(), 50);
+
+  document.getElementById('_pp-cancel').onclick = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  document.getElementById('_pp-save').onclick = () => {
+    const pRaw = inpPrezzo.value.replace(',', '.').trim();
+    const p = pRaw !== '' ? parseFloat(pRaw) : null;
+    const q = parseInt(inpQta.value, 10) || 1;
+    const liste = leggiListe();
+    const l = liste.find(x => x.id === lista.id);
+    if (l) {
+      const v = l.voci.find(x => x.id === voce.id);
+      if (v) { v.prezzo = (p != null && !isNaN(p)) ? p : null; v.qta = q; voce.prezzo = v.prezzo; voce.qta = v.qta; }
+      salvaListe(liste);
+    }
+    overlay.remove();
+    if (onSalva) onSalva();
+  };
+}
+
+// ════════════════════════════════════════════════════════════
 // GESTIONE EVENTI — localStorage
-// ============================================================
+// ════════════════════════════════════════════════════════════
 
 // ── IndexedDB foto ────────────────────────────────────────────────────────────
 const FOTO_DB_NAME    = 'promemoriamio-foto';
@@ -5801,7 +6167,12 @@ function fmtDataEvento(ev) {
 }
 
 function titoloCarta(ev) {
-  return (ev.extra || {}).titolo || '—';
+  const x = ev.extra || {};
+  // Compleanni/onomastici: "Mario Compleanno" invece di "Compleanno di Mario"
+  if (ev.categoria === 'ricorrenze' && x.tipo && x.nome) {
+    return x.nome + ' ' + x.tipo;
+  }
+  return x.titolo || '—';
 }
 
 // ── Backup banner ─────────────────────────────────────────────────────────────
@@ -6228,7 +6599,9 @@ function renderAvvisiProssimi() {
     if (!dataExtra) continue;
     const dataEv = parseDataLocale(dataExtra);
     if (isNaN(dataEv.getTime())) continue;
-    const dataFmt = dataEv.getDate() + ' ' + MM[dataEv.getMonth()] + ' ' + dataEv.getFullYear();
+    const GG = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+    const oraFmt = dataExtra.includes('T') ? ' ' + dataExtra.substring(11,16) : '';
+    const dataFmt = GG[dataEv.getDay()] + ' ' + dataEv.getDate() + ' ' + MM[dataEv.getMonth()] + ' ' + dataEv.getFullYear() + oraFmt;
 
     ev.notifiche.forEach((n, ni) => {
       if (!n.on || n.avvisoLetto) return;
@@ -6260,7 +6633,7 @@ function renderAvvisiProssimi() {
         </div>
       </div>
       <div class="event-meta">
-        <span class="event-date">📅 ${escHtml(dataFmt)}</span>
+        <span class="event-date"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:3px"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${escHtml(dataFmt)}</span>
         <span class="event-date" style="color:var(--accent);font-weight:600">⏰ ${escHtml(descLabel)}</span>
       </div>
       <div class="event-actions">
@@ -6285,9 +6658,9 @@ function renderHome() {
   let html = renderPannelloGiornata();
   html += renderAvvisiProssimi();
 
-  // Vista agenda: il calendario mensile va subito dopo il pannello Oggi/Domani
+  // Vista agenda: calendario mensile in cima, poi lista completa sotto
   if (_vistaHome === 'agenda') {
-    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato);
+    const tuttiPerCalendario = leggiEventi().filter(ev => !ev.archiviato || ev.fattaIl);
     html += renderAgenda(tuttiPerCalendario);
   }
 
@@ -6316,8 +6689,12 @@ function renderHome() {
     });
     if (!items.length) continue;
     trovati = true;
-    // In vista agenda il gruppo "futuro" è già mostrato nel calendario mensile
-    if (_vistaHome === 'agenda' && g.key === 'futuro') continue;
+    // Per il gruppo "futuro": se vista agenda, renderAgenda raccoglie tutti gli eventi
+    // (viene chiamata una sola volta alla fine, fuori dal loop gruppi)
+    if (_vistaHome === 'agenda' && g.key === 'futuro') {
+      // segnaposto — il rendering agenda viene aggiunto dopo il loop
+      continue;
+    }
     html += `<div class="section-label${g.key === 'oggi' ? ' section-label-oggi' : ''}">${g.label}</div>`;
     for (const ev of items) {
       const badge = (ev.categoria === 'ricorrenze' && ev.extra && ev.extra.tipo) ? ev.extra.tipo : (CAT_LABELS[ev.categoria] || ev.categoria);
@@ -6357,6 +6734,31 @@ function renderHome() {
           ${oraCard ? `<span class="event-date" style="font-weight:700">${escHtml(oraCard)}</span>` : ''}
           <span class="event-cat-badge">${badge}</span>
         </div>
+        ${(() => {
+          if (ev.categoria !== 'condominio' && ev.categoria !== 'auto') return '';
+          const unita = ev.categoria === 'auto' ? 'km' : 'm³';
+          const prec = evExtra.valore_precedente;
+          const att  = evExtra.valore_attuale;
+          const ult  = Array.isArray(evExtra.letture) && evExtra.letture.length ? evExtra.letture[evExtra.letture.length - 1] : null;
+          if (prec == null && att == null && !ult) return '';
+          let righe = '';
+          if (prec != null) righe += `<span style="color:var(--fg-3)">Prec: <strong style="color:var(--fg-2)">${prec}</strong></span>`;
+          if (att  != null) righe += `${righe ? ' &nbsp;·&nbsp; ' : ''}<span style="color:var(--fg-3)">Att: <strong style="color:var(--accent)">${att}</strong></span>`;
+          if (att != null && prec != null) {
+            const diff = att - prec;
+            righe += ` <span style="color:var(--accent);font-weight:700">(${diff >= 0 ? '+' : ''}${diff})</span>`;
+          }
+          if (ult && !att) {
+            const MM = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+            const dtStr = ult.data ? (() => { const d = new Date(ult.data+'T00:00:00'); return d.getDate()+' '+MM[d.getMonth()]; })() : '';
+            const nRil = evExtra.letture.length;
+            righe += `<span style="color:var(--fg-3)">Ultima: <strong>${ult.attuale}</strong>${dtStr ? ' ('+dtStr+')' : ''}${nRil > 1 ? ' · '+nRil+' rilevazioni' : ''}</span>`;
+          }
+          return `<div style="display:flex;align-items:center;gap:4px;margin-top:4px;font-size:0.82rem;flex-wrap:wrap">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--fg-3)"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            ${righe}
+          </div>`;
+        })()}
         ${ev.categoria === 'farmaci' ? (() => {
           const _r = calcolaRiepilogoPillole(evExtra);
           if (!_r) return `<div class="fpp-configura" onclick="event.stopPropagation();apriEvento('${ev.id}')">💊 Aggiungi pillole per scatola per attivare il conteggio</div>`;
@@ -6492,8 +6894,6 @@ function renderHome() {
     }
   }
 
-  if (_vistaHome === 'agenda') trovati = true;
-
   if (!trovati) {
     html += `<div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
       <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -6532,7 +6932,7 @@ function _aggiornaCalendario() {
                 'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   label.textContent = MESI[_calMese] + ' ' + _calAnno;
   // Tutti gli eventi non archiviati (non solo futuro)
-  const tutti = leggiEventi().filter(ev => !ev.archiviato && ev.stato !== 'fatto');
+  const tutti = leggiEventi().filter(ev => !ev.archiviato || ev.fattaIl);
   grid.innerHTML = _renderCalGrid(tutti);
 }
 
@@ -6623,6 +7023,15 @@ function _dateEventoInMese(ev) {
   const inizioMese = new Date(_calAnno, _calMese, 1);
   const fineMese   = new Date(_calAnno, _calMese + 1, 0); // ultimo giorno
   fineMese.setHours(23,59,59,999);
+
+  // Evento archiviato con data completamento: mostralo nel giorno in cui è stato fatto
+  if (ev.archiviato && ev.fattaIl) {
+    const dtFatto = new Date(ev.fattaIl);
+    if (dtFatto.getMonth() === _calMese && dtFatto.getFullYear() === _calAnno) {
+      return [`${_calAnno}-${pad(_calMese+1)}-${pad(dtFatto.getDate())}`];
+    }
+    return [];
+  }
 
   // Scadenza mensile: compare una volta nel mese come primo giorno
   if (extra.scadenza_mensile) {
@@ -6726,9 +7135,14 @@ function _renderCalGrid(items) {
     let pillsHtml = '';
     for (const ev of eventiGiorno) {
       const c = CAT_COLORS[ev.categoria] || CAT_COLORS['generico'];
-      const fatto = ev.stato === 'fatto';
-      const fattoStyle = fatto ? 'opacity:0.5;text-decoration:line-through;' : '';
-      pillsHtml += `<div class="cal-pill" style="background:${c.bg};color:${c.text};${fattoStyle}">${escHtml(titoloCarta(ev))}</div>`;
+      let fatto = ev.stato === 'fatto' || ev.archiviato;
+      if (ev.categoria === 'farmaci') {
+        const x = ev.extra || {};
+        const nOrari = Array.isArray(x.orari) ? x.orari.length : 1;
+        const entry = Array.isArray(x.assunzioni) ? x.assunzioni.find(a => a.data === dataStr) : null;
+        fatto = entry ? entry.dosi >= nOrari : false;
+      }
+      pillsHtml += `<div class="cal-pill${fatto ? ' cal-pill--fatto' : ''}" style="background:${c.bg};color:${c.text}">${escHtml(titoloCarta(ev))}</div>`;
     }
 
     const dataAttrs = eventiGiorno.length
@@ -6829,22 +7243,63 @@ function segnaFatto(id) {
   if (!ev) return;
   // I farmaci usano farmacoDosaOggi — non vengono mai archiviati da qui
   if (ev.categoria === 'farmaci') { farmacoDosaOggi(id); return; }
+
+  const extra = ev.extra || {};
+  const hasLettura = (ev.categoria === 'condominio' || ev.categoria === 'auto') && extra.freq;
+
+  if (hasLettura) {
+    const valoreAttuale = extra.valore_attuale;
+    if (valoreAttuale != null && !isNaN(valoreAttuale)) {
+      // Salva in cronologia
+      if (!Array.isArray(extra.letture)) extra.letture = [];
+      const _n = new Date();
+      const _p = n => String(n).padStart(2,'0');
+      const oggi = _n.getFullYear()+'-'+_p(_n.getMonth()+1)+'-'+_p(_n.getDate());
+      const precedente = extra.valore_precedente;
+      extra.letture.push({
+        data: oggi,
+        precedente: precedente != null ? precedente : null,
+        attuale: valoreAttuale,
+        diff: precedente != null ? valoreAttuale - precedente : null
+      });
+      // Ruota: attuale → precedente, pulisce attuale
+      extra.valore_precedente = valoreAttuale;
+      delete extra.valore_attuale;
+      ev.extra = extra;
+      // Avanza la data alla prossima occorrenza senza archiviare
+      const prossima = calcolaDataProssima(extra.data, extra.freq, null, extra.freq_mesi);
+      if (prossima) {
+        extra.data = prossima.substring(0,10);
+        ev.stato = 'attivo';
+        ev.fattaIl = null;
+        salvaEventiLS(eventi);
+        renderHome();
+        showToast('Lettura salvata ✓');
+        return;
+      }
+    } else {
+      showToast('Inserisci la lettura attuale nell\'evento prima di chiudere');
+      return;
+    }
+  }
+
   ev.stato = 'fatto';
   ev.fattaIl = Date.now();
   // Manda in archivio solo se non è una ricorrenza ciclica
-  const tipoRic = (ev.extra || {}).tipo || '';
+  const tipoRic = extra.tipo || '';
   const isCiclica = ev.categoria === 'ricorrenze' && RICORRENZE_ANNUALI.has(tipoRic);
   if (!isCiclica) ev.archiviato = true;
   // Consuma l'override data prossima (monouso): aggiorna extra.data e rimuove il flag
-  if (ev.extra && ev.extra.data_prossima_override) {
-    ev.extra.data = ev.extra.data_prossima_override;
-    delete ev.extra.data_prossima_override;
+  if (extra.data_prossima_override) {
+    extra.data = extra.data_prossima_override;
+    delete extra.data_prossima_override;
+    ev.extra = extra;
   }
   salvaEventiLS(eventi);
   renderHome();
   showToast('Segnato come fatto ✓');
-  /* scheduleAllNotifications(); */
 }
+
 
 function apriEvento(id) {
   const eventi = leggiEventi();
@@ -6995,10 +7450,28 @@ function caricaFormEvento(ev) {
     set('ricorrenze-telefono', e.telefono || '');
     aggiornaFreqRicorrenza();
   } else if (cat === 'documenti') {
-    set('documenti-tipo', e.tipo);
+    const selDoc = document.getElementById('documenti-tipo');
+    const opzDoc = selDoc ? Array.from(selDoc.options).map(o => o.value) : [];
+    if (e.tipo && !opzDoc.includes(e.tipo)) {
+      set('documenti-tipo', 'Altro');
+      set('documenti-altro', e.tipo);
+    } else {
+      set('documenti-tipo', e.tipo);
+    }
+    toggleAltroTesto('documenti');
   } else if (cat === 'auto') {
-    set('auto-tipo', e.tipo);
+    const selAuto = document.getElementById('auto-tipo');
+    const opzAuto = selAuto ? Array.from(selAuto.options).map(o => o.value) : [];
+    if (e.tipo && !opzAuto.includes(e.tipo)) {
+      set('auto-tipo', 'Altro');
+      set('auto-altro', e.tipo);
+    } else {
+      set('auto-tipo', e.tipo);
+    }
+    toggleAltroTesto('auto');
     set('auto-veicolo', e.veicolo || '');
+    set('auto-km-iniziali', e.valore_precedente != null ? e.valore_precedente : '');
+    set('auto-km-attuali',  e.valore_attuale   != null ? e.valore_attuale   : '');
   } else if (cat === 'generico') {
     set('generico-titolo', e.titolo); set('generico-luogo', e.luogo);
   } else if (cat === 'acquisti') {
@@ -7008,6 +7481,8 @@ function caricaFormEvento(ev) {
   } else if (cat === 'condominio') {
     const selTipo = document.getElementById('condominio-tipo'); if (selTipo) selTipo.value = e.tipo || '';
     set('condominio-titolo', e.titolo); set('condominio-importo', e.importo);
+    set('condominio-lettura-iniziale', e.valore_precedente != null ? e.valore_precedente : '');
+    set('condominio-lettura-attuale',  e.valore_attuale   != null ? e.valore_attuale   : '');
   }
 
   // Frequenza e anticipo (tutti i form)
@@ -7102,12 +7577,18 @@ function raccogliCampiEvento(cat) {
     titolo = (_tipo && _nome) ? _tipo + ' di ' + _nome : _nome || _tipo || 'Ricorrenza';
     extra  = { tipo: _tipo, nome: _nome, ..._tel ? { telefono: _tel } : {} };
   } else if (cat === 'documenti') {
-    titolo = tipo() || 'Documento';
-    extra  = { tipo: tipo() };
+    const _tipoDoc = tipo() === 'Altro' ? (val('documenti-altro') || 'Altro') : (tipo() || 'Documento');
+    titolo = _tipoDoc;
+    extra  = { tipo: _tipoDoc };
   } else if (cat === 'auto') {
     const _veicolo = val('auto-veicolo');
-    titolo = (tipo() || 'Auto') + (_veicolo ? ' — ' + _veicolo : '');
-    extra  = { tipo: tipo(), veicolo: _veicolo };
+    const _tipoAuto = tipo() === 'Altro' ? (val('auto-altro') || 'Altro') : (tipo() || 'Auto');
+    titolo = _tipoAuto + (_veicolo ? ' — ' + _veicolo : '');
+    const _kmIniziali = val('auto-km-iniziali');
+    const _kmAttuali  = val('auto-km-attuali');
+    extra  = { tipo: _tipoAuto, veicolo: _veicolo, unita: 'km',
+      ..._kmIniziali !== '' ? { valore_precedente: parseFloat(_kmIniziali) } : {},
+      ..._kmAttuali  !== '' ? { valore_attuale:   parseFloat(_kmAttuali)  } : {} };
   } else if (cat === 'generico') {
     titolo = val('generico-titolo') || 'Impegno';
     extra  = { luogo: luogo() };
@@ -7118,7 +7599,11 @@ function raccogliCampiEvento(cat) {
     extra  = { tipo: tipo(), luogo: luogo() };
   } else if (cat === 'condominio') {
     titolo = val('condominio-titolo') || tipo() || 'Condominio';
-    extra  = { tipo: tipo(), importo: val('condominio-importo') };
+    const _lIniziale = val('condominio-lettura-iniziale');
+    const _lAttuale  = val('condominio-lettura-attuale');
+    extra  = { tipo: tipo(), importo: val('condominio-importo'), unita: 'm³',
+      ..._lIniziale !== '' ? { valore_precedente: parseFloat(_lIniziale) } : {},
+      ..._lAttuale  !== '' ? { valore_attuale:   parseFloat(_lAttuale)  } : {} };
   }
 
   const _freq = freq();
@@ -7244,11 +7729,11 @@ function resetForm(cat) {
     farmaci: ['farmaco-nome','farmaci-data','farmaci-freq','farmaci-anticipo','custom-prima-dose','custom-n-dosi','alterne-ora','farmaci-durata','farmaci-note','farmaci-pillole-scatola','farmaci-pillole-dose'],
     ricorrenze: ['ricorrenze-tipo','ricorrenze-nome','ricorrenze-data','ricorrenze-note','ricorrenze-telefono','ricorrenze-freq','ricorrenze-anticipo'],
     documenti: ['documenti-tipo','documenti-data','documenti-note','documenti-freq','documenti-anticipo'],
-    auto: ['auto-tipo','auto-veicolo','auto-data','auto-note','auto-freq','auto-anticipo'],
+    auto: ['auto-tipo','auto-veicolo','auto-data','auto-note','auto-freq','auto-anticipo','auto-km-iniziali','auto-km-attuali'],
     generico: ['generico-titolo','generico-data','generico-luogo','generico-note','generico-freq','generico-anticipo'],
     acquisti: ['acquisti-titolo','acquisti-data','acquisti-note','acquisti-freq','acquisti-anticipo'],
     lavoro: ['lavoro-tipo','lavoro-titolo','lavoro-data','lavoro-luogo','lavoro-note','lavoro-freq','lavoro-anticipo'],
-    condominio: ['condominio-tipo','condominio-data','condominio-titolo','condominio-importo','condominio-note','condominio-freq','condominio-anticipo'],
+    condominio: ['condominio-tipo','condominio-data','condominio-titolo','condominio-importo','condominio-note','condominio-freq','condominio-anticipo','condominio-lettura-iniziale','condominio-lettura-attuale'],
   };
   const defaultLbl = {
     'visite-data': 'Scegli data e ora',
@@ -7288,6 +7773,11 @@ function resetForm(cat) {
     const btn = document.getElementById(id + '-btn');
     if (btn) btn.classList.remove('filled');
   });
+  // Reset campo "Altro" testo libero (documenti, auto)
+  const altroWrap = document.getElementById(cat + '-altro-wrap');
+  if (altroWrap) altroWrap.style.display = 'none';
+  const altroInp = document.getElementById(cat + '-altro');
+  if (altroInp) altroInp.value = '';
   delete notifStati[cat]; // forza reinit defaults al prossimo accesso
   // Reset ricorrenze: ripristina visibilità campo frequenza
   if (cat === 'ricorrenze') {
@@ -7653,13 +8143,13 @@ window.addEventListener('load', () => {
 
     for (let i = 0; i < offset; i++) {
       const empty = document.createElement('div');
-      empty.className = 'dp-cal-cell empty';
+      empty.className = 'cal-cell empty';
       grid.appendChild(empty);
     }
     for (let d = 1; d <= daysInMonth; d++) {
       const ds = isoDate(year, month, d);
       const cell = document.createElement('div');
-      cell.className = 'dp-cal-cell';
+      cell.className = 'cal-cell';
       if (ds === todayStr) cell.classList.add('today');
       if (ds === _selDate) cell.classList.add('selected');
       cell.textContent = d;
@@ -8373,6 +8863,17 @@ function aggiornaFreqRicorrenza() {
   toggleAnticipo('ricorrenze');
 }
 
+function toggleAltroTesto(cat) {
+  const sel = document.getElementById(cat + '-tipo');
+  const wrap = document.getElementById(cat + '-altro-wrap');
+  if (!sel || !wrap) return;
+  wrap.style.display = sel.value === 'Altro' ? '' : 'none';
+  if (sel.value !== 'Altro') {
+    const inp = document.getElementById(cat + '-altro');
+    if (inp) inp.value = '';
+  }
+}
+
 function toggleAnticipo(cat) {
   const sel = document.getElementById(cat + '-freq');
   const wrap = document.getElementById(cat + '-anticipo-wrap');
@@ -8542,10 +9043,10 @@ function creaProssima(id) {
 
     <!-- CALENDAR -->
     <div id="picker-cal-section">
-      <div class="dp-cal-nav">
-        <button class="dp-cal-nav-btn" onclick="calStep(-1)">&#8249;</button>
-        <button class="dp-cal-month-btn" id="cal-month-label" onclick="toggleYearMonthPicker()"></button>
-        <button class="dp-cal-nav-btn" onclick="calStep(1)">&#8250;</button>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calStep(-1)">&#8249;</button>
+        <button class="cal-month-btn" id="cal-month-label" onclick="toggleYearMonthPicker()"></button>
+        <button class="cal-nav-btn" onclick="calStep(1)">&#8250;</button>
       </div>
 
       <!-- Anno/Mese selector a due colonne scroll -->
@@ -8565,10 +9066,10 @@ function creaProssima(id) {
 
       <!-- Griglia giorni (nascosta quando si sceglie anno/mese) -->
       <div id="cal-days-section">
-        <div class="dp-cal-weekdays">
+        <div class="cal-weekdays">
           <span>Lu</span><span>Ma</span><span>Me</span><span>Gi</span><span>Ve</span><span>Sa</span><span>Do</span>
         </div>
-        <div id="cal-grid" class="dp-cal-grid"></div>
+        <div id="cal-grid" class="cal-grid"></div>
       </div>
     </div>
 
