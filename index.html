@@ -173,6 +173,7 @@ function scheduleAllNotifications() {
 
   eventi.forEach(ev => {
     if (ev.stato === 'fatto') return;
+    if (ev.archiviato) return;
     const extra = ev.extra || {};
     const dataStr = extra.data;
     if (!dataStr) return;
@@ -4186,6 +4187,26 @@ function calcolaRiepilogoPillole(extra) {
   };
 }
 
+// === PILLOLE: calcolo nuove assunzioni da target pillole ===
+function _calcolaNuoveAssunzioni(extra, target) {
+  const dosi_al_giorno = Array.isArray(extra.orari) ? extra.orari.length : 1;
+  const pilloleXDose = extra.pilloleXDose || 1;
+  const dosi_target = Math.round(target / pilloleXDose);
+  const now = new Date();
+  const _pp = n => String(n).padStart(2, '0');
+  const nuoveAssunzioni = [];
+  let dosi_rimaste = dosi_target;
+  const cursore = new Date(extra.data + 'T00:00:00');
+  while (dosi_rimaste > 0 && cursore <= now) {
+    const dataStr = cursore.getFullYear()+'-'+_pp(cursore.getMonth()+1)+'-'+_pp(cursore.getDate());
+    const dosi_giorno = Math.min(dosi_rimaste, dosi_al_giorno);
+    nuoveAssunzioni.push({ data: dataStr, dosi: dosi_giorno });
+    dosi_rimaste -= dosi_giorno;
+    cursore.setDate(cursore.getDate() + 1);
+  }
+  return nuoveAssunzioni;
+}
+
 // === PILLOLE: allinea spunte alle attese ===
 function allineaPillole(evId) {
   const eventi = leggiEventi();
@@ -4203,22 +4224,7 @@ function allineaPillole(evId) {
   if (isNaN(target) || target < 0) { showToast('Numero non valido'); return; }
 
   const extra = ev.extra;
-  const dosi_al_giorno = Array.isArray(extra.orari) ? extra.orari.length : 1;
-  const pilloleXDose = extra.pilloleXDose || 1;
-  const dosi_target = Math.round(target / pilloleXDose);
-  const now = new Date();
-  const _pp = n => String(n).padStart(2, '0');
-  const nuoveAssunzioni = [];
-  let dosi_rimaste = dosi_target;
-  const cursore = new Date(extra.data + 'T00:00:00');
-  while (dosi_rimaste > 0 && cursore <= now) {
-    const dataStr = cursore.getFullYear()+'-'+_pp(cursore.getMonth()+1)+'-'+_pp(cursore.getDate());
-    const dosi_giorno = Math.min(dosi_rimaste, dosi_al_giorno);
-    nuoveAssunzioni.push({ data: dataStr, dosi: dosi_giorno });
-    dosi_rimaste -= dosi_giorno;
-    cursore.setDate(cursore.getDate() + 1);
-  }
-  extra.assunzioni = nuoveAssunzioni;
+  extra.assunzioni = _calcolaNuoveAssunzioni(extra, target);
   ev.extra = extra;
   salvaEventiLS(eventi);
   renderHome();
@@ -4250,22 +4256,7 @@ function confermaPillole(evId, cellId) {
   const ev = eventi.find(e => e.id === evId);
   if (!ev || ev.categoria !== 'farmaci') return;
   const extra = ev.extra;
-  const dosi_al_giorno = Array.isArray(extra.orari) ? extra.orari.length : 1;
-  const pilloleXDose = extra.pilloleXDose || 1;
-  const dosi_target = Math.round(target / pilloleXDose);
-  const now = new Date();
-  const _pp = n => String(n).padStart(2, '0');
-  const nuoveAssunzioni = [];
-  let dosi_rimaste = dosi_target;
-  const cursore = new Date(extra.data + 'T00:00:00');
-  while (dosi_rimaste > 0 && cursore <= now) {
-    const dataStr = cursore.getFullYear()+'-'+_pp(cursore.getMonth()+1)+'-'+_pp(cursore.getDate());
-    const dosi_giorno = Math.min(dosi_rimaste, dosi_al_giorno);
-    nuoveAssunzioni.push({ data: dataStr, dosi: dosi_giorno });
-    dosi_rimaste -= dosi_giorno;
-    cursore.setDate(cursore.getDate() + 1);
-  }
-  extra.assunzioni = nuoveAssunzioni;
+  extra.assunzioni = _calcolaNuoveAssunzioni(extra, target);
   ev.extra = extra;
   salvaEventiLS(eventi);
   renderHome();
@@ -4412,7 +4403,7 @@ function mkWrap(labelTxt, input, calcolato) {
 }
 
 function ordinale(n) {
-  return n + (n === 2 ? 'ª' : n === 3 ? 'ª' : 'ª');
+  return n + (n === 1 ? 'ª' : n === 2 ? 'ª' : '°');
 }
 
 function mostraFoto(input) {
@@ -4449,7 +4440,7 @@ function scrollPrimoOggi() {
 // GESTIONE LISTE — localStorage
 // ============================================================
 
-const LS_KEY = 'agendame_liste';
+const LS_KEY = 'promemoriamio_liste';
 
 function leggiListe() {
   try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
@@ -5672,7 +5663,7 @@ async function fotoCaricaAnteprime(evId, slots) {
 
 // ── Fine modulo foto ───────────────────────────────────────────────────────────
 
-const LS_EVENTI = 'agendame_eventi';
+const LS_EVENTI = 'promemoriamio_eventi';
 let eventoInModifica = null; // id evento in modifica, null = nuovo
 let _tempEvId = null;        // id provvisorio per foto su form nuovo
 let mostraCompletati = false;
@@ -5933,7 +5924,7 @@ function aggiornaBackupBanner() {
 function esportaBackup() {
   const payload = {};
   const chiavi = [
-    'agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'
+    'promemoriamio_eventi', 'promemoriamio_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'
   ];
   chiavi.forEach(k => {
     try {
@@ -5960,7 +5951,7 @@ function esportaBackup() {
 async function condividiBackup() {
   // Costruisce il payload identico a esportaBackup()
   const payload = {};
-  const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'];
+  const chiavi = ['promemoriamio_eventi', 'promemoriamio_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'];
   chiavi.forEach(k => {
     try {
       const v = localStorage.getItem(k);
@@ -6014,9 +6005,17 @@ function importaBackup(input) {
       alert('File non valido: JSON non leggibile.');
       return;
     }
-    const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'];
-    const trovate = chiavi.filter(k => k in payload);
-    if (trovate.length === 0) {
+    // Mappa chiavi: accetta sia i vecchi nomi agendame_* sia i nuovi promemoriamio_*
+    const mappaChiavi = {
+      'promemoriamio_eventi': ['promemoriamio_eventi', 'agendame_eventi'],
+      'promemoriamio_liste':  ['promemoriamio_liste',  'agendame_liste'],
+      'promemoriamio_conti':  ['promemoriamio_conti'],
+      'promemoriamio_profilo': ['promemoriamio_profilo'],
+      'promemoriamio_appunti': ['promemoriamio_appunti']
+    };
+    // Verifica che almeno una chiave (vecchia o nuova) sia presente nel backup
+    const tutteChiaviAccettate = Object.values(mappaChiavi).flat();
+    if (!tutteChiaviAccettate.some(k => k in payload)) {
       alert('File non riconosciuto: nessuna chiave valida trovata.');
       return;
     }
@@ -6039,8 +6038,12 @@ function importaBackup(input) {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    trovate.forEach(k => {
-      try { localStorage.setItem(k, JSON.stringify(payload[k])); } catch(e) {}
+    // Scrivi sempre con chiave nuova, cercando nel payload il valore nella chiave nuova o vecchia
+    Object.entries(mappaChiavi).forEach(([nuova, candidate]) => {
+      const chiaveTrovata = candidate.find(k => k in payload);
+      if (chiaveTrovata !== undefined) {
+        try { localStorage.setItem(nuova, JSON.stringify(payload[chiaveTrovata])); } catch(e) {}
+      }
     });
     // aggiorna timestamp backup con la data del file (se presente) o ora
     const ts = payload._backup_ts || Date.now();
@@ -7149,6 +7152,16 @@ function caricaFormEvento(ev) {
       fotoCaricaAnteprime(ev.id, ['confezione']);
     }
   } else if (cat === 'documenti') {
+    // Dropdown tipo documento
+    const selDoc = document.getElementById('documenti-tipo');
+    const opzDoc = selDoc ? Array.from(selDoc.options).map(o => o.value) : [];
+    if (e.tipo && !opzDoc.includes(e.tipo)) {
+      set('documenti-tipo', 'Altro');
+      set('documenti-altro', e.tipo);
+    } else {
+      set('documenti-tipo', e.tipo);
+    }
+    toggleAltroTesto('documenti');
     // Foto documento: inietta campi se abbiamo un evId
     const _evId = ev.id;
     const _fWrap = document.getElementById('documenti-foto-wrap');
@@ -7163,16 +7176,6 @@ function caricaFormEvento(ev) {
     set('ricorrenze-nome', e.nome);
     set('ricorrenze-telefono', e.telefono || '');
     aggiornaFreqRicorrenza();
-  } else if (cat === 'documenti') {
-    const selDoc = document.getElementById('documenti-tipo');
-    const opzDoc = selDoc ? Array.from(selDoc.options).map(o => o.value) : [];
-    if (e.tipo && !opzDoc.includes(e.tipo)) {
-      set('documenti-tipo', 'Altro');
-      set('documenti-altro', e.tipo);
-    } else {
-      set('documenti-tipo', e.tipo);
-    }
-    toggleAltroTesto('documenti');
   } else if (cat === 'auto') {
     const selAuto = document.getElementById('auto-tipo');
     const opzAuto = selAuto ? Array.from(selAuto.options).map(o => o.value) : [];
@@ -7252,7 +7255,7 @@ function raccogliCampiEvento(cat) {
       const ora = val('alterne-ora'); if (ora) orari = [ora];
     } else if (freqVal === 'custom') {
       const prima = val('custom-prima-dose');
-      const nDosi = parseInt(document.getElementById('custom-n-dosi')?.value || '1');
+      const nDosi = Math.max(1, Math.min(24, parseInt(document.getElementById('custom-n-dosi')?.value || '1')));
       if (prima && nDosi > 0) {
         const [hh, mm] = prima.split(':').map(Number);
         const baseMin = hh * 60 + mm;
@@ -7561,7 +7564,7 @@ function aggiornaOrariCustom() {
 (function patchAggiornaOrari() {
   const orig = window.aggiornaOrari;
   window.aggiornaOrari = function() {
-    orig();
+    if (typeof orig === 'function') orig();
     const freq = document.getElementById('freq-select');
     const cw = document.getElementById('custom-wrap');
     if (freq && cw && freq.value === 'custom') {
