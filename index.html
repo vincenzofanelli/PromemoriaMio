@@ -4465,7 +4465,7 @@ function scrollPrimoOggi() {
 // GESTIONE LISTE — localStorage
 // ============================================================
 
-const LS_KEY = 'agendame_liste';
+const LS_KEY = 'promemoriamio_liste';
 
 function leggiListe() {
   try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
@@ -5845,7 +5845,7 @@ async function fotoCaricaAnteprime(evId, slots) {
 
 // ── Fine modulo foto ───────────────────────────────────────────────────────────
 
-const LS_EVENTI = 'agendame_eventi';
+const LS_EVENTI = 'promemoriamio_eventi';
 let eventoInModifica = null; // id evento in modifica, null = nuovo
 let _tempEvId = null;        // id provvisorio per foto su form nuovo
 let mostraCompletati = false;
@@ -6106,7 +6106,7 @@ function aggiornaBackupBanner() {
 function esportaBackup() {
   const payload = {};
   const chiavi = [
-    'agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'
+    'promemoriamio_eventi', 'promemoriamio_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'
   ];
   chiavi.forEach(k => {
     try {
@@ -6133,7 +6133,7 @@ function esportaBackup() {
 async function condividiBackup() {
   // Costruisce il payload identico a esportaBackup()
   const payload = {};
-  const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'];
+  const chiavi = ['promemoriamio_eventi', 'promemoriamio_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'];
   chiavi.forEach(k => {
     try {
       const v = localStorage.getItem(k);
@@ -6212,8 +6212,11 @@ function importaBackup(input) {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // Mappa chiavi vecchie → nuove (retrocompatibilità backup agendame_*)
+    const migra = { 'agendame_eventi': 'promemoriamio_eventi', 'agendame_liste': 'promemoriamio_liste' };
     trovate.forEach(k => {
-      try { localStorage.setItem(k, JSON.stringify(payload[k])); } catch(e) {}
+      const dest = migra[k] || k;
+      try { localStorage.setItem(dest, JSON.stringify(payload[k])); } catch(e) {}
     });
     // aggiorna timestamp backup con la data del file (se presente) o ora
     const ts = payload._backup_ts || Date.now();
