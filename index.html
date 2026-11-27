@@ -173,7 +173,6 @@ function scheduleAllNotifications() {
 
   eventi.forEach(ev => {
     if (ev.stato === 'fatto') return;
-    if (ev.archiviato) return;
     const extra = ev.extra || {};
     const dataStr = extra.data;
     if (!dataStr) return;
@@ -2298,7 +2297,7 @@ body {
     </button>
     <button class="fab" onclick="goTo('nuovo')">
       <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-      <span>Menu</span>
+      <span>Nuovo</span>
     </button>
     <button class="nav-btn" onclick="goTo('utente')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -3728,15 +3727,11 @@ body {
     </div>
   </div>
 
-  <!-- Pulsante microfono + Azzera € -->
+  <!-- Pulsante microfono -->
   <div style="padding:8px 16px 4px;display:flex;align-items:center;gap:10px">
     <button id="lista-mic-btn" onclick="listaMicToggle()" style="display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:12px;border:none;background:#dcfce7;color:#15803d;font-weight:700;font-size:0.88rem;cursor:pointer">
       <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
       <span id="lista-mic-label">Microfono</span>
-    </button>
-    <button onclick="azzeraImportiLista()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;border:none;background:#fef9c3;color:#854d0e;font-weight:700;font-size:0.88rem;cursor:pointer">
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      Azzera €
     </button>
     <div id="lista-mic-status" style="font-size:0.78rem;color:var(--fg-3)"></div>
   </div>
@@ -3747,6 +3742,22 @@ body {
     <div class="todo-add-row">
       <input type="text" id="todo-new-input" placeholder="Scrivi voce e premi ✚ o Invio…" autocomplete="off"
              onkeydown="if(event.key==='Enter') aggiungiTodo()" style="border-radius:var(--radius-s)">
+    </div>
+
+    <!-- CARRELLO DEL GIORNO -->
+    <div id="carrello-section" style="display:none;margin-bottom:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 4px 4px">
+        <span style="font-size:0.78rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.04em">🛒 Da comprare oggi</span>
+        <button onclick="fineSpesa()" style="padding:5px 12px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit">Fine spesa</button>
+      </div>
+      <div id="carrello-totale-bar" style="display:none;padding:0 0 6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-radius:10px;background:linear-gradient(90deg,#2563eb,#1d4ed8);color:#fff">
+          <span style="font-size:0.78rem;font-weight:600;opacity:0.9">Totale carrello</span>
+          <span id="carrello-totale-val" style="font-size:1rem;font-weight:800">€ 0,00</span>
+        </div>
+      </div>
+      <div id="carrello-voci-wrap"></div>
+      <div style="border-top:1.5px dashed var(--border);margin:6px 0 8px"></div>
     </div>
 
     <div id="todo-aperte-wrap"></div>
@@ -4191,26 +4202,6 @@ function calcolaRiepilogoPillole(extra) {
   };
 }
 
-// === PILLOLE: calcolo nuove assunzioni da target pillole ===
-function _calcolaNuoveAssunzioni(extra, target) {
-  const dosi_al_giorno = Array.isArray(extra.orari) ? extra.orari.length : 1;
-  const pilloleXDose = extra.pilloleXDose || 1;
-  const dosi_target = Math.round(target / pilloleXDose);
-  const now = new Date();
-  const _pp = n => String(n).padStart(2, '0');
-  const nuoveAssunzioni = [];
-  let dosi_rimaste = dosi_target;
-  const cursore = new Date(extra.data + 'T00:00:00');
-  while (dosi_rimaste > 0 && cursore <= now) {
-    const dataStr = cursore.getFullYear()+'-'+_pp(cursore.getMonth()+1)+'-'+_pp(cursore.getDate());
-    const dosi_giorno = Math.min(dosi_rimaste, dosi_al_giorno);
-    nuoveAssunzioni.push({ data: dataStr, dosi: dosi_giorno });
-    dosi_rimaste -= dosi_giorno;
-    cursore.setDate(cursore.getDate() + 1);
-  }
-  return nuoveAssunzioni;
-}
-
 // === PILLOLE: allinea spunte alle attese ===
 function allineaPillole(evId) {
   const eventi = leggiEventi();
@@ -4228,7 +4219,22 @@ function allineaPillole(evId) {
   if (isNaN(target) || target < 0) { showToast('Numero non valido'); return; }
 
   const extra = ev.extra;
-  extra.assunzioni = _calcolaNuoveAssunzioni(extra, target);
+  const dosi_al_giorno = Array.isArray(extra.orari) ? extra.orari.length : 1;
+  const pilloleXDose = extra.pilloleXDose || 1;
+  const dosi_target = Math.round(target / pilloleXDose);
+  const now = new Date();
+  const _pp = n => String(n).padStart(2, '0');
+  const nuoveAssunzioni = [];
+  let dosi_rimaste = dosi_target;
+  const cursore = new Date(extra.data + 'T00:00:00');
+  while (dosi_rimaste > 0 && cursore <= now) {
+    const dataStr = cursore.getFullYear()+'-'+_pp(cursore.getMonth()+1)+'-'+_pp(cursore.getDate());
+    const dosi_giorno = Math.min(dosi_rimaste, dosi_al_giorno);
+    nuoveAssunzioni.push({ data: dataStr, dosi: dosi_giorno });
+    dosi_rimaste -= dosi_giorno;
+    cursore.setDate(cursore.getDate() + 1);
+  }
+  extra.assunzioni = nuoveAssunzioni;
   ev.extra = extra;
   salvaEventiLS(eventi);
   renderHome();
@@ -4260,7 +4266,22 @@ function confermaPillole(evId, cellId) {
   const ev = eventi.find(e => e.id === evId);
   if (!ev || ev.categoria !== 'farmaci') return;
   const extra = ev.extra;
-  extra.assunzioni = _calcolaNuoveAssunzioni(extra, target);
+  const dosi_al_giorno = Array.isArray(extra.orari) ? extra.orari.length : 1;
+  const pilloleXDose = extra.pilloleXDose || 1;
+  const dosi_target = Math.round(target / pilloleXDose);
+  const now = new Date();
+  const _pp = n => String(n).padStart(2, '0');
+  const nuoveAssunzioni = [];
+  let dosi_rimaste = dosi_target;
+  const cursore = new Date(extra.data + 'T00:00:00');
+  while (dosi_rimaste > 0 && cursore <= now) {
+    const dataStr = cursore.getFullYear()+'-'+_pp(cursore.getMonth()+1)+'-'+_pp(cursore.getDate());
+    const dosi_giorno = Math.min(dosi_rimaste, dosi_al_giorno);
+    nuoveAssunzioni.push({ data: dataStr, dosi: dosi_giorno });
+    dosi_rimaste -= dosi_giorno;
+    cursore.setDate(cursore.getDate() + 1);
+  }
+  extra.assunzioni = nuoveAssunzioni;
   ev.extra = extra;
   salvaEventiLS(eventi);
   renderHome();
@@ -4407,7 +4428,7 @@ function mkWrap(labelTxt, input, calcolato) {
 }
 
 function ordinale(n) {
-  return n + (n === 1 ? 'ª' : n === 2 ? 'ª' : '°');
+  return n + (n === 2 ? 'ª' : n === 3 ? 'ª' : 'ª');
 }
 
 function mostraFoto(input) {
@@ -4444,7 +4465,7 @@ function scrollPrimoOggi() {
 // GESTIONE LISTE — localStorage
 // ============================================================
 
-const LS_KEY = 'promemoriamio_liste';
+const LS_KEY = 'agendame_liste';
 
 function leggiListe() {
   try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
@@ -4510,8 +4531,28 @@ function buildListaCard(lista, archiviata) {
     <span class="lista-card-badge ${aperte === 0 ? 'zero' : ''}">${aperte > 0 ? aperte + ' aperte' : '✓ tutto fatto'}</span>
   `;
 
+  // bottone ripristina (solo per archiviate)
+  if (archiviata) {
+    const restBtn = document.createElement('button');
+    restBtn.style.cssText = 'flex-shrink:0;margin-left:4px;padding:6px 8px;border:none;background:none;color:var(--accent);cursor:pointer;border-radius:8px;line-height:1';
+    restBtn.title = 'Ripristina lista';
+    restBtn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6M3 10l6-6"/></svg>';
+    restBtn.onclick = e => {
+      e.stopPropagation();
+      const ll = leggiListe();
+      const idx = ll.findIndex(x => x.id === lista.id);
+      if (idx === -1) return;
+      ll[idx].archiviata = false;
+      delete ll[idx].archiviatail;
+      salvaListe(ll);
+      renderListe();
+      showToast('Lista ripristinata ✓');
+    };
+    card.appendChild(restBtn);
+  }
+
   const delBtn = document.createElement('button');
-  delBtn.style.cssText = 'flex-shrink:0;margin-left:8px;padding:6px 8px;border:none;background:none;color:var(--fg-3);cursor:pointer;border-radius:8px;line-height:1';
+  delBtn.style.cssText = 'flex-shrink:0;margin-left:4px;padding:6px 8px;border:none;background:none;color:var(--fg-3);cursor:pointer;border-radius:8px;line-height:1';
   delBtn.title = 'Elimina lista';
   delBtn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>';
   delBtn.onclick = e => {
@@ -4618,6 +4659,9 @@ function renderDettaglio() {
   // Aggiorna totale prezzo
   aggiornaTotale();
 
+  // Render carrello del giorno
+  renderCarrello();
+
   // disabilita "Archivia" se già archiviata
   const btnArch = document.querySelector('.btn-archivia');
   if (btnArch) {
@@ -4696,13 +4740,40 @@ function buildTodoItem(voce, lista) {
     apriPopupPrezzo(lista, voce, () => { _aggiornaPrezzoBadge(); aggiornaTotale(); });
   };
 
+  // bottone carrello (solo voci non done)
+  const cartBtn = document.createElement('button');
+  cartBtn.style.cssText = 'flex-shrink:0;padding:4px 6px;border:none;background:none;cursor:pointer;border-radius:8px;line-height:1;margin-right:2px;font-size:1rem';
+  cartBtn.title = 'Aggiungi al carrello del giorno';
+  const _aggiornaCartBtn = () => {
+    const carr = (leggiListe().find(l => l.id === lista.id) || lista).carrello || [];
+    const inCart = carr.some(c => c.id === voce.id);
+    cartBtn.style.opacity = inCart ? '1' : '0.35';
+    cartBtn.textContent = '🛒';
+  };
+  _aggiornaCartBtn();
+  cartBtn.onclick = () => {
+    const ll = leggiListe();
+    const l2 = ll.find(x => x.id === lista.id);
+    if (!l2) return;
+    if (!l2.carrello) l2.carrello = [];
+    const idx = l2.carrello.findIndex(c => c.id === voce.id);
+    if (idx === -1) {
+      l2.carrello.push({ id: voce.id, prezzo: voce.prezzo, qta: voce.qta || 1 });
+    } else {
+      l2.carrello.splice(idx, 1);
+    }
+    salvaListe(ll);
+    renderDettaglio();
+  };
+  if (voce.done) cartBtn.style.display = 'none';
+
   // delete
   const del = document.createElement('button');
   del.className = 'todo-del';
   del.title = 'Elimina';
   del.style.flexShrink = '0';
   del.style.marginTop = '2px';
-  del.style.marginLeft = '10px';
+  del.style.marginLeft = '4px';
   del.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
   del.onclick = () => eliminaTodo(lista.id, voce.id);
 
@@ -4749,6 +4820,7 @@ function buildTodoItem(voce, lista) {
   div.appendChild(cb);
   div.appendChild(body);
   div.appendChild(priceBadge);
+  div.appendChild(cartBtn);
   div.appendChild(del);
   return div;
 }
@@ -4765,21 +4837,7 @@ function aggiungiTodo() {
   salvaListe(liste);
   input.value = '';
   renderDettaglio();
-  input.blur(); // chiude la tastiera dopo l'aggiunta
-}
-
-function azzeraImportiLista() {
-  if (!listaCorrenteId) return;
-  const liste = leggiListe();
-  const lista = liste.find(l => l.id === listaCorrenteId);
-  if (!lista) return;
-  const haImporti = lista.voci.some(v => v.prezzo != null && !isNaN(v.prezzo));
-  if (!haImporti) { showToast('Nessun importo da azzerare'); return; }
-  if (!confirm('Azzera tutti gli importi € della lista? I nomi delle voci restano invariati.')) return;
-  lista.voci.forEach(v => { v.prezzo = null; });
-  salvaListe(liste);
-  renderDettaglio();
-  showToast('✓ Importi azzerati');
+  input.focus();
 }
 
 function toggleTodo(listaId, voceId) {
@@ -4797,6 +4855,8 @@ function eliminaTodo(listaId, voceId) {
   const lista = liste.find(l => l.id === listaId);
   if (!lista) return;
   lista.voci = lista.voci.filter(v => v.id !== voceId);
+  // rimuovi anche dal carrello se presente
+  if (lista.carrello) lista.carrello = lista.carrello.filter(c => c.id !== voceId);
   salvaListe(liste);
   renderDettaglio();
 }
@@ -5426,6 +5486,110 @@ function aggiornaTotale() {
   if (val) val.textContent = '€ ' + tot.toFixed(2).replace('.', ',');
 }
 
+// ════ CARRELLO DEL GIORNO ════
+function renderCarrello() {
+  const liste = leggiListe();
+  const lista = liste.find(l => l.id === listaCorrenteId);
+  if (!lista) return;
+  const carrello = lista.carrello || [];
+  const section = document.getElementById('carrello-section');
+  const wrap    = document.getElementById('carrello-voci-wrap');
+  const totBar  = document.getElementById('carrello-totale-bar');
+  const totVal  = document.getElementById('carrello-totale-val');
+  if (!section) return;
+
+  if (carrello.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  wrap.innerHTML = '';
+
+  let tot = 0, haPrezzo = false;
+  carrello.forEach(c => {
+    const voce = lista.voci.find(v => v.id === c.id);
+    if (!voce) return; // voce eliminata dalla lista master
+    // usa prezzo/qta del carrello (sovrascrive master)
+    const prezzo = c.prezzo;
+    const qta    = c.qta || 1;
+    if (prezzo != null) { haPrezzo = true; tot += prezzo * qta; }
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--border)';
+
+    // nome voce
+    const nome = document.createElement('div');
+    nome.style.cssText = 'flex:1;font-size:0.9rem;font-weight:600;color:var(--fg);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    nome.textContent = voce.testo;
+
+    // badge prezzo carrello (cliccabile)
+    const badge = document.createElement('div');
+    badge.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:1px;cursor:pointer;min-width:60px;flex-shrink:0';
+    const _aggiornaBadgeCarr = () => {
+      badge.innerHTML = '';
+      if (qta > 1 || c.qta > 1) {
+        const q = document.createElement('div');
+        q.style.cssText = 'font-size:0.68rem;color:var(--fg-3)';
+        q.textContent = 'x' + c.qta;
+        badge.appendChild(q);
+      }
+      const p = document.createElement('div');
+      p.style.cssText = c.prezzo != null ? 'font-size:0.82rem;font-weight:700;color:#2563eb' : 'font-size:0.9rem;font-weight:600;color:var(--fg)';
+      p.textContent = c.prezzo != null ? '€ ' + (c.prezzo * (c.qta || 1)).toFixed(2).replace('.',',') : '€';
+      badge.appendChild(p);
+    };
+    _aggiornaBadgeCarr();
+    badge.onclick = () => {
+      // popup prezzo che salva in carrello anziché in voce master
+      const vFake = { prezzo: c.prezzo, qta: c.qta || 1 };
+      apriPopupPrezzo(lista, vFake, () => {
+        const ll2 = leggiListe();
+        const l2  = ll2.find(x => x.id === lista.id);
+        if (!l2) return;
+        const ci  = (l2.carrello || []).findIndex(x => x.id === voce.id);
+        if (ci !== -1) { l2.carrello[ci].prezzo = vFake.prezzo; l2.carrello[ci].qta = vFake.qta; }
+        salvaListe(ll2);
+        renderDettaglio();
+      });
+    };
+
+    // rimuovi dal carrello
+    const rem = document.createElement('button');
+    rem.style.cssText = 'flex-shrink:0;padding:4px 6px;border:none;background:none;color:var(--fg-3);cursor:pointer;border-radius:8px;font-size:1rem;line-height:1';
+    rem.title = 'Rimuovi dal carrello';
+    rem.textContent = '✕';
+    rem.onclick = () => {
+      const ll2 = leggiListe();
+      const l2  = ll2.find(x => x.id === lista.id);
+      if (!l2) return;
+      l2.carrello = (l2.carrello || []).filter(x => x.id !== voce.id);
+      salvaListe(ll2);
+      renderDettaglio();
+    };
+
+    row.appendChild(nome);
+    row.appendChild(badge);
+    row.appendChild(rem);
+    wrap.appendChild(row);
+  });
+
+  if (totBar && totVal) {
+    totBar.style.display = haPrezzo ? 'block' : 'none';
+    totVal.textContent = '€ ' + tot.toFixed(2).replace('.', ',');
+  }
+}
+
+function fineSpesa() {
+  if (!confirm('Fine spesa: rimuovere tutte le voci dal carrello?')) return;
+  const ll = leggiListe();
+  const l  = ll.find(x => x.id === listaCorrenteId);
+  if (!l) return;
+  l.carrello = [];
+  salvaListe(ll);
+  renderDettaglio();
+  showToast('Carrello svuotato ✓');
+}
+
 function apriPopupPrezzo(lista, voce, onSalva) {
   const old = document.getElementById('_pp-overlay');
   if (old) old.remove();
@@ -5681,7 +5845,7 @@ async function fotoCaricaAnteprime(evId, slots) {
 
 // ── Fine modulo foto ───────────────────────────────────────────────────────────
 
-const LS_EVENTI = 'promemoriamio_eventi';
+const LS_EVENTI = 'agendame_eventi';
 let eventoInModifica = null; // id evento in modifica, null = nuovo
 let _tempEvId = null;        // id provvisorio per foto su form nuovo
 let mostraCompletati = false;
@@ -5942,7 +6106,7 @@ function aggiornaBackupBanner() {
 function esportaBackup() {
   const payload = {};
   const chiavi = [
-    'promemoriamio_eventi', 'promemoriamio_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'
+    'agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'
   ];
   chiavi.forEach(k => {
     try {
@@ -5969,7 +6133,7 @@ function esportaBackup() {
 async function condividiBackup() {
   // Costruisce il payload identico a esportaBackup()
   const payload = {};
-  const chiavi = ['promemoriamio_eventi', 'promemoriamio_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'];
+  const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'];
   chiavi.forEach(k => {
     try {
       const v = localStorage.getItem(k);
@@ -6023,17 +6187,9 @@ function importaBackup(input) {
       alert('File non valido: JSON non leggibile.');
       return;
     }
-    // Mappa chiavi: accetta sia i vecchi nomi agendame_* sia i nuovi promemoriamio_*
-    const mappaChiavi = {
-      'promemoriamio_eventi': ['promemoriamio_eventi', 'agendame_eventi'],
-      'promemoriamio_liste':  ['promemoriamio_liste',  'agendame_liste'],
-      'promemoriamio_conti':  ['promemoriamio_conti'],
-      'promemoriamio_profilo': ['promemoriamio_profilo'],
-      'promemoriamio_appunti': ['promemoriamio_appunti']
-    };
-    // Verifica che almeno una chiave (vecchia o nuova) sia presente nel backup
-    const tutteChiaviAccettate = Object.values(mappaChiavi).flat();
-    if (!tutteChiaviAccettate.some(k => k in payload)) {
+    const chiavi = ['agendame_eventi', 'agendame_liste', 'promemoriamio_conti', 'promemoriamio_profilo', 'promemoriamio_appunti'];
+    const trovate = chiavi.filter(k => k in payload);
+    if (trovate.length === 0) {
       alert('File non riconosciuto: nessuna chiave valida trovata.');
       return;
     }
@@ -6056,12 +6212,8 @@ function importaBackup(input) {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    // Scrivi sempre con chiave nuova, cercando nel payload il valore nella chiave nuova o vecchia
-    Object.entries(mappaChiavi).forEach(([nuova, candidate]) => {
-      const chiaveTrovata = candidate.find(k => k in payload);
-      if (chiaveTrovata !== undefined) {
-        try { localStorage.setItem(nuova, JSON.stringify(payload[chiaveTrovata])); } catch(e) {}
-      }
+    trovate.forEach(k => {
+      try { localStorage.setItem(k, JSON.stringify(payload[k])); } catch(e) {}
     });
     // aggiorna timestamp backup con la data del file (se presente) o ora
     const ts = payload._backup_ts || Date.now();
@@ -7170,16 +7322,6 @@ function caricaFormEvento(ev) {
       fotoCaricaAnteprime(ev.id, ['confezione']);
     }
   } else if (cat === 'documenti') {
-    // Dropdown tipo documento
-    const selDoc = document.getElementById('documenti-tipo');
-    const opzDoc = selDoc ? Array.from(selDoc.options).map(o => o.value) : [];
-    if (e.tipo && !opzDoc.includes(e.tipo)) {
-      set('documenti-tipo', 'Altro');
-      set('documenti-altro', e.tipo);
-    } else {
-      set('documenti-tipo', e.tipo);
-    }
-    toggleAltroTesto('documenti');
     // Foto documento: inietta campi se abbiamo un evId
     const _evId = ev.id;
     const _fWrap = document.getElementById('documenti-foto-wrap');
@@ -7194,6 +7336,16 @@ function caricaFormEvento(ev) {
     set('ricorrenze-nome', e.nome);
     set('ricorrenze-telefono', e.telefono || '');
     aggiornaFreqRicorrenza();
+  } else if (cat === 'documenti') {
+    const selDoc = document.getElementById('documenti-tipo');
+    const opzDoc = selDoc ? Array.from(selDoc.options).map(o => o.value) : [];
+    if (e.tipo && !opzDoc.includes(e.tipo)) {
+      set('documenti-tipo', 'Altro');
+      set('documenti-altro', e.tipo);
+    } else {
+      set('documenti-tipo', e.tipo);
+    }
+    toggleAltroTesto('documenti');
   } else if (cat === 'auto') {
     const selAuto = document.getElementById('auto-tipo');
     const opzAuto = selAuto ? Array.from(selAuto.options).map(o => o.value) : [];
@@ -7273,7 +7425,7 @@ function raccogliCampiEvento(cat) {
       const ora = val('alterne-ora'); if (ora) orari = [ora];
     } else if (freqVal === 'custom') {
       const prima = val('custom-prima-dose');
-      const nDosi = Math.max(1, Math.min(24, parseInt(document.getElementById('custom-n-dosi')?.value || '1')));
+      const nDosi = parseInt(document.getElementById('custom-n-dosi')?.value || '1');
       if (prima && nDosi > 0) {
         const [hh, mm] = prima.split(':').map(Number);
         const baseMin = hh * 60 + mm;
@@ -7582,7 +7734,7 @@ function aggiornaOrariCustom() {
 (function patchAggiornaOrari() {
   const orig = window.aggiornaOrari;
   window.aggiornaOrari = function() {
-    if (typeof orig === 'function') orig();
+    orig();
     const freq = document.getElementById('freq-select');
     const cw = document.getElementById('custom-wrap');
     if (freq && cw && freq.value === 'custom') {
