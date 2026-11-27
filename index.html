@@ -3750,6 +3750,7 @@ body {
 
     <!-- CARRELLO DEL GIORNO -->
     <div id="carrello-section" style="display:none;margin-bottom:4px">
+      <div style="border-top:2.5px solid var(--accent);margin:2px 0 6px;opacity:0.5;border-radius:2px"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 4px 4px">
         <span style="font-size:0.78rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.04em">🛒 Da comprare oggi</span>
         <button onclick="fineSpesa()" style="padding:5px 12px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit">Fine spesa</button>
@@ -5566,7 +5567,7 @@ function renderCarrello() {
     };
     _buildBadge();
     badge.onclick = () => {
-      const vFake = { prezzo: c.prezzo, qta: c.qta || 1 };
+      const vFake = { id: voce.id, prezzo: c.prezzo, qta: c.qta || 1 };
       apriPopupPrezzo(lista, vFake, () => {
         const ll2 = leggiListe();
         const l2  = ll2.find(x => x.id === lista.id);
